@@ -1,13 +1,16 @@
 """	
 ## SCRIPT FOR FUNCTIONS IMPLEMENTATION
 
-The functions are:
-	- fastplot		Makes a simple plot
-	- hotpxRemove		Removes hotpx [taken by internet]
-	- showfits		Prints fits image
-	- targetDatafit		Extracts data from fits and print a row image
-	- RotCor		Corrects the inclination of the spectrum, making a linear fit
-	- initialization
+These are the functions used in the `fr_spectrum1.py` script
+
+The implemented functions are:
+- `fastplot` 	:	Makes a simple plot
+- `hotpxRemove` : 	Removes hotpx [taken by internet]
+- `showfits` 	:	Prints fits image
+- `targetDatafit` :	Extracts data from fits and print a row image
+- `RotCor`	:	Corrects the inclination of the spectrum, making a linear fit
+- `initialization`
+
 """
 
 import numpy as np
