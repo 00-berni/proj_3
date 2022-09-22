@@ -1,6 +1,13 @@
 # Spectra Experience
 
-## Structure
+## Table of Contents
+
+1. [Structure of the ptoject folder](#structure-of-the-project-folder)
+2. [What to do](#what-to-do)
+
+---
+
+## Structure of the project folder
 
 - **_./_**
   - **`README.md`**
