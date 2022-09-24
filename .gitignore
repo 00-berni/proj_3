@@ -1,2 +1,5 @@
 # ignore pictures
 *.png
+
+# vscode things
+.vscode/*
