@@ -3,3 +3,6 @@
 
 # vscode things
 .vscode/*
+
+# venv things
+venv/*
