@@ -2,7 +2,10 @@
 *.png
 
 # vscode things
-.vscode/*
+.vscode/**
 
 # venv things
-venv/*
+venv/**
+
+# i have no idea of what is
+.idea/**
