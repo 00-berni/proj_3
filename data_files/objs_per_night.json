@@ -1,0 +1,225 @@
+{
+    "01_night":{
+        "betaLyr":[
+            "betaLyr_alpy_26072022_0250",
+            "betaLyr_alpy_lamp_26072022_0250"
+        ],
+        "gammaCygni":[
+            "gammaCygni_alby_26072022_0405",
+            "gammaCygni_alby_lamp_26072022_0405"
+        ],
+        "giove":[
+            "giove_alpy_26072022_0116",
+            "giove_lamp_alpy_26072022",
+            "giove_flat_alpy_26072022"
+        ],
+        "luna":[
+            [
+                "LunaBianca_Alpy_26072022_0528",
+                "LunaNera_Alpy_26072022_0522"
+            ],
+            "LunaNera_Alpy_Lamp_26072022_0522",
+            " ",
+            "LunaNera_Image_26072022_0525"
+
+        ],
+        "m57": [
+            "m57_alpy_26072022_0201",
+            "m57_alpy_lamp_26072022_0201"
+        ],
+        "marte": [
+            "Marte_alpy_26072022_0505",
+            "Marte_alpy_lamp_26072022_0505"
+        ],
+        "pyCygni": [
+            "pCygni_alpy_26072022_0135",
+            "pCygni_alpy_lamp_26072022_0135"
+        ],
+        "saturno": [
+            "saturno_alpy_26072022_0440",
+            "saturno_alpy_lamp_26072022_0440",
+            " ",
+            "saturno_image_26072022_0440"
+        ],
+        "vega": [
+            "vega_alby_26072022_0327",
+            "vega_alby_lamp_26072022_0327"
+        ],
+        "wr137": [
+            "wr137_alpy_26072022_0427","wr137_alpy_lamp_26072022_0427"
+        ]
+    },
+    "02_night":{
+        "antares": [
+            "antares_alpy_26072022_2305",
+            "antares_alpy_lamp_26072022_2305",
+            " "
+        ],
+        "arturo": [
+            "arturo_alpy_26072022_2239",
+            "arturo_alpy_lamp_26072022_2239",
+            "arturo_alpy_flat_26072022_2239"
+        ],
+        "chcygni": [
+            [
+                "chcygni_alpy_27072022_0258",
+                "chcygni-001",
+                "chcygni-002",
+                "chcygni-003",
+                "chcygni-004"
+            ],
+            "chcygni_alpy_lamp_27072022_0258"
+        ]
+    },
+    "03_night":{
+        "aldebaran": [
+            "aldebaran_echelle_28072022_0507",
+            [
+                "aldebaran_echelle_lampthor_28072022_0507",
+                "aldebaran_echelle_lampW_28072022_0507"
+            ]
+        ],
+        "betalyr": [
+            [
+                "betalyr-001",
+                "betalyr-002",
+                "betalyr-003",
+                "betalyr-004",
+                "betalyr-005",
+                "betalyr-006",
+                "betalyr-007",
+                "betalyr-008"
+            ],
+            [
+                "thor",
+                "tung"
+            ]
+        ],
+        "giove": [
+            "giove_echelle_28072022_0439",
+            [
+                "giove_echelle_lampthor_28072022_0439",
+                "giove_echelle_lampW_28072022_0439"
+            ]        
+        ],
+        "marte": [
+            "marte_echelle_28072022_0455",
+            [
+                "marte_echelle_lampthor_28072022_0455",
+                "marte_echelle_lampW_28072022_0455"
+            ]
+        ],
+        "vega": [
+            "vega_echelle_28072022_0206",
+            [
+                "vega_echelle_lampthor_28072022_0206",
+                "vega_echelle_lampW_28072022_0206"
+            ]
+        ]
+        
+    },
+    "04_night":{
+        "betaaur": [
+            "betaaur_echelle_29072022_0443",
+            [
+                "betaaur_echelle_lampthor_29072022_0443",
+                "betaaur_echelle_lampW_29072022_0443"
+            ]
+        ]        
+    },
+    "05_night":{
+        "algol": [
+            "algol_echelle_30072022_0437",
+            [
+                "algol_echelle_lampthor_30072022_0437",
+                "algol_echelle_lampW_30072022_0437"
+            ]
+        ],
+        "arturo": [
+            "arturo_echelle_30072022_0011",
+            [
+                "arturo_echelle_lampthor_30072022_0011",
+                "arturo_echelle_lampW_30072022_0011"
+            ]
+        ],
+        "betaaur": [
+            "betaauriga_echelle_30072022_0444",
+            [
+                "betaauriga_echelle_lampthor_30072022_0444",
+                "betaauriga_echelle_lampW_30072022_0444"
+            ]
+        ],
+        "betalyr": [
+            "betalyr_echelle_30072022_0204",
+            [
+                "betalyr_echelle_lampthor_30072022_0204",
+                "betalyr_echelle_lampW_30072022_0204"
+            ]
+        ],
+        "deneb": [
+            "deneb_echelle_30072022_0021",
+            [
+                "deneb_echelle_lampthor_30072022_0021",
+                "deneb_echelle_lampW_30072022_0021"
+            ]
+        ],
+        "epsilonauriga+": [
+            "epsauriga_echelle_30072022_0502",
+            [
+                "epsauriga_echelle_lampthor_30072022_0502",
+                "epsauriga_echelle_lampW_30072022_0502"
+            ]
+        ],
+        "pcygni": [
+            [
+                "pcygni_echelle_30072022_0148",
+                "PCygni-001",
+                "PCygni-002",
+                "PCygni-003",
+                "PCygni-004",
+                "PCygni-005",
+                "PCygni-006",
+                "PCygni-007",
+                "PCygni-008",
+                "PCygni-009",
+                "PCygni-0010"
+            ],
+            [
+                "pcygni_echelle_lampthor_30072022_0148",
+                " "
+            ]
+        ],
+        "pleione": [
+            "pleione_echelle_30072022_0430",
+            [
+                "pleione_echelle_lampthor_30072022_0430",
+                "pleione_echelle_lampW_30072022_0430"
+            ]
+        ],
+        "vega": [
+            "vega_echelle_30072022_0156",
+            [
+                "vega_echelle_lampthor_30072022_0156",
+                "vega_echelle_lampW_30072022_0156"
+            ]
+        ],
+        "wr137": [
+            [
+                "wr137-001",
+                "wr137-002",
+                "wr137-003",
+                "wr137-004",
+                "wr137-005",
+                "wr137-006",
+                "wr137-007",
+                "wr137-008",
+                "wr137-009",
+                "wr137-0010"
+            ],
+            [
+                "wr137_echelle_lampthor_30072022_0417",
+                "wr137_echelle_lampW_30072022_0417"
+            ]
+        ]
+    }
+}
