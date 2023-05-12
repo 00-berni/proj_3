@@ -9,3 +9,6 @@ venv/**
 
 # i have no idea of what is
 .idea/**
+
+#
+*.pyc
