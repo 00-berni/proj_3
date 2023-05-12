@@ -10,7 +10,7 @@ from scipy.optimize import curve_fit
 import scipy.ndimage as ndimage
 import functions as my
 
-folder_name = '26072022'
+folder_name = './data_files/26072022'
 
 '''
 In the file targets.txt the names of the fits data for the various targets. We took for each observation a lamp calibration.
