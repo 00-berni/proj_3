@@ -11,7 +11,7 @@ if __name__ == '__main__':
     # selecting the observation night
     sel_obs = 0
     # choosing the object
-    sel_obj = 'betaLyr'
+    sel_obj = 'gammaCygni'
     # collecting data fits for that object
     obj, lims = collect_fits(sel_obs, sel_obj)
     obj_fit, obj_lamp = obj
@@ -105,8 +105,8 @@ if __name__ == '__main__':
     trasf_func = lambda x : fit_func2(x,p0,p1)
 
     
-    lengths = trasf_func(np.arange(len(flt_spectrum)))
+    # lengths = trasf_func(np.arange(len(flt_spectrum)))
 
-    fastplot(lengths,flt_spectrum,title='Corrected and calibrated spectrum of '+sel_obj,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9])
+    # fastplot(lengths,flt_spectrum,title='Corrected and calibrated spectrum of '+sel_obj,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9])
 
-    plt.show()
+    # plt.show()

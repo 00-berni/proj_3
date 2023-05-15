@@ -99,7 +99,8 @@ if __name__ == '__main__':
     # selecting the observation night
     sel_obs = 0
     # choosing the object
-    sel_obj = 'betaLyr'
+    # sel_obj = 'betaLyr'
+    sel_obj = 'gammaCygni'
     # collecting data fits for that object
     obj, lims = collect_fits(sel_obs, sel_obj)
     if sel_obj != 'giove':
