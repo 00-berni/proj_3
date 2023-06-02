@@ -11,7 +11,7 @@ if __name__ == '__main__':
     # selecting the observation night
     sel_obs = 0
     # choosing the object
-    sel_obj = 'gammaCygni'
+    sel_obj = 'vega'
     # collecting data fits for that object
     obj, lims = collect_fits(sel_obs, sel_obj)
     obj_fit, obj_lamp = obj

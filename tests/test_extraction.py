@@ -97,17 +97,18 @@ def angle_correction(data: np.ndarray, init: list[float] = [0.9, 0.], angle: flo
 
 if __name__ == '__main__':
     # selecting the observation night
-    sel_obs = 0
+    sel_obs = 1
     # choosing the object
     # sel_obj = 'betaLyr'
-    sel_obj = 'gammaCygni'
+    sel_obj = 'chcygni'
     # collecting data fits for that object
     obj, lims = collect_fits(sel_obs, sel_obj)
     if sel_obj != 'giove':
         obj_fit, obj_lamp = obj
     else:
         obj_fit, obj_lamp, obj_flat = obj
-
+    print(obj_fit)
+    obj_fit = obj_fit[0]
     # appending the path
     obj_fit = data_file_path(sel_obs, sel_obj, obj_fit)
     obj_lamp = data_file_path(sel_obs, sel_obj,obj_lamp)
@@ -115,10 +116,20 @@ if __name__ == '__main__':
         obj_flat = data_file_path(sel_obs, sel_obj,obj_flat)
 
     hdul, spectrum = get_data_fit(obj_fit)
-    hdul, lamp = get_data_fit(obj_lamp)
+    hdul.info()
+    # print header
+    hdr = hdul[0].header
+    print(' - HEADER -')
+    for parameter in hdr:
+        hdr_info = f'{parameter} =\t{hdr[parameter]}' 
+        comm = hdr.comments[parameter]
+        if comm != '': hdr_info = hdr_info + ' \ ' + comm 
+        print(hdr_info)
+    print()
+    hdul_lamp, lamp = get_data_fit(obj_lamp)
     if sel_obj == 'giove':
-        hdul, flat = get_data_fit(obj_flat)
+        hdul_flat, flat = get_data_fit(obj_flat)
     lamp = lamp[640:1373, 750:-1]
-    showfits(lamp,n=3)
-
+    showfits(spectrum,n=3)
+    showfits(lamp,n=4)
     plt.show()
