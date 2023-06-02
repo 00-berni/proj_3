@@ -10,5 +10,8 @@ venv/**
 # i have no idea of what is
 .idea/**
 
-#
+# cython files
 *.pyc
+
+# result files
+**/*results.txt
