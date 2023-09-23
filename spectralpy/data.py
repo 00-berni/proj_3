@@ -3,11 +3,8 @@
 """
 
 import os
-import json
 import numpy as np
 from astropy.io import fits
-from spectralpy.calcorr import hotpx_remove
-from spectralpy.display import showfits
 
 def data_extraction(path_file: str) -> dict:
     """Extracting data from a .json file
@@ -18,6 +15,7 @@ def data_extraction(path_file: str) -> dict:
     :return: data organized into nights of aquisition and objects
     :rtype: dict
     """
+    import json 
     # opening the file
     with open(path_file) as f:
         data_file = f.read()
@@ -112,8 +110,11 @@ def get_data_fit(path: str, lims: list = [0,-1,0,-1], hotpx: bool = True, v: int
     data = data[ly:ry,lx:rx]
     # hot px correction
     if hotpx == True:
+        from .calcorr import hotpx_remove
         data = hotpx_remove(data)
     # Spectrum image
-    if display_plots == True: showfits(data, v=v,title=title,n=n,dim=dim) 
+    if display_plots == True: 
+        from .display import showfits
+        showfits(data, v=v,title=title,n=n,dim=dim) 
     return hdul,data
 ##*
