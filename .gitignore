@@ -9,6 +9,7 @@ venv/**
 
 # i have no idea of what is
 .idea/**
+**/.ipynb_checkpoints
 
 # cython files
 *.pyc
