@@ -102,19 +102,22 @@ In addition to the package (that is the aim of the exercise), the project direct
 
 ### <a id='toc2_1'></a>[data_files](#toc0_)
 
-All acquired data are listed in the file `objs_per_night.json`. The exstension of the files is the standard `.fit`. In addition to the observation data, for the chosen target the information about the cuts of the image is reported in ***calibration*** directory.
+All acquired data are listed in the file `objs_per_night.json`. The extension of the files is the standard `.fit`. In addition to the observation data, for each chosen target the information about the cuts of the image is reported in a text file, named `cut_indicies.txt`, placed in the same directory of the selected data.
+
 
 #### Observations 
 
-Data of ***01_night*** and ***02_night*** are obtained thanks to the _Alpy_ spectroscope, while the others are taken with _echelle_. However, the routine can extrapolate only the _Alpy_'s data, then for some selected targets the extracted data from _echelle_ are just collected in the ***chosen_echelle_data*** directory[^1].
+Data of ***01_night*** and ***02_night*** are obtained through the _Alpy_ spectroscope, while the others are taken with _echelle_. However, the routine is only able to extract the data from _Alpy_, so for selected targets the _echelle_ data are already collected in the ***chosen_echelle_data*** directory. The reason is that **the data obtained by _echelle_ were extracted and calibrated via a Matlab script written by Marco Monaci and used here with his permission.**
 
-[^1]: The data from _echelle_ are extracted via a Matlab script written by Marco Monaci and used here with his permission.
+Only one _flat_ per night was acquired, while the spectrum of the calibration lamp was taken for each observed target. Before storing the data, the CCD exectuted a cycle of _darks_ and corrected them automatically.  
 
-- Alpy
+#### Calibration lamps
 
-    Each observation is acquired 
-The spectrum of the lamp is acquired for each target. Data for calibration are taken manually.
-A _flat_ was acquired for each night of observation.
+The ***calibration*** directory collects the manuals on the spectra of the lamps used for calibration.
+
+As explained later about the correlation between different calibrations, the detection of the spectral lines of the lamp is done only for the one corresponding to the observation chosen to be studied first. These data are listed in the file `calibration_lines.txt`, placed in the same directory as the target, and are sampled manually.
+
+For _echelle_ this procedure is not required (see above). 
 
 
 ### <a id='toc2_2'></a>[spectralpy](#toc0_)
@@ -149,9 +152,9 @@ The package is implemented to calibrate the acquired spectra and to extract only
 
         To calibrate the specrtum a reference is essential. The NeAr lamp is the standard lamp for the Alpy and the documentation about it is reported in the [`SpectreArNeLISA.pdf`](data_files/calibration/SpectreArNeLISA.pdf) file. After adjusting the inclination of the image the program computes the parameters of the function to pass from pixels (coordinates along x axis) to wavelengths (in $\AA$). To do that a polynomial fit with 3 parameters are used. The result of this procedure is the spectrum $\mathcal{S}_\lambda$.
 
-The spectrum thus obtained is not normalized in brightness, because there are not enough observations of the same target to do it. 
+    The spectrum thus obtained is not normalized in brightness, because there are not enough observations of the same target to do it. 
 
-After a spectrum has been calibrated, the last step of the routine changes a little: in fact, to avoid the samples of each calibration lamp the program computes the correlation between this and the previous lamp and compares it with the autocorrelation of the first. For all the investigated cases the difference is null.  
+    After a spectrum has been calibrated, the last step of the routine changes a little: in fact, to avoid the samples of each calibration lamp the program computes the correlation between this and the previous lamp and compares it with the autocorrelation of the first. For all the investigated cases the difference is null.  
 
 
 - `data.py`
