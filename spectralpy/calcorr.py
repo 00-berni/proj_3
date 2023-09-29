@@ -199,3 +199,5 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: list[None] | np.ndarray 
     # displaying the calibrated spectrum
     fastplot(lengths, spectrum,title='Corrected and calibrated spectrum of ' + ch_obj,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9])
     plt.show()
+
+    return hdul, sp_data, spectrum, lengths, flat_value, cal_func
