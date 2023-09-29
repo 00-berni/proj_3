@@ -4,7 +4,11 @@
 
 import os
 import numpy as np
+import matplotlib.pyplot as plt
 from astropy.io import fits
+from .stuff import angle_correction, hotpx_remove
+from .display import showfits
+
 
 def data_extraction(path_file: str) -> dict:
     """Extracting data from a .json file
@@ -110,7 +114,6 @@ def get_data_fit(path: str, lims: list = [0,-1,0,-1], hotpx: bool = True, v: int
     data = data[ly:ry,lx:rx]
     # hot px correction
     if hotpx == True:
-        from .calcorr import hotpx_remove
         data = hotpx_remove(data)
     # Spectrum image
     if display_plots == True: 
@@ -118,3 +121,93 @@ def get_data_fit(path: str, lims: list = [0,-1,0,-1], hotpx: bool = True, v: int
         showfits(data, v=v,title=title,n=n,dim=dim) 
     return hdul,data
 ##*
+
+
+def extract_data(ch_obs: int, ch_obj: str) -> list[str]:
+    """Collecting data from data files.
+    
+    Given a selected observation night and object, the function 
+    returns both the paths of the target and the calibration lamp
+    (also the flat if there is) and the corrisponding values for 
+    the edges of the images. 
+
+    :param ch_obs: chosen obeservation night
+    :type ch_obs: int
+    :param ch_obj: chosen object name
+    :type ch_obj: str
+    
+    :return: the list with paths and extrema
+    :rtype: list
+    """
+    # only for the first two observation nights Alpy was used
+    if ch_obs < 2:
+        # extracting informations
+        obj, lims = collect_fits(ch_obs, ch_obj)
+        # collecting in different variables
+        obj_fit, obj_lamp = obj[:2] 
+        lims_fit, lims_lamp = lims[:2]
+
+        # appending the path
+        obj_fit = data_file_path(ch_obs, ch_obj, obj_fit)
+        obj_lamp = data_file_path(ch_obs, ch_obj, obj_lamp)
+        
+        # storing in `data` list
+        #   format is [obj, its extrema, ...]
+        data = [obj_fit, lims_fit, obj_lamp, lims_lamp]   
+        # condition for the presence of flat
+        if ch_obj == 'giove' or ch_obj == 'arturo':
+            obj_flat = obj[-1]
+            lims_flat = lims[-1]
+            obj_flat = data_file_path(ch_obs, ch_obj, obj_flat)
+            data += [obj_flat, lims_flat]             
+    # for echelle data extraction
+    else:
+        # extracting informations
+        obj, _ = collect_fits(ch_obs, ch_obj, cutignore=True)
+        # collecting in different variables
+        obj_fit, obj_lamp = obj[:2]
+        thor, tung = obj_lamp
+
+        # appending the path
+        obj_fit = data_file_path(ch_obs, ch_obj, obj_fit)
+        thor = data_file_path(ch_obs, ch_obj, thor)
+        tung = data_file_path(ch_obs, ch_obj, tung)
+        
+        # storing in `data` list
+        #   format is [obj, its extrema, ...]
+        data = [obj_fit, thor, tung]   
+    return data
+
+
+
+def get_data(ch_obj: str, obj_fit: str, lims_fit: list[int | None] = [None,None,None,None] , angle: float | None = None, display_plots: bool = False) -> tuple:
+    """Extracting the fits data
+    The function gets the data of the spectrum from the fits file of a selected target and corrects for the
+    inclination, returning the fits information (`hdul`), the spectrum data (`sp_data`) and the angle of
+    inclination (`angle`).
+
+    :param ch_obj: chosen object name
+    :type ch_obj: str
+    :param obj_fit: path of the target
+    :type obj_fit: str
+    :param lims_fit: extrema of the image
+    :type lims_fit: list[int]
+    :param angle: the inclination angle to rotate the image. If it is None it will be estimated, defaults to None
+    :type angle: float | None, optional
+    :param display_plots: if it is True images/plots are displayed, defaults to False
+    :type display_plots: bool, optional
+    
+    :return: fits information, spectrum data, inclination angle 
+    :rtype: tuple
+    """
+    # collecting fits informations and spectrum data
+    hdul, sp_data = get_data_fit(obj_fit, lims=lims_fit, title='Row spectrum of '+ ch_obj, n=1, display_plots=display_plots)
+    # correcting for inclination angle
+    angle, sp_data = angle_correction(sp_data, angle=angle, display_plots=display_plots)
+    # condition to display the images/plots
+    if display_plots == True:
+        showfits(sp_data, title='Rotated image')
+        plt.show()
+    return hdul, sp_data, angle
+
+
