@@ -44,7 +44,7 @@ if __name__ == '__main__':
 
     showfits(sp_lamp, title='Rotated lamp image')
     
-    sel_high = int((685.7+26.8) / 2)
+    sel_high = int((np.argmax(sp_lamp,axis=0)).sum()/sp_lamp.shape[1])
 
     plt.hlines(sel_high,0,len(sp_lamp[0])-1)
 
