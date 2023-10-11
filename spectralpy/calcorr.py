@@ -229,7 +229,8 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | np.ndarray = None
     
     return results
 
-def mean_line(peaks: np.ndarray, spectrum: np.ndarray, dist: int = 2, hight: int | float = 150) -> tuple[np.ndarray,np.ndarray]:
+
+def mean_line(peaks: np.ndarray, spectrum: np.ndarray, dist: int = 2, hight: int | float = 300) -> tuple[np.ndarray,np.ndarray]:
     peaks = np.copy(peaks)
     spectrum = np.copy(spectrum)
     pksdiff = np.diff(peaks)
@@ -323,7 +324,17 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
     pkslamp1, _ = find_peaks(lamp1,height=height1)
     pkslamp2, _ = find_peaks(lamp2,height=height2)
 
-    mpks1, mline1 = mean_line(pkslamp1,lamp1)
+    
+    prova = lamp1[pkslamp1].astype(int)
+    diff_1 = np.array([ abs(prova[i+1]-prova[i]) for i in range(len(prova)-1)])
+    print(prova[0],prova[1], prova[1]-prova[0])
+    print(diff_1)
+    diff_1 = diff_1[np.where(diff_1<=800)[0]]
+    print(np.mean(diff_1))
+
+    diff_high1 = np.mean(diff_1)
+
+    mpks1, mline1 = mean_line(pkslamp1,lamp1,hight=diff_high1)
     mpks2, mline2 = mean_line(pkslamp2,lamp2)
     print(len(mpks1),len(mpks2))
 
@@ -368,7 +379,7 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
 
     if display_plots:
         plt.figure('Correlation of Lamps',figsize=[10,7])
-        plt.suptitle('Correlation between the peaks position of two lamps:\nmaxlag $\equiv \max{ | C(lamp_1,lamp_2) - C(lamp_2,lamp_2) | } =$' + f'{maxlag}')
+        plt.suptitle('Correlation between the peaks position of two lamps:\nmaxlag $\equiv \max{ | \\bar{C}(lamp_1,lamp_2) - \\bar{C}(lamp_2,lamp_2) | } =$' + f'{maxlag}')
 
         plt.subplot(2,2,1)
         plt.title('Spectrum of the lamps')
@@ -389,14 +400,14 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
 
         plt.subplot(2,2,2)
         plt.title('Correlation and autocorrelation')
-        plt.plot(corr,'g',label='correlation')
-        plt.ylabel('$C(lamp_1,lamp_2)$')
+        plt.plot(corr/max(corr),'g',label='normalized correlation')
+        plt.ylabel('$\\bar{C}(lamp_1,lamp_2)$')
         plt.grid(axis='x',linestyle='dashed',alpha=0.3)
         plt.legend()
         # plt.xticks(np.arange(0,len(corr),len(corr)//6),[])
         plt.subplot(2,2,4)
-        plt.plot(autocorr,'y',label='autocorrelation')
-        plt.ylabel('$C(lamp_2,lamp_2)$')
+        plt.plot(autocorr/max(autocorr),'y',label='normalized autocorrelation')
+        plt.ylabel('$\\bar{C}(lamp_2,lamp_2)$')
         plt.grid(axis='x',linestyle='dashed',alpha=0.3)
         plt.legend()
         plt.xlabel('idx')
