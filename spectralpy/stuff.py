@@ -134,7 +134,7 @@ def angle_correction(data: np.ndarray, init: list[float] = [0.9, 0.], angle: flo
         if display_plots == True:
             print(f'Estimated Angle:\ntheta = {angle:e} +- {Dangle:e} deg\t-> {Dangle/angle*100} %')
             fastplot(x_pos,y_pos,2,'+')
-            fastplot(x_pos,fitlin(x_pos,m,q),2,'-',labels=['x','y'])
+            fastplot(x_pos,fitlin(x_pos,*pop),2,'-',labels=['x','y'])
 
     data_rot  = ndimage.rotate(data, angle, reshape=False)
     return angle, data_rot
