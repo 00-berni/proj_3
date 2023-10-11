@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 ##*
-def fastplot(x: np.ndarray, y: np.ndarray, numfig: int = None, fmt: str = '-', title: str = '', labels: list[str] = ['',''], dim: list[int] = [10,7]) -> None:
+def fastplot(x: np.ndarray, y: np.ndarray, numfig: int = None, fmt: str = '-', title: str = '', labels: list[str] = ['',''], dim: list[int] = [10,7], grid: bool = False) -> None:
     """Function to display a plot quickly.
     You can choose to make a simple plot or adding some stuff.
 
@@ -30,7 +30,8 @@ def fastplot(x: np.ndarray, y: np.ndarray, numfig: int = None, fmt: str = '-', t
     plt.plot(x,y,fmt)
     plt.xlabel(xl)
     plt.ylabel(yl)
-
+    if grid:
+        plt.grid(which='both',linestyle='--',alpha=0.2,color='grey')
 
 
 ##*
