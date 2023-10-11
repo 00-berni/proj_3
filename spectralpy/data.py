@@ -123,7 +123,7 @@ def get_data_fit(path: str, lims: list = [0,-1,0,-1], hotpx: bool = True, v: int
 ##*
 
 
-def extract_data(ch_obs: int, ch_obj: str) -> list[str]:
+def extract_data(ch_obs: int, ch_obj: str, sel: list[str] | str = 'all') -> list[str]:
     """Collecting data from data files.
     
     Given a selected observation night and object, the function 
@@ -153,13 +153,24 @@ def extract_data(ch_obs: int, ch_obj: str) -> list[str]:
         
         # storing in `data` list
         #   format is [obj, its extrema, ...]
-        data = [obj_fit, lims_fit, obj_lamp, lims_lamp]   
+        data = []
+        if (sel == 'all') or ('obj' in sel) or ('obj_fit' in sel):
+            data += [obj_fit]   
+        if (sel == 'all') or ('obj' in sel) or ('lims_fit' in sel):
+            data += [lims_fit]
+        if (sel == 'all') or ('lamp' in sel) or ('obj_lamp' in sel):
+            data += [obj_lamp]
+        if (sel == 'all') or ('lamp' in sel) or ('lims_lamp' in sel):
+            data += [lims_lamp]
         # condition for the presence of flat
         if ch_obj == 'giove' or ch_obj == 'arturo':
             obj_flat = obj[-1]
             lims_flat = lims[-1]
             obj_flat = data_file_path(ch_obs, ch_obj, obj_flat)
-            data += [obj_flat, lims_flat]             
+            if (sel == 'all') or ('flat' in sel) or ('obj_flat' in sel):
+                data += [obj_flat]             
+            if (sel == 'all') or ('flat' in sel) or ('lims_flat' in sel):
+                data += [lims_flat]             
     # for echelle data extraction
     else:
         # extracting informations
@@ -175,7 +186,13 @@ def extract_data(ch_obs: int, ch_obj: str) -> list[str]:
         
         # storing in `data` list
         #   format is [obj, its extrema, ...]
-        data = [obj_fit, thor, tung]   
+        data = []
+        if (sel == 'all') or ('obj' in sel) or ('obj_fit' in sel):
+            data += [obj_fit]
+        if (sel == 'all') or ('lamp' in sel) or ('thor' in sel):
+            data += [thor]  
+        if (sel == 'all') or ('lamp' in sel) or ('tung' in sel):  
+            data += [tung]  
     return data
 
 
