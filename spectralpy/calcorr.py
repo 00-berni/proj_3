@@ -32,7 +32,7 @@ def compute_flat(ch_obs: int, display_plots: bool = False) -> np.ndarray:
     elif ch_obs == 1:
         flat_obj = 'arturo'
     # collecting informations for the target and the flat
-    obj_fit, lims_fit, _, _, obj_flat, lims_flat = extract_data(ch_obs, flat_obj)
+    obj_fit, lims_fit, obj_flat, lims_flat = extract_data(ch_obs, flat_obj,sel=['obj','flat'])
     # extracting target spectrum data and evaluating the inclination angle
     _, _, angle = get_data(flat_obj,obj_fit,lims_fit, display_plots=display_plots)
     # extracting flat spectrum data and correcting for inclination
@@ -53,7 +53,7 @@ def compute_flat(ch_obs: int, display_plots: bool = False) -> np.ndarray:
     return flat_value
 
 
-def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, high: int, initial_values: list[float] = [3600, 2.6,0.], display_plots: bool = False) -> Callable[[np.ndarray],np.ndarray]:
+def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, initial_values: list[float] = [3600, 2.6,0.], display_plots: bool = False) -> Callable[[np.ndarray],np.ndarray]:
     """Evaluating the calibration function to pass from x axis units to Armstrong
     From spectrum data of the selected calibration lamp and corrisponding detected lines (obtained from `SpecrteArNeLISA.pdf` file) the function to map positions
     along the x axis in wavelengths is computed. To estimate the parameters a fit for a linear function is implemented.
@@ -79,6 +79,7 @@ def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, hig
     # extracting lamp spectrum and correcting for inclination
     _, sp_lamp = get_data_fit(obj_lamp,lims=lims_lamp, title='Row spectrum lamp', n=1, display_plots=display_plots)
     _, sp_lamp = angle_correction(sp_lamp, angle=angle, display_plots=display_plots)
+    high = int((np.argmax(sp_lamp,axis=0)).sum()/sp_lamp.shape[1])
     # condition to display the images/plots
     if display_plots == True:
         showfits(sp_lamp, title='Rotated lamp image')
@@ -88,7 +89,7 @@ def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, hig
     spectrum_lamp = sp_lamp[high]
     # condition to display the images/plots
     if display_plots == True:
-        fastplot(np.arange(len(spectrum_lamp)), spectrum_lamp, title=f'Lamp spectrum at y = {high}',labels=['x','counts'])
+        fastplot(np.arange(len(spectrum_lamp)), spectrum_lamp, title=f'Lamp spectrum at y = {high}',labels=['x','counts'],grid=True)
         plt.show()
 
     # fit method
@@ -100,39 +101,49 @@ def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, hig
     lines, x, Dx = np.loadtxt(cal_file, unpack=True)
     Dy = np.full(lines.shape,3.63)
 
-    pop, _ = fit_routine(x,lines,initial_values=initial_values,fit_func=fit_func,xerr=Dx,yerr=Dy,display_res=display_plots)
+    pop, perr, pcov = fit_routine(x,lines,initial_values=initial_values,fit_func=fit_func,xerr=Dx,yerr=Dy,display_res=display_plots,return_res=['pcov'])
     _,p1,p2 = pop
+    Dp0,Dp1,Dp2 = perr
 
     # defining the calibration function
     cal_func = lambda x : fit_func(pop,x)
     
+    def err_func(x: np.ndarray, dx: np.ndarray, all_res: bool = False):
+        dfdx = p1 + p2*2*x
+        err = (dfdx*dx)**2
+        if all_res:
+            dfdp1 = x
+            dfdp2 = x**2
+            err += Dp0**2 + (dfdp1*Dp1)**2 + (dfdp2*Dp2)**2 + 2*( dfdp1*pcov[0,1] + dfdp2*pcov[0,2] + dfdp1*dfdp2*pcov[1,2]) 
+        return np.sqrt(err)
+        
     # condition to display the images/plots
     if display_plots == True:
-        sigma = np.sqrt(Dy**2 + (p1*Dx)**2 + (p2*x*Dx*2)**2)
+        sigma = np.sqrt(Dy**2 + (p1*Dx + p2*x*Dx*2)**2)
         fig = plt.figure('Calibration',figsize=[8,7])
         fig.suptitle('Fit for lamp calibration')
         ax1, ax2 = fig.subplots(2, 1, sharex=True, gridspec_kw=dict(height_ratios=[2, 1], hspace=0.05))
         # plt.title('Calibration fit')
-        ax1.errorbar(x,lines,xerr=Dx,yerr=Dy,fmt='.',color='violet',label='data')
-        ax1.plot(x,cal_func(x),label='Best-fit')
+        ax1.errorbar(x,lines,xerr=Dx,yerr=Dy,fmt='.',color='green',label='data')
+        ax1.plot(x,cal_func(x),color='orange',label='Best-fit')
         ax1.set_ylabel('$\lambda$ [$\AA$]')
         ax1.legend(numpoints=1)
 
         # plt.figure(figsize=[10,7])
         # plt.title('Residuals')
-        ax2.axhline(0,xmin=0,xmax=1,linestyle='-.',alpha=0.5)
-        ax2.errorbar(x,lines-cal_func(x),xerr=Dx,yerr=sigma,fmt='v',linestyle=':',color='violet')
+        ax2.axhline(0,xmin=0,xmax=1,linestyle='-.',color='black',alpha=0.5)
+        ax2.errorbar(x,lines-cal_func(x),xerr=Dx,yerr=sigma,fmt='v',linestyle=':',color='green')
         ax2.set_xlabel('x [px]')
         ax2.set_ylabel('Residuals [$\AA$]')
 
         plt.show()
 
-    return cal_func
+    return cal_func, err_func
 
 
 
 
-def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: list[None] | np.ndarray = [], cal_func: Callable[[np.ndarray],np.ndarray] | None = None, display_plots: bool = False, initial_values: list[float] | tuple[float] = [3600, 2.6,0.]) -> tuple:
+def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | np.ndarray = None, cal_func: Callable[[np.ndarray],np.ndarray] | None = None, err_func: Callable[[np.ndarray,np.ndarray,bool],np.ndarray] | None = None, display_plots: bool = False, initial_values: list[float] | tuple[float] = [3600, 2.6,0.], ret_values: str = 'few') -> list[np.ndarray | dict[str,np.ndarray] | dict[str,float | np.ndarray | Callable[[np.ndarray],np.ndarray]] | Callable[[np.ndarray,np.ndarray,bool],np.ndarray] | float]:
     """Getting the spectrum of a selceted target for a chosen observation night
     The function extracts fits data for a target and evaluates inclination correction, flat gain and calibration function to return the
     calibrated spectrum. If the flat gain or the calibration function are already computed then one can pass them to the function, 
@@ -149,7 +160,6 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: list[None] | np.ndarray 
       - `compute_flat()`
       - `calibration()`
     
-
     :param ch_obs: chosen observation night
     :type ch_obs: int
     :param ch_obj: chosen ob
@@ -165,7 +175,7 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: list[None] | np.ndarray 
     :rtype: tuple
     """
     # collecting data
-    obj_fit, lims_fit, obj_lamp, lims_lamp = extract_data(ch_obs, ch_obj)
+    obj_fit, lims_fit, obj_lamp, lims_lamp = extract_data(ch_obs, ch_obj,sel=['obj','lamp'])
     # extracting fits data and correcting for inclination
     hdul, sp_data, angle = get_data(ch_obj,obj_fit,lims_fit, display_plots=display_plots)
     if display_plots == False: 
@@ -175,29 +185,227 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: list[None] | np.ndarray 
     # computing the cumulative spectrum over columns
     spectrum = sp_data.sum(axis=0)
     if display_plots == True:
-        fastplot(np.arange(len(spectrum)), spectrum, title='Cumulative spectrum', labels=['x','counts'])
+        fastplot(np.arange(len(spectrum)), spectrum, title='Cumulative spectrum', labels=['x','counts'],grid=True)
         plt.show()
 
+    ret_cond = (flat is None) and (cal_func is None) and (err_func is None)
+
     # estimating the flat gain
-    flat_value = compute_flat(ch_obs, display_plots=display_plots) if len(flat) == 0 else flat
+    flat_value = compute_flat(ch_obs, display_plots=display_plots) if flat is None else flat
     # correcting for the flat gain
     spectrum = spectrum / flat_value[:len(spectrum)]
     if display_plots == True:
-        fastplot(np.arange(len(spectrum)), spectrum, title='Cumulative spectrum corrected by flat', labels=['x','counts'])    
+        fastplot(np.arange(len(spectrum)), spectrum, title='Cumulative spectrum corrected by flat', labels=['x','counts'],grid=True)    
         plt.show()
         
     # condition to compute the calibration function
-    if cal_func == None:
+    if cal_func is None:
         # getting the path of the calibration file
         cal_file = os.path.join(os.path.split(obj_fit)[0],'calibration_lines.txt')
-        #! CONDIZIONE DA CONTROLLARE 
-        high = int((685.7+26.8) / 2)
         # estimating the calibration function
-        cal_func = calibration(cal_file=cal_file, obj_lamp=obj_lamp, lims_lamp=lims_lamp, angle=angle, high=high,initial_values=initial_values,display_plots=display_plots)
+        cal_func, err_func = calibration(cal_file=cal_file, obj_lamp=obj_lamp, lims_lamp=lims_lamp, angle=angle,initial_values=initial_values,display_plots=display_plots)
     # getting the corrisponding wavelengths
     lengths = cal_func(np.arange(len(spectrum)))
     # displaying the calibrated spectrum
-    fastplot(lengths, spectrum,title='Corrected and calibrated spectrum of ' + ch_obj,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9])
+    fastplot(lengths, spectrum,title='Corrected and calibrated spectrum of ' + ch_obj,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9],grid=True)
     plt.show()
 
-    return hdul, sp_data, spectrum, lengths, flat_value, cal_func
+    if (ret_values == 'all') or (ret_values == 'few') or (ret_values == 'data')or (ret_values == 'calibration'):
+        results = [spectrum, lengths]
+    
+    if (ret_values == 'all') or (ret_values == 'data'):
+        data = { 'hdul' : hdul,
+                 'sp_data' : sp_data }
+        results += [data]
+    if (ret_values == 'all') or (ret_values == 'calibration'):
+        if ret_cond:
+            cal_data = { 'angle' : angle,
+                         'flat' : flat_value,
+                         'func' : cal_func,
+                         'err' : err_func }
+        else:
+            cal_data = angle
+        results += [cal_data]
+    
+    return results
+
+def mean_line(peaks: np.ndarray, spectrum: np.ndarray, dist: int = 2, hight: int | float = 150) -> tuple[np.ndarray,np.ndarray]:
+    peaks = np.copy(peaks)
+    spectrum = np.copy(spectrum)
+    pksdiff = np.diff(peaks)
+    pos = np.where(pksdiff == dist)[0]
+    if len(pos) != 0:
+        from scipy.interpolate import CubicSpline
+        delpos = []
+        for i in range(len(pos)):
+            x = pos[i]
+            pk1, pk2 = peaks[x], peaks[x+1]
+            sp1, sp2 = spectrum[pk1], spectrum[pk2]
+            pk = pk1+1
+            sp = spectrum[pk]
+            if max(sp1-sp,sp2-sp) <= hight:
+                xdata = np.array([pk1-1,pk1,pk2,pk2+1])
+                ydata = spectrum[xdata]
+                int_line = CubicSpline(xdata,ydata)
+                peaks[x] = pk
+                spectrum[pk] = int_line(pk)
+            else:
+                delpos += [i]
+        pos = np.delete(pos,delpos)
+        peaks = np.delete(peaks,pos+1)
+    return peaks, spectrum[peaks]
+
+
+
+
+def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str] | list[str], angles: tuple[float | None, float | None] | list[float | None, float | None] | float | None = None, height: int | float = 2000, display_plots: bool = False):
+    
+    if type(nights) == int:
+        obs1 = nights
+        obs2 = nights
+    else:
+        obs1, obs2 = nights
+    
+    obj1, obj2 = objs_name
+    
+    if isinstance(angles, (tuple,list)):
+        angle1 = angles 
+        angle2 = angles 
+    else:
+        angle1, angle2 = angles
+    
+    plots = False
+
+    obj1, cut1, lamp1, lims1 = extract_data(obs1,obj1,sel=['obj','lamp'])
+    obj2, cut2, lamp2, lims2 = extract_data(obs2,obj2,sel=['obj','lamp'])
+
+    _, _, angle1 = get_data('',obj1,cut1,display_plots=plots)
+    _, _, angle2 = get_data('',obj2,cut2,display_plots=plots)
+
+    _, lamp1 = get_data_fit(lamp1,lims1,title='lamp1',display_plots=plots)
+    _, lamp2 = get_data_fit(lamp2,lims2,title='lamp2',display_plots=plots)
+
+    _, lamp1 = angle_correction(lamp1,angle=angle1,display_plots=plots)
+    _, lamp2 = angle_correction(lamp2,angle=angle2,display_plots=plots)
+
+    plt.show()
+
+
+    sel_high1 = int((np.argmax(lamp1,axis=0)).sum()/lamp1.shape[1])
+    sel_high2 = int((np.argmax(lamp2,axis=0)).sum()/lamp2.shape[1])
+
+    print(f'Sel hight 1: {sel_high1}')
+    print(f'Sel hight 2: {sel_high2}')
+
+
+    lamp1 = lamp1[sel_high1]
+    lamp2 = lamp2[sel_high2]
+
+    maxlamp1 = lamp1.max()
+    maxlamp2 = lamp2.max()
+
+    fact = min(maxlamp1,maxlamp2)/max(maxlamp1,maxlamp2)
+
+    if maxlamp1 > maxlamp2:
+        height1 = height
+        height2 = height*fact
+    elif maxlamp1 < maxlamp2:
+        height1 = height*fact
+        height2 = height
+    else:
+        height1, height2 = height, height
+
+    print(height1,height2)
+
+    ## Correlation
+    from scipy.signal import find_peaks
+    # finding the positions of the peaks in lamp spectra
+    pkslamp1, _ = find_peaks(lamp1,height=height1)
+    pkslamp2, _ = find_peaks(lamp2,height=height2)
+
+    mpks1, mline1 = mean_line(pkslamp1,lamp1)
+    mpks2, mline2 = mean_line(pkslamp2,lamp2)
+    print(len(mpks1),len(mpks2))
+
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.title('Spectrum of the lamps')
+    plt.plot(lamp1,'b',label='lamp1')
+    plt.plot(pkslamp1,lamp1[pkslamp1],'.r')
+    plt.plot(mpks1,mline1,'xg')
+    plt.axhline(height1,xmin=0,xmax=1,linestyle='-.',color='black',alpha=0.5)
+    plt.ylabel('$I_1$ [a.u.]')
+    plt.legend()
+    # plt.xticks(np.arange(0,len(lamp1),len(lamp1)//4),[])
+    plt.subplot(2,1,2)
+    plt.plot(lamp2,'y',label='lamp2')
+    plt.plot(pkslamp2,lamp2[pkslamp2],'.r')
+    plt.plot(mpks2,mline2,'xg')
+    plt.axhline(height2,xmin=0,xmax=1,linestyle='-.',color='black',alpha=0.5)
+    plt.ylabel('$I_2$ [a.u.]')
+    plt.legend()
+    plt.xlabel('x [a.u.]')
+    plt.show()
+
+    print(len(pkslamp1),len(pkslamp2))
+    print(f'Max diff: {abs(mpks1-mpks2).max()}')
+
+    # computing the correlation and the autocorrelation
+    corr = np.correlate(mpks1.astype(float),mpks2.astype(float),'full')
+    autocorr = np.correlate(mpks2.astype(float),mpks2.astype(float),'full')
+    # corr = np.correlate(pkslamp1.astype(float),pkslamp2.astype(float),'full')
+    # autocorr = np.correlate(pkslamp2.astype(float),pkslamp2.astype(float),'full')
+    
+
+    # computing the max lag
+    maxlag = np.abs(corr/max(corr)-autocorr/max(autocorr)).max()
+    # checking the max lag
+    print(f'max(|auto_corr - corr|) = {maxlag}')
+    # if maxlag < 1:
+    #     print(f'max(|auto_corr - corr|) = {maxlag}')
+    # else:
+    #     raise Exception(f'\nPeaks positions in lamps have to be shifted!\nMAXLAG = {maxlag}')
+
+    if display_plots:
+        plt.figure('Correlation of Lamps',figsize=[10,7])
+        plt.suptitle('Correlation between the peaks position of two lamps:\nmaxlag $\equiv \max{ | C(lamp_1,lamp_2) - C(lamp_2,lamp_2) | } =$' + f'{maxlag}')
+
+        plt.subplot(2,2,1)
+        plt.title('Spectrum of the lamps')
+        plt.plot(lamp1,'b',label='lamp1')
+        plt.plot(pkslamp1,lamp1[pkslamp1],'.r')
+        plt.plot(mpks1,mline1,'xg')
+        plt.ylabel('$I_1$ [a.u.]')
+        plt.legend()
+        plt.xticks(np.arange(0,len(lamp1),len(lamp1)//4),[])
+        plt.subplot(2,2,3)
+        plt.plot(lamp2,'y',label='lamp2')
+        plt.plot(pkslamp2,lamp2[pkslamp2],'.r')
+        plt.plot(mpks2,mline2,'xg')
+        plt.ylabel('$I_2$ [a.u.]')
+        plt.legend()
+        plt.xlabel('x [a.u.]')
+
+
+        plt.subplot(2,2,2)
+        plt.title('Correlation and autocorrelation')
+        plt.plot(corr,'g',label='correlation')
+        plt.ylabel('$C(lamp_1,lamp_2)$')
+        plt.grid(axis='x',linestyle='dashed',alpha=0.3)
+        plt.legend()
+        # plt.xticks(np.arange(0,len(corr),len(corr)//6),[])
+        plt.subplot(2,2,4)
+        plt.plot(autocorr,'y',label='autocorrelation')
+        plt.ylabel('$C(lamp_2,lamp_2)$')
+        plt.grid(axis='x',linestyle='dashed',alpha=0.3)
+        plt.legend()
+        plt.xlabel('idx')
+        plt.show()
+
+    return maxlag
+
+    
+
+
+
+
