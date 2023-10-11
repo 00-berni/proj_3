@@ -60,6 +60,7 @@ def collect_fits(night: int, obj: str) -> tuple:
     :rtype: list
     """
     cut = np.loadtxt(os.path.join(DATA_FOLDER, NIGHTS[night], obj, 'cut_indicies.txt'), dtype=int, unpack=False)
+    cut = np.where(cut == -1, None, cut)
     return DATA_ALL[NIGHTS[night]][obj], cut
 
 def data_file_path(night: int, obj: str, data_file: str) -> str:
@@ -228,3 +229,6 @@ def get_data(ch_obj: str, obj_fit: str, lims_fit: list[int | None] = [None,None,
     return hdul, sp_data, angle
 
 
+
+
+# if __name__ == '__main__':
