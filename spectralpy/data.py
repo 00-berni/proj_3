@@ -67,7 +67,7 @@ def data_file_path(night: int, obj: str, data_file: str) -> str:
     return os.path.join(DATA_FOLDER, NIGHTS[night], obj , data_file + '.fit')
 
 ##* 
-def get_data_fit(path: str, lims: list = [0,-1,0,-1], hotpx: bool = True, v: int = -1, title: str = '', n: int = None, dim: list[int] = [10,7], display_plots: bool = True) -> tuple:
+def get_data_fit(path: str, lims: list = [0,None,0,None], hotpx: bool = True, v: int = -1, title: str = '', n: int = None, dim: list[int] = [10,7], display_plots: bool = True) -> tuple:
     """Function to open fits file and extract data.
     It brings the path and extracts the data, giving a row image.
     You can set a portion of image and also the correction for hotpx.
@@ -230,5 +230,3 @@ def get_data(ch_obj: str, obj_fit: str, lims_fit: list[int | None] = [None,None,
 
 
 
-
-# if __name__ == '__main__':
