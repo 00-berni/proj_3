@@ -66,8 +66,8 @@ def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, ini
     :type lims_lamp: list
     :param angle: inclination angle
     :type angle: float
-    :param high: y coorfinate at which the spectrum is taken
-    :type high: int
+    :param height: y coorfinate at which the spectrum is taken
+    :type height: int
     :param initial_values: initial values for the fit, defaults to [3600, 2.6]
     :type initial_values: list[float], optional
     :param display_plots: if it is True images/plots are displayed, defaults to False
@@ -79,17 +79,17 @@ def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, ini
     # extracting lamp spectrum and correcting for inclination
     _, sp_lamp = get_data_fit(obj_lamp,lims=lims_lamp, title='Row spectrum lamp', n=1, display_plots=display_plots)
     _, sp_lamp = angle_correction(sp_lamp, angle=angle, display_plots=display_plots)
-    high = int((np.argmax(sp_lamp,axis=0)).sum()/sp_lamp.shape[1])
+    height = int((np.argmax(sp_lamp,axis=0)).sum()/sp_lamp.shape[1])
     # condition to display the images/plots
     if display_plots == True:
         showfits(sp_lamp, title='Rotated lamp image')
-        plt.hlines(high,0,len(sp_lamp[0])-1,color='blue')
+        plt.hlines(height,0,len(sp_lamp[0])-1,color='blue')
         plt.show()
-    # taking the spectrum of the lamp at `high`
-    spectrum_lamp = sp_lamp[high]
+    # taking the spectrum of the lamp at `height`
+    spectrum_lamp = sp_lamp[height]
     # condition to display the images/plots
     if display_plots == True:
-        fastplot(np.arange(len(spectrum_lamp)), spectrum_lamp, title=f'Lamp spectrum at y = {high}',labels=['x','counts'],grid=True)
+        fastplot(np.arange(len(spectrum_lamp)), spectrum_lamp, title=f'Lamp spectrum at y = {height}',labels=['x','counts'],grid=True)
         plt.show()
 
     # fit method
@@ -230,13 +230,49 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | np.ndarray = None
     return results
 
 
-def mean_line(peaks: np.ndarray, spectrum: np.ndarray, dist: int = 2, hight: int | float = 300) -> tuple[np.ndarray,np.ndarray]:
+def mean_line(peaks: np.ndarray, spectrum: np.ndarray, dist: int = 3, height: int | float = 800) -> tuple[np.ndarray,np.ndarray]:
     peaks = np.copy(peaks)
     spectrum = np.copy(spectrum)
+
+    spectral_distance = lambda pos : abs(spectrum[pos[0]].astype(float)-spectrum[pos[1]].astype(float))
+
+    # height estimation
+    height_diff = np.array([ min(spectral_distance((pk,pk+1)), spectral_distance((pk,pk-1)))  for pk in peaks])
+    # height_diff = np.array([ abs(spectrum[peaks[i+1]]-spectrum[peaks[i]]) for i in range(len(peaks))])
+    ind_diff = np.where(height_diff <= height)[0]
+    if len(ind_diff) != 0:
+        height = max(height_diff[ind_diff])
+
+    print(height_diff)
+    print(f'height -> {height}')
+
     pksdiff = np.diff(peaks)
+
+    from scipy.interpolate import CubicSpline
+    if dist == 3:
+        pos = np.where(pksdiff == dist)[0]
+        if len(pos) != 0:
+            delpos = []
+            for i in range(len(pos)):
+                x = pos[i]
+                pk0, pk3 = peaks[x], peaks[x+1]
+                sp0, sp3 = spectrum[pk0], spectrum[pk3]
+                pk1, pk2 = pk0+1, pk0+2
+                sp1, sp2 = spectrum[pk1], spectrum[pk2]
+                if max(sp0-sp1,sp3-sp2) <= height:
+                    xdata = np.array([pk0-1,pk0,pk3,pk3+1])
+                    ydata = spectrum[xdata]
+                    int_line = CubicSpline(xdata,ydata)
+                    peaks[x] = pk1 if sp0 >= sp3 else pk2
+                    spectrum[peaks[x]] = int_line(peaks[x])
+                else:
+                    delpos += [i]
+            pos = np.delete(pos,delpos)
+            peaks = np.delete(peaks,pos+1)
+            del pk0,pk1,pk2,pk3,pos
+        dist -= 1
     pos = np.where(pksdiff == dist)[0]
     if len(pos) != 0:
-        from scipy.interpolate import CubicSpline
         delpos = []
         for i in range(len(pos)):
             x = pos[i]
@@ -244,7 +280,7 @@ def mean_line(peaks: np.ndarray, spectrum: np.ndarray, dist: int = 2, hight: int
             sp1, sp2 = spectrum[pk1], spectrum[pk2]
             pk = pk1+1
             sp = spectrum[pk]
-            if max(sp1-sp,sp2-sp) <= hight:
+            if max(sp1-sp,sp2-sp) <= height:
                 xdata = np.array([pk1-1,pk1,pk2,pk2+1])
                 ydata = spectrum[xdata]
                 int_line = CubicSpline(xdata,ydata)
@@ -254,6 +290,8 @@ def mean_line(peaks: np.ndarray, spectrum: np.ndarray, dist: int = 2, hight: int
                 delpos += [i]
         pos = np.delete(pos,delpos)
         peaks = np.delete(peaks,pos+1)
+
+
     return peaks, spectrum[peaks]
 
 
@@ -292,15 +330,15 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
     plt.show()
 
 
-    sel_high1 = int((np.argmax(lamp1,axis=0)).sum()/lamp1.shape[1])
-    sel_high2 = int((np.argmax(lamp2,axis=0)).sum()/lamp2.shape[1])
+    sel_height1 = int((np.argmax(lamp1,axis=0)).sum()/lamp1.shape[1])
+    sel_height2 = int((np.argmax(lamp2,axis=0)).sum()/lamp2.shape[1])
 
-    print(f'Sel hight 1: {sel_high1}')
-    print(f'Sel hight 2: {sel_high2}')
+    print(f'Sel heightt 1: {sel_height1}')
+    print(f'Sel heightt 2: {sel_height2}')
 
 
-    lamp1 = lamp1[sel_high1]
-    lamp2 = lamp2[sel_high2]
+    lamp1 = lamp1[sel_height1]
+    lamp2 = lamp2[sel_height2]
 
     maxlamp1 = lamp1.max()
     maxlamp2 = lamp2.max()
@@ -324,34 +362,46 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
     pkslamp1, _ = find_peaks(lamp1,height=height1)
     pkslamp2, _ = find_peaks(lamp2,height=height2)
 
-    
-    prova = lamp1[pkslamp1].astype(int)
-    diff_1 = np.array([ abs(prova[i+1]-prova[i]) for i in range(len(prova)-1)])
-    print(prova[0],prova[1], prova[1]-prova[0])
-    print(diff_1)
-    diff_1 = diff_1[np.where(diff_1<=800)[0]]
-    print(np.mean(diff_1))
+    pkslamp1 = pkslamp1.astype(int)
+    pkslamp2 = pkslamp2.astype(int)
 
-    diff_high1 = np.mean(diff_1)
-
-    mpks1, mline1 = mean_line(pkslamp1,lamp1,hight=diff_high1)
+    mpks1, mline1 = mean_line(pkslamp1,lamp1)
     mpks2, mline2 = mean_line(pkslamp2,lamp2)
-    print(len(mpks1),len(mpks2))
+    print('0: ',len(mpks1),len(mpks2))
+    
+    cnt = 0
+    dim_diff = len(mpks1)-len(mpks2)
+    while(dim_diff != 0):
+        cnt += 1
+        if dim_diff > 0: height1 += 100
+        else: height2 += 100
+
+        pkslamp1, _ = find_peaks(lamp1,height=height1)
+        pkslamp2, _ = find_peaks(lamp2,height=height2)
+
+        pkslamp1 = pkslamp1.astype(int)
+        pkslamp2 = pkslamp2.astype(int)
+
+        mpks1, mline1 = mean_line(pkslamp1,lamp1)
+        mpks2, mline2 = mean_line(pkslamp2,lamp2)
+        
+        print(f'{cnt}: ',len(mpks1),len(mpks2))
+        dim_diff = len(mpks1)-len(mpks2)
 
     plt.figure()
     plt.subplot(2,1,1)
     plt.title('Spectrum of the lamps')
     plt.plot(lamp1,'b',label='lamp1')
-    plt.plot(pkslamp1,lamp1[pkslamp1],'.r')
-    plt.plot(mpks1,mline1,'xg')
+    plt.plot(pkslamp1,lamp1[pkslamp1],'.r',label='detected peaks')
+    plt.plot(mpks1,mline1,'xg',label='after interpolation')
     plt.axhline(height1,xmin=0,xmax=1,linestyle='-.',color='black',alpha=0.5)
     plt.ylabel('$I_1$ [a.u.]')
     plt.legend()
     # plt.xticks(np.arange(0,len(lamp1),len(lamp1)//4),[])
     plt.subplot(2,1,2)
-    plt.plot(lamp2,'y',label='lamp2')
-    plt.plot(pkslamp2,lamp2[pkslamp2],'.r')
-    plt.plot(mpks2,mline2,'xg')
+    plt.plot(lamp2,'c',label='lamp2')
+    plt.plot(pkslamp2,lamp2[pkslamp2],'.r',label='detected peaks')
+    plt.plot(mpks2,mline2,'xg',label='after interpolation')
     plt.axhline(height2,xmin=0,xmax=1,linestyle='-.',color='black',alpha=0.5)
     plt.ylabel('$I_2$ [a.u.]')
     plt.legend()
@@ -382,17 +432,19 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
         plt.suptitle('Correlation between the peaks position of two lamps:\nmaxlag $\equiv \max{ | \\bar{C}(lamp_1,lamp_2) - \\bar{C}(lamp_2,lamp_2) | } =$' + f'{maxlag}')
 
         plt.subplot(2,2,1)
+        #
         plt.title('Spectrum of the lamps')
         plt.plot(lamp1,'b',label='lamp1')
-        plt.plot(pkslamp1,lamp1[pkslamp1],'.r')
-        plt.plot(mpks1,mline1,'xg')
+        plt.plot(pkslamp1,lamp1[pkslamp1],'.r',label='detected peaks')
+        plt.plot(mpks1,mline1,'xg',label='after interpolation')
         plt.ylabel('$I_1$ [a.u.]')
         plt.legend()
         plt.xticks(np.arange(0,len(lamp1),len(lamp1)//4),[])
+        #
         plt.subplot(2,2,3)
-        plt.plot(lamp2,'y',label='lamp2')
-        plt.plot(pkslamp2,lamp2[pkslamp2],'.r')
-        plt.plot(mpks2,mline2,'xg')
+        plt.plot(lamp2,'c',label='lamp2')
+        plt.plot(pkslamp2,lamp2[pkslamp2],'.r',label='detected peaks')
+        plt.plot(mpks2,mline2,'xg',label='after interpolation')
         plt.ylabel('$I_2$ [a.u.]')
         plt.legend()
         plt.xlabel('x [a.u.]')
@@ -400,13 +452,14 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
 
         plt.subplot(2,2,2)
         plt.title('Correlation and autocorrelation')
-        plt.plot(corr/max(corr),'g',label='normalized correlation')
+        plt.plot(corr/max(corr),'b',label='normalized correlation')
         plt.ylabel('$\\bar{C}(lamp_1,lamp_2)$')
         plt.grid(axis='x',linestyle='dashed',alpha=0.3)
         plt.legend()
         # plt.xticks(np.arange(0,len(corr),len(corr)//6),[])
+        #
         plt.subplot(2,2,4)
-        plt.plot(autocorr/max(autocorr),'y',label='normalized autocorrelation')
+        plt.plot(autocorr/max(autocorr),'c',label='normalized autocorrelation')
         plt.ylabel('$\\bar{C}(lamp_2,lamp_2)$')
         plt.grid(axis='x',linestyle='dashed',alpha=0.3)
         plt.legend()
