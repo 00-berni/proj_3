@@ -27,3 +27,8 @@ if __name__ == '__main__':
     spectrum, lengths, angle2 = calibrated_spectrum(night,obj_name2,flat=flat_value,cal_func=cal_func,err_func=err_func,display_plots=display_plots,ret_values='calibration')
 
     lag = lamp_corr(night,(obj_name1,obj_name2),(angle1,angle2),display_plots=True)
+
+    obj_name2 = 'gammaCygni'
+    spectrum, lengths, angle2 = calibrated_spectrum(night,obj_name2,flat=flat_value,cal_func=cal_func,err_func=err_func,display_plots=display_plots,ret_values='calibration')
+
+    lag = lamp_corr(night,(obj_name1,obj_name2),(angle1,angle2),display_plots=True)
