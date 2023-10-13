@@ -261,8 +261,10 @@ def mean_line(peaks: np.ndarray, spectrum: np.ndarray, dist: int = 3, height: in
         # taking the maximum
         height = max(height_diff[ind_diff])
 
+    ## ?
     print(height_diff)
     print(f'height -> {height}')
+    ## ?
 
     # computing the distance between peaks (along x axis)
     pksdiff = np.diff(peaks)
@@ -361,12 +363,13 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
     :return: max lag
     :rtype: float
     """
+    # collecting data
     if type(nights) == int:
         obs1 = nights
         obs2 = nights
     else:
         obs1, obs2 = nights
-    
+ 
     obj1, obj2 = objs_name
     
     if isinstance(angles, (tuple,list)):
@@ -375,7 +378,9 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
         angle1 = angles 
         angle2 = angles 
     
+    ## ?
     plots = False
+    ## ?
 
     obj1, cut1, lamp1, lims1 = extract_data(obs1,obj1,sel=['obj','lamp'])
     obj2, cut2, lamp2, lims2 = extract_data(obs2,obj2,sel=['obj','lamp'])
@@ -391,22 +396,27 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
 
     plt.show()
 
+    # selecting the spectrum row
+    sel_height1 = int(np.mean(np.argmax(lamp1,axis=0)))
+    sel_height2 = int(np.mean(np.argmax(lamp2,axis=0)))
 
-    sel_height1 = int((np.argmax(lamp1,axis=0)).sum()/lamp1.shape[1])
-    sel_height2 = int((np.argmax(lamp2,axis=0)).sum()/lamp2.shape[1])
-
+    ## ?
     print(f'Sel heightt 1: {sel_height1}')
     print(f'Sel heightt 2: {sel_height2}')
+    ## ?
 
-
+    # extracting spectra
     lamp1 = lamp1[sel_height1]
     lamp2 = lamp2[sel_height2]
 
+    # storing maximum values
     maxlamp1 = lamp1.max()
     maxlamp2 = lamp2.max()
 
+    # computing this ratio
     fact = min(maxlamp1,maxlamp2)/max(maxlamp1,maxlamp2)
 
+    # condition to module the minimum height for peaks
     if maxlamp1 > maxlamp2:
         height1 = height
         height2 = height*fact
@@ -416,28 +426,41 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
     else:
         height1, height2 = height, height
 
+    ## ?
     print(height1,height2)
+    ## ?
 
-    ## Correlation
+    # importing the function to detect peaks
     from scipy.signal import find_peaks
     # finding the positions of the peaks in lamp spectra
     pkslamp1, _ = find_peaks(lamp1,height=height1)
     pkslamp2, _ = find_peaks(lamp2,height=height2)
-
+    # checking the type
     pkslamp1 = pkslamp1.astype(int)
     pkslamp2 = pkslamp2.astype(int)
-
+    # approximating the trend
     mpks1, mline1 = mean_line(pkslamp1,lamp1)
     mpks2, mline2 = mean_line(pkslamp2,lamp2)
-    print('0: ',len(mpks1),len(mpks2))
     
+    ## ?
+    print('0: ',len(mpks1),len(mpks2))
     cnt = 0
+    ## ?
+
+    # computing the difference of array lenghts    
     dim_diff = len(mpks1)-len(mpks2)
+    # correction routine
     while(dim_diff != 0):
+        
+        ## ?
         cnt += 1
+        ## ?
+
+        # condition to increase the boundary limit to one or to the other
         if dim_diff > 0: height1 += 100
         else: height2 += 100
 
+        # same procedure
         pkslamp1, _ = find_peaks(lamp1,height=height1)
         pkslamp2, _ = find_peaks(lamp2,height=height2)
 
@@ -447,9 +470,14 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
         mpks1, mline1 = mean_line(pkslamp1,lamp1)
         mpks2, mline2 = mean_line(pkslamp2,lamp2)
         
+        ## ?
         print(f'{cnt}: ',len(mpks1),len(mpks2))
+        ## ?
+        
+        # computing the difference again
         dim_diff = len(mpks1)-len(mpks2)
 
+    # plots
     plt.figure()
     plt.subplot(2,1,1)
     plt.title('Spectrum of the lamps')
@@ -470,25 +498,19 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
     plt.xlabel('x [a.u.]')
     plt.show()
 
+    ## ?
     print(len(pkslamp1),len(pkslamp2))
     print(f'Max diff: {abs(mpks1-mpks2).max()}')
+    ## ?
 
-    # computing the correlation and the autocorrelation
+    # computing the correlation and the autocorrelation for peaks positions
     corr = np.correlate(mpks1.astype(float),mpks2.astype(float),'full')
     autocorr = np.correlate(mpks2.astype(float),mpks2.astype(float),'full')
-    # corr = np.correlate(pkslamp1.astype(float),pkslamp2.astype(float),'full')
-    # autocorr = np.correlate(pkslamp2.astype(float),pkslamp2.astype(float),'full')
-    
-
     # computing the max lag
     maxlag = np.abs(corr/max(corr)-autocorr/max(autocorr)).max()
-    # checking the max lag
+    # printing the max lag
     print(f'max(|auto_corr - corr|) = {maxlag}')
-    # if maxlag < 1:
-    #     print(f'max(|auto_corr - corr|) = {maxlag}')
-    # else:
-    #     raise Exception(f'\nPeaks positions in lamps have to be shifted!\nMAXLAG = {maxlag}')
-
+    # condition for additional plots
     if display_plots:
         plt.figure('Correlation of Lamps',figsize=[10,7])
         plt.suptitle('Correlation between the peaks position of two lamps:\nmaxlag $\equiv \max{ | \\bar{C}(lamp_1,lamp_2) - \\bar{C}(lamp_2,lamp_2) | } =$' + f'{maxlag}')
