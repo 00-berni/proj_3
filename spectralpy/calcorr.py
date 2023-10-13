@@ -231,74 +231,136 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | np.ndarray = None
 
 
 def mean_line(peaks: np.ndarray, spectrum: np.ndarray, dist: int = 3, height: int | float = 800) -> tuple[np.ndarray,np.ndarray]:
+    """
+
+    :param peaks: peaks
+    :type peaks: np.ndarray
+    :param spectrum: spectrum
+    :type spectrum: np.ndarray
+    :param dist: maximum distance between peaks, defaults to 3
+    :type dist: int, optional
+    :param height: the maximum value to start interpolation, defaults to 800
+    :type height: int | float, optional
+
+    :return: average peaks and the corresponding value of the spectrum 
+    :rtype: tuple[np.ndarray,np.ndarray]
+    """
+    # making a copy of data
     peaks = np.copy(peaks)
     spectrum = np.copy(spectrum)
 
+    # method to compute the difference of two different spectrum values
     spectral_distance = lambda pos : abs(spectrum[pos[0]].astype(float)-spectrum[pos[1]].astype(float))
 
-    # height estimation
+    # height estimation routine
+    # computing the differences in height around peaks
     height_diff = np.array([ min(spectral_distance((pk,pk+1)), spectral_distance((pk,pk-1)))  for pk in peaks])
-    # height_diff = np.array([ abs(spectrum[peaks[i+1]]-spectrum[peaks[i]]) for i in range(len(peaks))])
+    # selecting only differences less than `height` value
     ind_diff = np.where(height_diff <= height)[0]
     if len(ind_diff) != 0:
+        # taking the maximum
         height = max(height_diff[ind_diff])
 
     print(height_diff)
     print(f'height -> {height}')
 
+    # computing the distance between peaks (along x axis)
     pksdiff = np.diff(peaks)
-
+    # class to interpolate
     from scipy.interpolate import CubicSpline
+    # condition for 4 points
     if dist == 3:
+        # storing the indecies of these peaks
         pos = np.where(pksdiff == dist)[0]
         if len(pos) != 0:
+            #: variable to store delectable indecies
             delpos = []
             for i in range(len(pos)):
                 x = pos[i]
+                # selected peaks
                 pk0, pk3 = peaks[x], peaks[x+1]
+                # corresponding spectrum values
                 sp0, sp3 = spectrum[pk0], spectrum[pk3]
+                # points between 2 peaks
                 pk1, pk2 = pk0+1, pk0+2
+                # corresponding spectrum values
                 sp1, sp2 = spectrum[pk1], spectrum[pk2]
+                # condition on height
                 if max(sp0-sp1,sp3-sp2) <= height:
+                    # interpolation routine
+                    # defining data
                     xdata = np.array([pk0-1,pk0,pk3,pk3+1])
                     ydata = spectrum[xdata]
+                    # computing the interpolation
                     int_line = CubicSpline(xdata,ydata)
+                    # changing the peaks position
                     peaks[x] = pk1 if sp0 >= sp3 else pk2
+                    # computing the corresponging interpolated value
                     spectrum[peaks[x]] = int_line(peaks[x])
                 else:
+                    # storing the index
                     delpos += [i]
+            # removing unused indecies 
             pos = np.delete(pos,delpos)
+            # reducing the number of peaKs
             peaks = np.delete(peaks,pos+1)
-            del pk0,pk1,pk2,pk3,pos
+            # freeing memory
+            del pk0,pk1,pk2,pk3,pos, delpos
+        # updating distance to 2
         dist -= 1
+    # storing the indecies of these peaks
     pos = np.where(pksdiff == dist)[0]
     if len(pos) != 0:
+        #: variable to store delectable indecies
         delpos = []
         for i in range(len(pos)):
             x = pos[i]
-            pk1, pk2 = peaks[x], peaks[x+1]
-            sp1, sp2 = spectrum[pk1], spectrum[pk2]
-            pk = pk1+1
-            sp = spectrum[pk]
-            if max(sp1-sp,sp2-sp) <= height:
-                xdata = np.array([pk1-1,pk1,pk2,pk2+1])
+            # selected peaks
+            pk0, pk2 = peaks[x], peaks[x+1]
+            # corresponding spectrum values
+            sp0, sp2 = spectrum[pk0], spectrum[pk2]
+            # point between 2 peaks
+            pk1 = pk0+1
+            # corresponding spectrum values
+            sp1 = spectrum[pk1]
+            # condition on height
+            if max(sp0-sp1,sp2-sp1) <= height:
+                # interpolation routine
+                xdata = np.array([pk0-1,pk0,pk2,pk2+1])
                 ydata = spectrum[xdata]
                 int_line = CubicSpline(xdata,ydata)
-                peaks[x] = pk
-                spectrum[pk] = int_line(pk)
+                peaks[x] = pk1
+                spectrum[peaks[x]] = int_line(peaks[x])
             else:
+                # storing the index
                 delpos += [i]
+        # removing unused indecies 
         pos = np.delete(pos,delpos)
+        # reducing the number of peaKs
         peaks = np.delete(peaks,pos+1)
-
 
     return peaks, spectrum[peaks]
 
 
 
 
-def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str] | list[str], angles: tuple[float | None, float | None] | list[float | None, float | None] | float | None = None, height: int | float = 2000, display_plots: bool = False):
+def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str] | list[str], angles: tuple[float | None, float | None] | list[float | None, float | None] | float | None = None, height: int | float = 2000, display_plots: bool = False) -> float:
+    """_summary_
+
+    :param nights: selected observation nights (e.g. `(0,1)` or `0`)
+    :type nights: tuple[int,int] | list[int] | int
+    :param objs_name: names of the selected targets (e.g. `('betaLyr','vega')`)
+    :type objs_name: tuple[str,str] | list[str]
+    :param angles: the corresponding angles for image correction (if any), defaults to None
+    :type angles: tuple[float  |  None, float  |  None] | list[float  |  None, float  |  None] | float | None, optional
+    :param height: the smallest height of peaks, defaults to 2000
+    :type height: int | float, optional
+    :param display_plots: if `True` functional plots are displayed, defaults to False
+    :type display_plots: bool, optional
     
+    :return: max lag
+    :rtype: float
+    """
     if type(nights) == int:
         obs1 = nights
         obs2 = nights
@@ -308,10 +370,10 @@ def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str
     obj1, obj2 = objs_name
     
     if isinstance(angles, (tuple,list)):
+        angle1, angle2 = angles
+    else:
         angle1 = angles 
         angle2 = angles 
-    else:
-        angle1, angle2 = angles
     
     plots = False
 
