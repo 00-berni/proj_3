@@ -79,7 +79,7 @@ def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, ini
     # extracting lamp spectrum and correcting for inclination
     _, sp_lamp = get_data_fit(obj_lamp,lims=lims_lamp, title='Row spectrum lamp', n=1, display_plots=display_plots)
     _, sp_lamp = angle_correction(sp_lamp, angle=angle, display_plots=display_plots)
-    height = int((np.argmax(sp_lamp,axis=0)).sum()/sp_lamp.shape[1])
+    height = int(np.mean(np.argmax(sp_lamp,axis=0)))
     # condition to display the images/plots
     if display_plots == True:
         showfits(sp_lamp, title='Rotated lamp image')
