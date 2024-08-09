@@ -95,7 +95,7 @@ def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, ini
     initial_values : list[float], optional
         initial values for the fit, by default `[3600, 2.6, 0.]`
     display_plots : bool, optional
-        if it is `True` images/plots are displayed, by default False
+        if it is `True` images/plots are displayed, by default `False`
 
     Returns
     -------
