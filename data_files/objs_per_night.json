@@ -1,225 +1,147 @@
 {
-    "01_night":{
-        "betaLyr":[
-            "betaLyr_alpy_26072022_0250",
-            "betaLyr_alpy_lamp_26072022_0250"
-        ],
-        "gammaCygni":[
-            "gammaCygni_alby_26072022_0405",
-            "gammaCygni_alby_lamp_26072022_0405"
-        ],
-        "giove":[
-            "giove_alpy_26072022_0116",
-            "giove_lamp_alpy_26072022",
-            "giove_flat_alpy_26072022"
-        ],
-        "luna":[
+    "17-03-27":{
+        "Arturo":[
             [
-                "LunaBianca_Alpy_26072022_0528",
-                "LunaNera_Alpy_26072022_0522"
+                "arturo_-0012sec",
+                "arturo_-0022sec",
+                "arturo_-0032sec",
+                "arturo_-0042sec",
+                "arturo_-0052sec"
             ],
-            "LunaNera_Alpy_Lamp_26072022_0522",
-            " ",
-            "LunaNera_Image_26072022_0525"
-
+            "arturo_lamp"
         ],
-        "m57": [
-            "m57_alpy_26072022_0201",
-            "m57_alpy_lamp_26072022_0201"
-        ],
-        "marte": [
-            "Marte_alpy_26072022_0505",
-            "Marte_alpy_lamp_26072022_0505"
-        ],
-        "pCygni": [
-            "pCygni_alpy_26072022_0135",
-            "pCygni_alpy_lamp_26072022_0135"
-        ],
-        "saturno": [
-            "saturno_alpy_26072022_0440",
-            "saturno_alpy_lamp_26072022_0440",
-            " ",
-            "saturno_image_26072022_0440"
-        ],
-        "vega": [
-            "vega_alby_26072022_0327",
-            "vega_alby_lamp_26072022_0327"
-        ],
-        "wr137": [
-            "wr137_alpy_26072022_0427","wr137_alpy_lamp_26072022_0427"
-        ]
-    },
-    "02_night":{
-        "antares": [
-            "antares_alpy_26072022_2305",
-            "antares_alpy_lamp_26072022_2305",
-            " "
-        ],
-        "arturo": [
-            "arturo_alpy_26072022_2239",
-            "arturo_alpy_lamp_26072022_2239",
-            "arturo_alpy_flat_26072022_2239"
-        ],
-        "chcygni": [
+        "Eltanin":[
             [
-                "chcygni_alpy_27072022_0258",
-                "chcygni-001",
-                "chcygni-002",
-                "chcygni-003",
-                "chcygni-004"
+                "eltanin-001_10sec",
+                "eltanin-002_10sec",
+                "eltanin-003_10sec",
+                "eltanin-004_10sec",
+                "eltanin-005_10sec"
             ],
-            "chcygni_alpy_lamp_27072022_0258"
-        ]
-    },
-    "03_night":{
-        "aldebaran": [
-            "aldebaran_echelle_28072022_0507",
-            [
-                "aldebaran_echelle_lampthor_28072022_0507",
-                "aldebaran_echelle_lampW_28072022_0507"
-            ]
+            "eltanin_lamp"
         ],
-        "betalyr": [
+        "Muceps":[
             [
-                "betalyr-001",
-                "betalyr-002",
-                "betalyr-003",
-                "betalyr-004",
-                "betalyr-005",
-                "betalyr-006",
-                "betalyr-007",
-                "betalyr-008"
+                "mucep-001_30sec",
+                "mucep-002_30sec",
+                "mucep-003_30sec",
+                "mucep-004_30sec",
+                "mucep-005_30sec"
             ],
-            [
-                "thor",
-                "tung"
-            ]
+            "muceps_lamp"
         ],
-        "giove": [
-            "giove_echelle_28072022_0439",
+        "Polluce":[
             [
-                "giove_echelle_lampthor_28072022_0439",
-                "giove_echelle_lampW_28072022_0439"
-            ]        
-        ],
-        "marte": [
-            "marte_echelle_28072022_0455",
-            [
-                "marte_echelle_lampthor_28072022_0455",
-                "marte_echelle_lampW_28072022_0455"
-            ]
-        ],
-        "vega": [
-            "vega_echelle_28072022_0206",
-            [
-                "vega_echelle_lampthor_28072022_0206",
-                "vega_echelle_lampW_28072022_0206"
-            ]
-        ]
-        
-    },
-    "04_night":{
-        "betaaur": [
-            "betaaur_echelle_29072022_0443",
-            [
-                "betaaur_echelle_lampthor_29072022_0443",
-                "betaaur_echelle_lampW_29072022_0443"
-            ]
-        ]        
-    },
-    "05_night":{
-        "algol": [
-            "algol_echelle_30072022_0437",
-            [
-                "algol_echelle_lampthor_30072022_0437",
-                "algol_echelle_lampW_30072022_0437"
-            ]
-        ],
-        "arturo": [
-            "arturo_echelle_30072022_0011",
-            [
-                "arturo_echelle_lampthor_30072022_0011",
-                "arturo_echelle_lampW_30072022_0011"
-            ]
-        ],
-        "betaaur": [
-            "betaauriga_echelle_30072022_0444",
-            [
-                "betaauriga_echelle_lampthor_30072022_0444",
-                "betaauriga_echelle_lampW_30072022_0444"
-            ]
-        ],
-        "betalyr": [
-            "betalyr_echelle_30072022_0204",
-            [
-                "betalyr_echelle_lampthor_30072022_0204",
-                "betalyr_echelle_lampW_30072022_0204"
-            ]
-        ],
-        "deneb": [
-            "deneb_echelle_30072022_0021",
-            [
-                "deneb_echelle_lampthor_30072022_0021",
-                "deneb_echelle_lampW_30072022_0021"
-            ]
-        ],
-        "epsilonauriga+": [
-            "epsauriga_echelle_30072022_0502",
-            [
-                "epsauriga_echelle_lampthor_30072022_0502",
-                "epsauriga_echelle_lampW_30072022_0502"
-            ]
-        ],
-        "pcygni": [
-            [
-                "pcygni_echelle_30072022_0148",
-                "PCygni-001",
-                "PCygni-002",
-                "PCygni-003",
-                "PCygni-004",
-                "PCygni-005",
-                "PCygni-006",
-                "PCygni-007",
-                "PCygni-008",
-                "PCygni-009",
-                "PCygni-0010"
+                "polluce_10sec_1",
+                "polluce_10sec_2"
             ],
-            [
-                "pcygni_echelle_lampthor_30072022_0148",
-                " "
-            ]
+            "polluce_lamp"
         ],
-        "pleione": [
-            "pleione_echelle_30072022_0430",
+        "Rastaban":[
             [
-                "pleione_echelle_lampthor_30072022_0430",
-                "pleione_echelle_lampW_30072022_0430"
-            ]
-        ],
-        "vega": [
-            "vega_echelle_30072022_0156",
-            [
-                "vega_echelle_lampthor_30072022_0156",
-                "vega_echelle_lampW_30072022_0156"
-            ]
-        ],
-        "wr137": [
-            [
-                "wr137-001",
-                "wr137-002",
-                "wr137-003",
-                "wr137-004",
-                "wr137-005",
-                "wr137-006",
-                "wr137-007",
-                "wr137-008",
-                "wr137-009",
-                "wr137-0010"
+                "rastaban-001__10sec",
+                "rastaban-002__10sec",
+                "rastaban-003__10sec",
+                "rastaban-004__10sec",
+                "rastaban-005__10sec"
             ],
+            "rastaban_lamp"
+        ],
+        "Regolo":[
             [
-                "wr137_echelle_lampthor_30072022_0417",
-                "wr137_echelle_lampW_30072022_0417"
+                "Regolo-0015sec",
+                "Regolo-0025sec",
+                "Regolo-0035sec",
+                "Regolo-0045sec"
+            ],
+            "Regolo_lamp"
+        ],
+        "Vega01":[
+            [
+                "vega-001_20deg",
+                "vega-002_20deg",
+                "vega-003_20deg",
+                "vega-004_20deg",
+                "vega-005_20deg"
+            ],
+            "vega_20deg_lamp"
+        ],
+        "Vega02":[
+            [
+                "vega-001_35deg",
+                "vega-002_35deg",
+                "vega-003_35deg",
+                "vega-004_35deg",
+                "vega-005_35deg"
+            ],
+            "vega_35deg_lamp"
+        ],
+        "Vega03":[
+            [
+                "vega-001_43deg",
+                "vega-002_43deg",
+                "vega-003_43deg",
+                "vega-004_43deg",
+                "vega-005_43deg"
+            ],
+            "vega43deglamp"
+        ],
+        "Vega04":[
+            [
+                "vega04-001_58deg",
+                "vega04-002_58deg",
+                "vega04-003_58deg",
+                "vega04-004_58deg",
+                "vega04-005_58deg"
+            ],
+            "vega04_lamp"
+        ],
+        "Vega05":[
+            [
+                "vega5-001_68deg",
+                "vega5-002_68deg",
+                "vega5-003_68deg",
+                "vega5-004_68deg",
+                "vega5-005_68deg",
+                "vega5-006_68deg",
+                "vega5-007_68deg",
+                "vega5-008_68deg",
+                "vega5-009_68deg",
+                "vega5-010_68deg"
+            ],
+            "vega5_lamp"
+        ],
+        "WR140":[
+            [
+                "wr140_100sec",
+                "wr140_300sec",
+                "wr140_600sec"
+            ],
+            "wr140_lamp"
+        ],
+        "calibrazione":{
+            "dark":[
+                "cal-001__dark",
+                "cal-002__dark",
+                "cal-003__dark",
+                "cal-004__dark",
+                "cal-005__dark"
+            ],
+            "flat":[
+                "cal-001__flat",
+                "cal-002__flat",
+                "cal-003__flat",
+                "cal-004__flat",
+                "cal-005__flat"
+            ],
+            "bias":[
+                "cal-001_bias",
+                "cal-002_bias",
+                "cal-003_bias",
+                "cal-004_bias",
+                "cal-005_bias"
             ]
-        ]
+        }
     }
+
 }
