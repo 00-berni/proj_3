@@ -1,23 +1,47 @@
 """
-    # Data module
+DATA PACKAGE
+============
+
+***
+
+::METHODS::
+-----------
+
+***
+
+!TO DO!
+-------
+    - [] **Update the file `.json` and methods: `collects_fits`, `get_data_fit`, `extract_data`, `get_data`**
+
+
+***
+    
+?WHAT ASK TO STEVE?
+-------------------
 """
 
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
+from astropy.io.fits import HDUList
 from .stuff import angle_correction, hotpx_remove
 from .display import showfits
+from numpy.typing import NDArray
 
 
 def data_extraction(path_file: str) -> dict:
     """Extracting data from a .json file
 
-    :param path_file: path of the data file
-    :type path_file: str
-    
-    :return: data organized into nights of aquisition and objects
-    :rtype: dict
+    Parameters
+    ----------
+    path_file : str
+        path of the data file
+
+    Returns
+    -------
+    data_file : dict
+        data organized into nights of aquisition and objects
     """
     import json 
     # opening the file
@@ -47,52 +71,84 @@ OBJ_FILE = os.path.join(DATA_FOLDER, 'objs_per_night.json')
 # extracting data
 DATA_ALL = data_extraction(OBJ_FILE)
 
-def collect_fits(night: int, obj: str) -> tuple:
-    """Collecting data fits for a chosen night observation
-    and object.
+def collect_fits(night: int, obj: str) -> tuple[NDArray, NDArray]:
+    """Collecting data fits for a chosen night observation and object.
 
-    :param night: index of chosen night
-    :type night: int
-    :param obj: name of the object
-    :type obj: str
-    
-    :return: the list with data fit of that object in that night and section limits for the images
-    :rtype: list
+    Parameters
+    ----------
+    night : int
+        index of chosen night
+    obj : str
+        name of the object
+
+    Returns
+    -------
+    extracted : NDArray
+        object in that night
+    cut : NDArray
+        section limits for the images
     """
     cut = np.loadtxt(os.path.join(DATA_FOLDER, NIGHTS[night], obj, 'cut_indicies.txt'), dtype=int, unpack=False)
     cut = np.where(cut == -1, None, cut)
-    return DATA_ALL[NIGHTS[night]][obj], cut
+    extracted = DATA_ALL[NIGHTS[night]][obj]
+    return extracted, cut
 
 def data_file_path(night: int, obj: str, data_file: str) -> str:
+    """
+
+    Parameters
+    ----------
+    night : int
+        _description_
+    obj : str
+        _description_
+    data_file : str
+        _description_
+
+    Returns
+    -------
+    str
+        _description_
+    """
     return os.path.join(DATA_FOLDER, NIGHTS[night], obj , data_file + '.fit')
 
 ##* 
-def get_data_fit(path: str, lims: list = [0,None,0,None], hotpx: bool = True, v: int = -1, title: str = '', n: int = None, dim: list[int] = [10,7], display_plots: bool = True) -> tuple:
+def get_data_fit(path: str, lims: list = [0,None,0,None], hotpx: bool = True, v: int = -1, title: str = '', n: int = None, dim: list[int] = [10,7], display_plots: bool = True) -> tuple[HDUList, NDArray]:
     """Function to open fits file and extract data.
     It brings the path and extracts the data, giving a row image.
     You can set a portion of image and also the correction for hotpx.
 
-    It calls the functions `hotpx_remove` and `showfits`.
+    Parameters
+    ----------
+    path : str
+        path of the fits file
+    lims : list, optional
+        edges of the fits, by default `[0,None,0,None]`
+        `lims` parameter controls the x and y extremes 
+        in such the form `[lower y, higher y, lower x, higher x]`
+    hotpx : bool, optional
+        parameter to remove or not the hot pixels, by default `True`
+        It calls the functions `hotpx_remove`
+    v : int, optional
+        cmap parameter, by default `-1` 
+            -  `1` for false colors
+            -  `0` for grayscale
+            - `-1` for reversed grayscale
+    title : str, optional
+        title of the image, by default `''`
+    n : int, optional
+        figure number, by default `None`
+    dim : list[int], optional
+        figure size, by default `[10,7]`
+    display_plots : bool, optional
+        _description_, by default `True`
 
-    :param path: path of the fits file
-    :type path: str
-    :param lims: edges of the fits, defaults to [0,-1,0,-1]
-    :type lims: list, optional
-    :param hotpx: parameter to remove or not the hot pixels, defaults to True
-    :type hotpx: bool, optional
-    :param v: cmap parameter: 1 for false colors, 0 for grayscale, -1 for reversed grayscale; defaults to -1
-    :type v: int, optional
-    :param title: title of the image, defaults to ''
-    :type title: str, optional
-    :param n: figure number, defaults to None
-    :type n: int, optional
-    :param dim: figure size, defaults to [10,7]
-    :type dim: list[int], optional
-
-    :return: `hdul` list of the chosen fits file and `data` of the spectrum
-    :rtype: tuple
-
-    .. note:: `lims` parameter controls the x and y extremes in such the form [lower y, higher y, lower x, higher x]
+    Returns
+    -------
+    hdul : HDUList
+        information about the chosen fits file
+    data : NDArray
+        data of the spectrum
     """
     # open the file
     hdul = fits.open(path)
@@ -120,25 +176,34 @@ def get_data_fit(path: str, lims: list = [0,None,0,None], hotpx: bool = True, v:
     if display_plots == True: 
         from .display import showfits
         showfits(data, v=v,title=title,n=n,dim=dim) 
-    return hdul,data
+    return hdul, data
 ##*
 
 
 def extract_data(ch_obs: int, ch_obj: str, sel: list[str] | str = 'all') -> list[str]:
     """Collecting data from data files.
     
+    Parameters
+    ----------
+    ch_obs : int
+        chosen obeservation night
+    ch_obj : str
+        chosen object name
+    sel : list[str] | str, optional
+        _description_, by default 'all'
+
+    Returns
+    -------
+    data : list[str]
+        the list with paths and extrema
+    
+    Notes
+    -----
     Given a selected observation night and object, the function 
     returns both the paths of the target and the calibration lamp
-    (also the flat if there is) and the corrisponding values for 
-    the edges of the images. 
+    (also the flat if any) and the corrisponding values for the 
+    edges of the images. 
 
-    :param ch_obs: chosen obeservation night
-    :type ch_obs: int
-    :param ch_obj: chosen object name
-    :type ch_obj: str
-    
-    :return: the list with paths and extrema
-    :rtype: list
     """
     # only for the first two observation nights Alpy was used
     if ch_obs < 2:
@@ -198,25 +263,37 @@ def extract_data(ch_obs: int, ch_obj: str, sel: list[str] | str = 'all') -> list
 
 
 
-def get_data(ch_obj: str, obj_fit: str, lims_fit: list[int | None] = [None,None,None,None] , angle: float | None = None, display_plots: bool = False) -> tuple:
+def get_data(ch_obj: str, obj_fit: str, lims_fit: list[int | None] = [None,None,None,None] , angle: float | None = None, display_plots: bool = False) -> tuple[HDUList, NDArray, float]:
     """Extracting the fits data
+
+    Parameters
+    ----------
+    ch_obj : str
+        chosen object name
+    obj_fit : str
+        path of the target
+    lims_fit : list[int  |  None], optional
+        extrema of the image, by default `[None,None,None,None]`
+    angle : float | None, optional
+        the inclination angle to rotate the image, by default `None`
+        If it is `None` it will be estimated
+    display_plots : bool, optional
+        if it is `True` images/plots are displayed, by default `False`
+
+    Returns
+    -------
+    hdul : HDList
+        fits information
+    sp_data : NDArray
+        spectrum data
+    angle : float
+        inclination angle
+    
+    Notes
+    -----
     The function gets the data of the spectrum from the fits file of a selected target and corrects for the
     inclination, returning the fits information (`hdul`), the spectrum data (`sp_data`) and the angle of
     inclination (`angle`).
-
-    :param ch_obj: chosen object name
-    :type ch_obj: str
-    :param obj_fit: path of the target
-    :type obj_fit: str
-    :param lims_fit: extrema of the image
-    :type lims_fit: list[int]
-    :param angle: the inclination angle to rotate the image. If it is None it will be estimated, defaults to None
-    :type angle: float | None, optional
-    :param display_plots: if it is True images/plots are displayed, defaults to False
-    :type display_plots: bool, optional
-    
-    :return: fits information, spectrum data, inclination angle 
-    :rtype: tuple
     """
     # collecting fits informations and spectrum data
     hdul, sp_data = get_data_fit(obj_fit, lims=lims_fit, title='Row spectrum of '+ ch_obj, n=1, display_plots=display_plots)

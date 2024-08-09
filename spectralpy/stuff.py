@@ -1,4 +1,28 @@
+"""
+STUFF PACKAGE
+=============
+
+***
+
+::METHODS::
+-----------
+
+***
+
+!TO DO!
+-------
+    - [] **Update `fit_routine`**
+    - [] **Change `angle_correction`**
+
+
+***
+    
+?WHAT ASK TO STEVE?
+-------------------
+"""
+
 import numpy as np
+from numpy.typing import NDArray
 from scipy import ndimage
 from typing import Callable
 from .display import fastplot
@@ -7,18 +31,24 @@ from .display import fastplot
 # definition of function type to use in docstring of functions
 FUNC_TYPE = type(abs)
 
-def hotpx_remove(data: np.ndarray) -> np.ndarray:
+def hotpx_remove(data: NDArray) -> NDArray:
     """Removing hot pixels from the image
-    The function replacing `NaN` values from
-    the image if there are.
-    I did not implement this function, I
-    took it from [*astropy documentation*](https://docs.astropy.org/en/stable/convolution/index.html)
 
-    :param data: spectrum data
-    :type data: np.ndarray
+    Parameters
+    ----------
+    data : NDArray
+        spectrum data
+
+    Returns
+    -------
+    data : NDArray
+        spectrum data without `NaN` values
     
-    :return: spectrum data without `NaN` values
-    :rtype: np.ndarray
+    Notes
+    -----
+    The function replacing `NaN` values from the image if there are.
+    I did not implement this function, I took it from [*astropy documentation*](https://docs.astropy.org/en/stable/convolution/index.html)
+
     """
     from astropy.convolution import Gaussian2DKernel, interpolate_replace_nans
     # checking the presence of `NaNs`
@@ -30,7 +60,35 @@ def hotpx_remove(data: np.ndarray) -> np.ndarray:
     return data
 
 
-def fit_routine(xdata: np.ndarray, ydata: np.ndarray, initial_values: list[float], fit_func: Callable[[np.ndarray],np.ndarray], xerr: np.ndarray | float | int | None = None, yerr: np.ndarray | float | None = None, iter: int | None = None, return_res: list[str] | tuple[str] | None = None, display_res: bool = False) -> list:
+def fit_routine(xdata: NDArray, ydata: NDArray, initial_values: list[float], fit_func: Callable[[NDArray],NDArray], xerr: NDArray | float | int | None = None, yerr: NDArray | float | None = None, iter: int | None = None, return_res: list[str] | tuple[str] | None = None, display_res: bool = False) -> list[NDArray]:
+    """_summary_
+
+    Parameters
+    ----------
+    xdata : NDArray
+        _description_
+    ydata : NDArray
+        _description_
+    initial_values : list[float]
+        _description_
+    fit_func : Callable[[NDArray],NDArray]
+        _description_
+    xerr : NDArray | float | int | None, optional
+        _description_, by default None
+    yerr : NDArray | float | None, optional
+        _description_, by default None
+    iter : int | None, optional
+        _description_, by default None
+    return_res : list[str] | tuple[str] | None, optional
+        _description_, by default None
+    display_res : bool, optional
+        _description_, by default False
+
+    Returns
+    -------
+    list[NDArray]
+        _description_
+    """
     if isinstance(xerr,(float,int)):
         xerr = np.full(xdata.shape,xerr)
     if isinstance(yerr,(float,int)):
@@ -100,21 +158,30 @@ def fit_routine(xdata: np.ndarray, ydata: np.ndarray, initial_values: list[float
 
 
 
-def angle_correction(data: np.ndarray, init: list[float] = [0.9, 0.], angle: float | None = None, display_plots: bool = True) -> tuple[float, np.ndarray]:
+def angle_correction(data: NDArray, init: list[float] = [0.9, 0.], angle: float | None = None, display_plots: bool = True) -> tuple[float, NDArray]:
     """Function to correct the inclination, rotating the image.
     
-    It takes the maximum of each column and does a fit to find 
+    It takes the maximum of each column and fit in order to find 
     the angle with the horizontal. The the image is rotated.
 
-    :param data: image matrix
-    :type data: np.ndarray
-    :param init: initial values for the fit, defaults to [0.9,0.]
-    :type init: list[float], optional
+    Parameters
+    ----------
+    data : NDArray
+        image matrix
+    init : list[float], optional
+        initial values for the fit, by default `[0.9, 0.]`
+    angle : float | None, optional
+        _description_, by default `None`
+    display_plots : bool, optional
+        _description_, by default `True`
 
-    :return: inclination angle and the corrected data
-    :rtype: tuple[float, np.ndarray]
+    Returns
+    -------
+    angle : float
+        inclination angle
+    data_rot : NDArray
+        the corrected data
     """
-
     if angle == None:
         y_pos = np.argmax(data, axis=0)
         x_pos = np.arange(len(y_pos))

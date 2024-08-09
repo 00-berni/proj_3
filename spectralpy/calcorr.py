@@ -1,8 +1,27 @@
 """
-    # Calibration module
+CALCORR PACKAGE
+===============
+
+***
+
+::METHODS::
+-----------
+
+***
+
+!TO DO!
+-------
+    - [] **Update `compute_flat` and `calibration`**
+
+
+***
+    
+?WHAT ASK TO STEVE?
+-------------------
 """
 import os
 import numpy as np
+from numpy.typing import NDArray
 from typing import Callable
 from scipy import odr
 from .display import *
@@ -11,20 +30,27 @@ from .data import get_data_fit, extract_data, get_data
 
 
 
-def compute_flat(ch_obs: int, display_plots: bool = False) -> np.ndarray:
+def compute_flat(ch_obs: int, display_plots: bool = False) -> NDArray:
     """Evaluating the flat gain
+
+    Parameters
+    ----------
+    ch_obs : int
+        chosen observation night
+    display_plots : bool, optional
+        if it is `True` images/plots are displayed, by default `False`
+
+    Returns
+    -------
+    flat_value : NDArray
+        flat gain for each x coordinate
+    
+    Notes
+    -----
     After extracting the data of the flat acquisition, the function finds the
     maximum and computes the cumulative spectrum over the y axis. Then the 
     gain is extimated for each x coordinate by normalization through the 
     maximum and returned.
-
-    :param ch_obs: chosen observation night
-    :type ch_obs: int
-    :param display_plots: if it is True images/plots are displayed, defaults to False
-    :type display_plots: bool, optional
-    
-    :return: flat gain for each x coordinate
-    :rtype: np.ndarray
     """
     # name of the target for which flat was acquired
     if ch_obs == 0:
@@ -53,28 +79,38 @@ def compute_flat(ch_obs: int, display_plots: bool = False) -> np.ndarray:
     return flat_value
 
 
-def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, initial_values: list[float] = [3600, 2.6,0.], display_plots: bool = False) -> Callable[[np.ndarray],np.ndarray]:
-    """Evaluating the calibration function to pass from x axis units to Armstrong
-    From spectrum data of the selected calibration lamp and corrisponding detected lines (obtained from `SpecrteArNeLISA.pdf` file) the function to map positions
-    along the x axis in wavelengths is computed. To estimate the parameters a fit for a linear function is implemented.
+def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, initial_values: list[float] = [3600, 2.6,0.], display_plots: bool = False) -> tuple[Callable[[NDArray],NDArray], Callable[[NDArray],NDArray]]:
+    """Evaluating the calibration function to pass from a.u. to Armstrong
 
-    :param cal_file: file with calibration lines sampled from the `SpecrteArNeLISA.pdf` file
-    :type cal_file: str
-    :param obj_lamp: path for the lamp file
-    :type obj_lamp: str
-    :param lims_lamp: extrema of the lamp image
-    :type lims_lamp: list
-    :param angle: inclination angle
-    :type angle: float
-    :param height: y coorfinate at which the spectrum is taken
-    :type height: int
-    :param initial_values: initial values for the fit, defaults to [3600, 2.6]
-    :type initial_values: list[float], optional
-    :param display_plots: if it is True images/plots are displayed, defaults to False
-    :type display_plots: bool, optional
+    Parameters
+    ----------
+    cal_file : str
+        file with calibration lines sampled from the `SpecrteArNeLISA.pdf` file
+    obj_lamp : str
+        path for the lamp file
+    lims_lamp : list
+        extrema of the lamp image
+    angle : float
+        inclination angle
+    initial_values : list[float], optional
+        initial values for the fit, by default `[3600, 2.6, 0.]`
+    display_plots : bool, optional
+        if it is `True` images/plots are displayed, by default False
+
+    Returns
+    -------
+    cal_func : Callable[[NDArray],NDArray]
+        the calibration function
+    err_func : Callable[[NDArray],NDArray]
+        _description_
     
-    :return: the calibration function
-    :rtype: FUNC_TYPE
+    Notes
+    -----
+    From spectrum data of the selected calibration lamp and corrisponding detected lines 
+    (obtained from `SpecrteArNeLISA.pdf` file) the function to map positions along the x 
+    axis in wavelengths is computed. To estimate the parameters a fit for a linear 
+    function is implemented
+
     """
     # extracting lamp spectrum and correcting for inclination
     _, sp_lamp = get_data_fit(obj_lamp,lims=lims_lamp, title='Row spectrum lamp', n=1, display_plots=display_plots)
@@ -108,7 +144,7 @@ def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, ini
     # defining the calibration function
     cal_func = lambda x : fit_func(pop,x)
     
-    def err_func(x: np.ndarray, dx: np.ndarray, all_res: bool = False):
+    def err_func(x: NDArray, dx: NDArray, all_res: bool = False):
         dfdx = p1 + p2*2*x
         err = (dfdx*dx)**2
         if all_res:
@@ -143,15 +179,53 @@ def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, ini
 
 
 
-def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | np.ndarray = None, cal_func: Callable[[np.ndarray],np.ndarray] | None = None, err_func: Callable[[np.ndarray,np.ndarray,bool],np.ndarray] | None = None, display_plots: bool = False, initial_values: list[float] | tuple[float] = [3600, 2.6,0.], ret_values: str = 'few') -> list[np.ndarray | dict[str,np.ndarray] | dict[str,float | np.ndarray | Callable[[np.ndarray],np.ndarray]] | Callable[[np.ndarray,np.ndarray,bool],np.ndarray] | float]:
+def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | NDArray = None, cal_func: Callable[[NDArray],NDArray] | None = None, err_func: Callable[[NDArray,NDArray,bool],NDArray] | None = None, display_plots: bool = False, initial_values: list[float] | tuple[float] = [3600, 2.6,0.], ret_values: str = 'few') -> list[NDArray] | list[NDArray | dict]:
     """Getting the spectrum of a selceted target for a chosen observation night
+
+    Parameters
+    ----------
+    ch_obs : int
+        chosen observation night
+    ch_obj : str
+        chosen obj
+    flat : None | NDArray, optional
+        if the flat gain is not evaluated yet, the flat target name is passed, by default `None`
+    cal_func : Callable[[NDArray],NDArray] | None, optional
+        if it is None, the calibration function will be computed, by default `None`
+    err_func : Callable[[NDArray,NDArray,bool],NDArray] | None, optional
+        _description_, by default `None`
+    display_plots : bool, optional
+        if it is True images/plots are displayed, by default `False`
+    initial_values : list[float] | tuple[float], optional
+        _description_, by default `[3600, 2.6,0.]`
+    ret_values : str, optional
+        _description_, by default `'few'`
+
+    Returns
+    -------
+    spectrum : NDArray
+        cumulative spectrum 
+    lengths : NDArray
+        corrisponding wavelenghts
+    data : dict[str,NDArray], optional
+        information about the image
+            * `'hdul'` : fits information
+            * `'sp_data'` : spectrum image data
+        It is returned only if `ret_values == 'data' or 'all'` 
+    cal_data : dict[str, float | NDArray | Callable], optional
+        information about calibration
+            * `'angle'` : correction angle value
+            * `'flat_value'` : estimate flat value
+            * `'func'` : calibration function
+            * `'err'` : function to compute the uncertainties associated with `'func'`
+        It is returned only if `ret_values == 'calibration' or 'all'` 
+
+    Notes
+    -----
     The function extracts fits data for a target and evaluates inclination correction, flat gain and calibration function to return the
     calibrated spectrum. If the flat gain or the calibration function are already computed then one can pass them to the function, 
     avoiding an other estimation.
-    
-    The function returns fits informations (`hdul`), spectrum image data (`sp_data`), cumulative spectrum (`spectrum`), corrisponding 
-    wavelengths (`lenghts`), flat gain (`flat_value`) and calibration function (`cal_func`).
-    
+        
     It calls the functions:
       - `extract_data()`
       - `get_data()`
@@ -159,20 +233,7 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | np.ndarray = None
       - `fastplot()`
       - `compute_flat()`
       - `calibration()`
-    
-    :param ch_obs: chosen observation night
-    :type ch_obs: int
-    :param ch_obj: chosen ob
-    :type ch_obj: str
-    :param flat: if the flat gain is not evaluated yet, the flat target name is passed
-    :type flat: str | np.ndarray
-    :param cal_func: if it is None, the calibration function will be computed, defaults to None
-    :type cal_func: FUNC_TYPE | None, optional
-    :param display_plots: if it is True images/plots are displayed, defaults to False
-    :type display_plots: bool, optional
-    
-    :return: fits informations, spectrum image data, cumulative spectrum, corrisponding wavelenghts, flat gain and calibration function
-    :rtype: tuple
+
     """
     # collecting data
     obj_fit, lims_fit, obj_lamp, lims_lamp = extract_data(ch_obs, ch_obj,sel=['obj','lamp'])
@@ -210,7 +271,7 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | np.ndarray = None
     fastplot(lengths, spectrum,title='Corrected and calibrated spectrum of ' + ch_obj,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9],grid=True)
     plt.show()
 
-    if (ret_values == 'all') or (ret_values == 'few') or (ret_values == 'data')or (ret_values == 'calibration'):
+    if (ret_values == 'all') or (ret_values == 'few') or (ret_values == 'data') or (ret_values == 'calibration'):
         results = [spectrum, lengths]
     
     if (ret_values == 'all') or (ret_values == 'data'):
@@ -220,9 +281,9 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | np.ndarray = None
     if (ret_values == 'all') or (ret_values == 'calibration'):
         if ret_cond:
             cal_data = { 'angle' : angle,
-                         'flat' : flat_value,
-                         'func' : cal_func,
-                         'err' : err_func }
+                         'flat'  : flat_value,
+                         'func'  : cal_func,
+                         'err'   : err_func }
         else:
             cal_data = angle
         results += [cal_data]
@@ -230,20 +291,26 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | np.ndarray = None
     return results
 
 
-def mean_line(peaks: np.ndarray, spectrum: np.ndarray, dist: int = 3, height: int | float = 800) -> tuple[np.ndarray,np.ndarray]:
-    """
+def mean_line(peaks: NDArray, spectrum: NDArray, dist: int = 3, height: int | float = 800) -> tuple[NDArray,NDArray]:
+    """    
 
-    :param peaks: peaks
-    :type peaks: np.ndarray
-    :param spectrum: spectrum
-    :type spectrum: np.ndarray
-    :param dist: maximum distance between peaks, defaults to 3
-    :type dist: int, optional
-    :param height: the maximum value to start interpolation, defaults to 800
-    :type height: int | float, optional
+    Parameters
+    ----------
+    peaks : NDArray
+        peaks
+    spectrum : NDArray
+        spectrum
+    dist : int, optional
+        maximum distance between peaks, by default `3`
+    height : int | float, optional
+        the maximum value to start interpolation, by default `800`
 
-    :return: average peaks and the corresponding value of the spectrum 
-    :rtype: tuple[np.ndarray,np.ndarray]
+    Returns
+    -------
+    peaks : NDArray
+        average peaks
+    spectrum[peaks] : NDArray
+        corresponding values of the spectrum
     """
     # making a copy of data
     peaks = np.copy(peaks)
@@ -347,21 +414,25 @@ def mean_line(peaks: np.ndarray, spectrum: np.ndarray, dist: int = 3, height: in
 
 
 def lamp_corr(nights: tuple[int,int] | list[int] | int, objs_name: tuple[str,str] | list[str], angles: tuple[float | None, float | None] | list[float | None, float | None] | float | None = None, height: int | float = 2000, display_plots: bool = False) -> float:
-    """_summary_
+    """    
 
-    :param nights: selected observation nights (e.g. `(0,1)` or `0`)
-    :type nights: tuple[int,int] | list[int] | int
-    :param objs_name: names of the selected targets (e.g. `('betaLyr','vega')`)
-    :type objs_name: tuple[str,str] | list[str]
-    :param angles: the corresponding angles for image correction (if any), defaults to None
-    :type angles: tuple[float  |  None, float  |  None] | list[float  |  None, float  |  None] | float | None, optional
-    :param height: the smallest height of peaks, defaults to 2000
-    :type height: int | float, optional
-    :param display_plots: if `True` functional plots are displayed, defaults to False
-    :type display_plots: bool, optional
-    
-    :return: max lag
-    :rtype: float
+    Parameters
+    ----------
+    nights : tuple[int,int] | list[int] | int
+        selected observation nights (e.g. `(0,1)` or `0`)
+    objs_name : tuple[str,str] | list[str]
+        names of the selected targets (e.g. `('betaLyr','vega')`)
+    angles : tuple[float  |  None, float  |  None] | list[float  |  None, float  |  None] | float | None, optional
+        the corresponding angles for image correction (if any), by default `None`
+    height : int | float, optional
+        the smallest height of peaks, by default `2000`
+    display_plots : bool, optional
+        if `True` functional plots are displayed, by default `False`
+
+    Returns
+    -------
+    maxlag : float
+        maximum lag
     """
     # collecting data
     if type(nights) == int:
