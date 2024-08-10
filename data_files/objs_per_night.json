@@ -263,6 +263,78 @@
             "psf_guide"
         ]
     },
+    "22-07-26_ohp":{
+        "betaLyr":[
+            "betaLyr_alpy_26072022_0250",
+            "betaLyr_alpy_lamp_26072022_0250"
+        ],
+        "gammaCygni":[
+            "gammaCygni_alby_26072022_0405",
+            "gammaCygni_alby_lamp_26072022_0405"
+        ],
+        "giove":[
+            "giove_alpy_26072022_0116",
+            "giove_lamp_alpy_26072022",
+            "giove_flat_alpy_26072022"
+        ],
+        "luna":[
+            [
+                "LunaBianca_Alpy_26072022_0528",
+                "LunaNera_Alpy_26072022_0522"
+            ],
+            "LunaNera_Alpy_Lamp_26072022_0522",
+            " ",
+            "LunaNera_Image_26072022_0525"
+
+        ],
+        "m57": [
+            "m57_alpy_26072022_0201",
+            "m57_alpy_lamp_26072022_0201"
+        ],
+        "marte": [
+            "Marte_alpy_26072022_0505",
+            "Marte_alpy_lamp_26072022_0505"
+        ],
+        "pCygni": [
+            "pCygni_alpy_26072022_0135",
+            "pCygni_alpy_lamp_26072022_0135"
+        ],
+        "saturno": [
+            "saturno_alpy_26072022_0440",
+            "saturno_alpy_lamp_26072022_0440",
+            " ",
+            "saturno_image_26072022_0440"
+        ],
+        "vega": [
+            "vega_alby_26072022_0327",
+            "vega_alby_lamp_26072022_0327"
+        ],
+        "wr137": [
+            "wr137_alpy_26072022_0427",
+            "wr137_alpy_lamp_26072022_0427"
+        ]
+    },
+    "22-07-27_ohp":{
+        "antares": [
+            "antares_alpy_26072022_2305",
+            "antares_alpy_lamp_26072022_2305"
+        ],
+        "arturo": [
+            "arturo_alpy_26072022_2239",
+            "arturo_alpy_lamp_26072022_2239",
+            "arturo_alpy_flat_26072022_2239"
+        ],
+        "chcygni": [
+            [
+                "chcygni_alpy_27072022_0258",
+                "chcygni-001",
+                "chcygni-002",
+                "chcygni-003",
+                "chcygni-004"
+            ],
+            "chcygni_alpy_lamp_27072022_0258"
+        ]
+    },
     "23-03-28":{
         "Aldebaran":[
             "aldebaran",
