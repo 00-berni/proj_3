@@ -27,7 +27,8 @@ from astropy.io import fits
 from astropy.io.fits import HDUList
 from .stuff import angle_correction, hotpx_remove
 from .display import showfits
-from numpy.typing import NDArray
+from numpy.typing import NDArray, ArrayLike
+from typing import Sequence, Literal
 
 
 def data_extraction(path_file: str) -> dict:
@@ -52,32 +53,32 @@ def data_extraction(path_file: str) -> dict:
     return data_file
 
 # names for the selection of the night observation
-NIGHTS = [f'0{i}_night' for i in range(1,6)]
-
+NIGHTS = ('16-08-26','17-03-27','18-04-22','18-11-27','22-07-26_ohp','22-07-26_ohp','23-03-28')
 # taking path of the current folder
 PWD = os.path.dirname(os.path.realpath(__file__))
 # path of the project folder
-PROJECT_FOLDER = os.path.split(PWD)[0]
+PROJECT_DIR = os.path.split(PWD)[0]
 # path of the data folder
-DATA_FOLDER = os.path.join(PROJECT_FOLDER, 'data_files')
+DATA_DIR = os.path.join(PROJECT_DIR, 'data_files')
 # path of calibration folder
-CAL_FOLDER = os.path.join(DATA_FOLDER, 'calibration')
+CAL_DIR = os.path.join(DATA_DIR, 'calibration')
 # path of results folder
-RESULT_FOLDER = os.path.join(PROJECT_FOLDER, 'results')
+RESULT_DIR = os.path.join(PROJECT_DIR, 'results')
 
 # file with objects collection
-OBJ_FILE = os.path.join(DATA_FOLDER, 'objs_per_night.json')
+OBJ_FILE = os.path.join(DATA_DIR, 'objs_per_night.json')
 
 # extracting data
 DATA_ALL = data_extraction(OBJ_FILE)
 
-def collect_fits(night: int, obj: str) -> tuple[NDArray, NDArray]:
+# Literal['16-08-26','17-03-27','18-04-22','18-11-27','22-07-26_ohp','22-07-26_ohp','23-03-28']
+def collect_fits(night: str, obj: str) -> tuple[NDArray, ArrayLike]:
     """Collecting data fits for a chosen night observation and object.
 
     Parameters
     ----------
-    night : int
-        index of chosen night
+    night : str
+        selected night
     obj : str
         name of the object
 
@@ -85,15 +86,18 @@ def collect_fits(night: int, obj: str) -> tuple[NDArray, NDArray]:
     -------
     extracted : NDArray
         object in that night
-    cut : NDArray
+    cut : ArrayLike
         section limits for the images
     """
-    cut = np.loadtxt(os.path.join(DATA_FOLDER, NIGHTS[night], obj, 'cut_indicies.txt'), dtype=int, unpack=False)
+    cut = np.loadtxt(os.path.join(DATA_DIR, night, obj, 'cut_indicies.txt'), dtype=int, unpack=False)
     cut = np.where(cut == -1, None, cut)
+    # try:
+    # except:
+    #     cut = [0,None,0,None]
     extracted = DATA_ALL[NIGHTS[night]][obj]
     return extracted, cut
 
-def data_file_path(night: int, obj: str, data_file: str) -> str:
+def data_file_path(night: str, obj: str, data_file: str) -> str:
     """
 
     Parameters
@@ -110,10 +114,10 @@ def data_file_path(night: int, obj: str, data_file: str) -> str:
     str
         _description_
     """
-    return os.path.join(DATA_FOLDER, NIGHTS[night], obj , data_file + '.fit')
+    return os.path.join(DATA_DIR, night, obj , data_file + '.fit')
 
 ##* 
-def get_data_fit(path: str, lims: list = [0,None,0,None], hotpx: bool = True, v: int = -1, title: str = '', n: int = None, dim: list[int] = [10,7], display_plots: bool = True) -> tuple[HDUList, NDArray]:
+def get_data_fit(path: str, lims: Sequence[int | None] = [0,None,0,None], hotpx: bool = True, display_plots: bool = True, **kwargs) -> tuple[HDUList, NDArray]:
     """Function to open fits file and extract data.
     It brings the path and extracts the data, giving a row image.
     You can set a portion of image and also the correction for hotpx.
@@ -129,19 +133,23 @@ def get_data_fit(path: str, lims: list = [0,None,0,None], hotpx: bool = True, v:
     hotpx : bool, optional
         parameter to remove or not the hot pixels, by default `True`
         It calls the functions `hotpx_remove`
-    v : int, optional
-        cmap parameter, by default `-1` 
-            -  `1` for false colors
-            -  `0` for grayscale
-            - `-1` for reversed grayscale
-    title : str, optional
-        title of the image, by default `''`
-    n : int, optional
-        figure number, by default `None`
-    dim : list[int], optional
-        figure size, by default `[10,7]`
     display_plots : bool, optional
         _description_, by default `True`
+    **kwargs:
+        Parameters for the image
+
+        Properties:
+        * v : int
+            cmap parameter, by default `-1` 
+              -  `1` : false colors
+              -  `0` : grayscale
+              - `-1` : reversed grayscale
+        * title : str
+            title of the image, by default `''`
+        * n : int
+            figure number, by default `None`
+        * dim : list[int]
+            figure size, by default `[10,7]`
 
     Returns
     -------
@@ -175,12 +183,56 @@ def get_data_fit(path: str, lims: list = [0,None,0,None], hotpx: bool = True, v:
     # Spectrum image
     if display_plots == True: 
         from .display import showfits
-        showfits(data, v=v,title=title,n=n,dim=dim) 
+        showfits(data, **kwargs) 
     return hdul, data
 ##*
 
+def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07-27_ohp','23-03-28'], sel_cal: Literal['dark','flat','bias','all'] = 'all') -> list[NDArray | list[NDArray]]:
+    results = []
+    dark = None
+    flat = None
+    bias = None
+    if ch_obs == '17-03-27':
+        calibration, lims = collect_fits(ch_obs,'calibrazione')
+        if sel_cal in ['dark', 'all']:
+            dark = calibration['dark']
+            results += [dark]
+        if sel_cal in ['flat', 'all']:
+            flat = calibration['flat'] 
+            results += [[flat,lims]]
+        if sel_cal in ['bias', 'all']:
+            bias = calibration['bias'] 
+            results += [bias]
+    elif ch_obs == '18-11-27':
+        calibration, lims = collect_fits(ch_obs,'Calibration')
+        if sel_cal in ['flat', 'all']:
+            flat = calibration[0] 
+            results += [[flat, lims]]
+        else: raise Exception(f'No {sel_cal} for this observation')
+    elif ch_obs == '22-07-26_ohp':
+        calibration, lims = collect_fits(ch_obs,'giove')
+        if sel_cal in ['flat', 'all']:
+            flat = calibration[-1] 
+            results += [[flat, lims[-1]]]
+        else: raise Exception(f'No {sel_cal} for this observation')
+    elif ch_obs == '22-07-27_ohp':
+        calibration, lims = collect_fits(ch_obs,'arturo')
+        if sel_cal in ['flat', 'all']:
+            flat = calibration[-1] 
+            results += [[flat, lims[-1]]]
+        else: raise Exception(f'No {sel_cal} for this observation')
+    elif ch_obs == '23-03-28':
+        calibration, lims = collect_fits(ch_obs,'Calibration')
+        if sel_cal == 'bias': raise Exception(f'No {sel_cal} for this observation')
+        if sel_cal in ['dark', 'all']:
+            dark = calibration['dark'] 
+            results += [dark]
+        if sel_cal in ['flat', 'all']:
+            flat = calibration['flat'] 
+            results += [[flat, lims]]
+    return results
 
-def extract_data(ch_obs: int, ch_obj: str, sel: list[str] | str = 'all') -> list[str]:
+def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], sel: list[str] | str = 'all') -> list[str]:
     """Collecting data from data files.
     
     Parameters
@@ -205,8 +257,16 @@ def extract_data(ch_obs: int, ch_obj: str, sel: list[str] | str = 'all') -> list
     edges of the images. 
 
     """
+    obj, lims = collect_fits(ch_obs, ch_obj)
+    if ch_obs in NIGHTS[:2]:
+        obj_fit, lims_fit = obj[0], lims[:-1]
+        if ch_obj != 'Aldebaran':
+            obj_lamp, lims_lamp = obj[1], lims[-1]
+        else:
+            obj_lamp, lims_lamp = None, None
+
     # only for the first two observation nights Alpy was used
-    if ch_obs < 2:
+    elif ch_obs < 2:
         # extracting informations
         obj, lims = collect_fits(ch_obs, ch_obj)
         # collecting in different variables
