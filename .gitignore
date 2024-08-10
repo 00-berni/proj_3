@@ -16,3 +16,5 @@ venv/**
 
 # result files
 **/*results.txt
+
+*.zip
