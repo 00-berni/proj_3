@@ -258,10 +258,9 @@
             ],
             "lamp_venus"
         ],
-        "Calibration":[
-            "Flat",
-            "psf_guide"
-        ]
+        "Calibration":
+            "Flat"
+        
     },
     "22-07-26_ohp":{
         "betaLyr":[
@@ -274,8 +273,7 @@
         ],
         "giove":[
             "giove_alpy_26072022_0116",
-            "giove_lamp_alpy_26072022",
-            "giove_flat_alpy_26072022"
+            "giove_lamp_alpy_26072022"
         ],
         "luna":[
             [
@@ -312,7 +310,9 @@
         "wr137": [
             "wr137_alpy_26072022_0427",
             "wr137_alpy_lamp_26072022_0427"
-        ]
+        ],
+        "Calibration": 
+            "giove_flat_alpy_26072022"
     },
     "22-07-27_ohp":{
         "antares": [
@@ -321,8 +321,7 @@
         ],
         "arturo": [
             "arturo_alpy_26072022_2239",
-            "arturo_alpy_lamp_26072022_2239",
-            "arturo_alpy_flat_26072022_2239"
+            "arturo_alpy_lamp_26072022_2239"            
         ],
         "chcygni": [
             [
@@ -333,7 +332,9 @@
                 "chcygni-004"
             ],
             "chcygni_alpy_lamp_27072022_0258"
-        ]
+        ],
+        "Calibration": 
+            "arturo_alpy_flat_26072022_2239"
     },
     "23-03-28":{
         "Aldebaran":[
