@@ -35,10 +35,12 @@ class Spectrum():
     def empty():
         return Spectrum([],[],[],False)
 
-    def __init__(self, hdul: HDUList | Sequence[HDUList] | None, data: NDArray | None, lims: NDArray | None, hotpx: bool = True) -> None:
+    def __init__(self, hdul: HDUList | Sequence[HDUList] | None, data: NDArray | None, lims: NDArray | None, hotpx: bool = True, name: str = '') -> None:
+        self.name = name
         self.hdul = hdul
         self.data = hotpx_remove(data) if hotpx else data 
         self.lims = lims
+        self.spec = None
 
     def print_header(self) -> None:
         # print header
