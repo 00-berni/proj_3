@@ -59,7 +59,7 @@ def fastplot(x: NDArray, y: NDArray, numfig: int = None, fmt: str = '-', title: 
 
 
 ##*
-def showfits(data: NDArray, v: int = -1, title: str = '', n: int = None, dim: list[int] = [10,7]) -> None:
+def showfits(data: NDArray, v: int = -1, title: str = '', subtitle: str = '', n: int = None, dim: list[int] = [10,7]) -> None:
     """Function to display the fits image.
     You can display simply the image or set a figure number and a title.
 
@@ -80,7 +80,8 @@ def showfits(data: NDArray, v: int = -1, title: str = '', n: int = None, dim: li
         figure size, by default `[10,7]`
     """
     plt.figure(n,figsize=dim)
-    plt.title(title)
+    plt.suptitle(title, fontsize=20)
+    plt.title(subtitle, fontsize=18)
     if v == 1 : color = 'viridis'
     elif v == 0 : color = 'gray'
     else : color = 'gray_r'
