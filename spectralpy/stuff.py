@@ -24,12 +24,54 @@ STUFF PACKAGE
 import numpy as np
 from numpy.typing import NDArray
 from scipy import ndimage
-from typing import Callable
+from typing import Callable, Sequence
 from .display import fastplot
+from astropy.io.fits import HDUList
+
+
+class Spectrum():
+    
+    @staticmethod
+    def empty():
+        return Spectrum([],[],[],False)
+
+    def __init__(self, hdul: HDUList | Sequence[HDUList] | None, data: NDArray | None, lims: NDArray | None, hotpx: bool = True) -> None:
+        self.hdul = hdul
+        self.data = hotpx_remove(data) if hotpx else data 
+        self.lims = lims
+
+    def print_header(self) -> None:
+        # print header
+        hdr = self.hdul[0].header
+        print(' - HEADER -')
+        for parameter in hdr:
+            hdr_info = f'{parameter} =\t{hdr[parameter]}' 
+            comm = hdr.comments[parameter]
+            if comm != '': hdr_info = hdr_info + ' \ ' + comm 
+            print(hdr_info)
+        print()
+    
+    def get_exposure(self) -> float:
+        header = self.hdul[0].header
+        return header['EXPOSURE']
+    
+    def copy(self):
+        target = Spectrum(self.hdul, self.data, self.lims, hotpx=False)
+        return target
 
 
 # definition of function type to use in docstring of functions
 FUNC_TYPE = type(abs)
+
+def make_cut_indicies(file_path: str, lines_num: int) -> NDArray:
+    cut = np.array([[0,-1,0,-1]]*lines_num,dtype=int)
+    content = "#\tThe section of image to display\n#\n#\tThe first row is for the target acquisition\n#\tThe last one is for the lamp\n#\n#yl\tyu\txl\txu"
+    for line in cut.astype(str):
+        content = content + '\n' + '\t'.join(line)
+    f = open(file_path, "w")
+    f.write(content)
+    f.close()
+    return cut
 
 def hotpx_remove(data: NDArray) -> NDArray:
     """Removing hot pixels from the image
