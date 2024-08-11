@@ -2,13 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 # from .spectralpy import data
 from spectralpy.calcorr import calibrated_spectrum, lamp_corr
-from spectralpy.display import fastplot            
+from spectralpy.display import fastplot, showfits            
 import spectralpy.data as spdata
 
 if __name__ == '__main__':
     from spectralpy.data import NIGHTS
     target, lamp = spdata.extract_data(NIGHTS[0],'Pleione',selection=1,display_plots=True)
-    
+    results = spdata.extract_cal_data(NIGHTS[1], 'flat')
+    print(results)
+    showfits(results[0].data)
+    plt.show()
 
     # ### DATA
     # display_plots = False
