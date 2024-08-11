@@ -222,7 +222,7 @@ def get_data(ch_obj: str, obj_fit: str, lims_fit: list[int | None] = [None,None,
         plt.show()
     return target, angle
 
-def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07-27_ohp','23-03-28'], sel_cal: Literal['dark','flat','bias','all'] = 'all') -> list[NDArray | list[NDArray]]:
+def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07-27_ohp','23-03-28'], sel_cal: Literal['dark','flat','bias','all'] = 'all', angle: float | None = 0) -> list[NDArray | list[NDArray]]:
     results = []
     dark = None
     flat = None
@@ -230,14 +230,36 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
     if ch_obs == '17-03-27':
         calibration, lims = collect_fits(ch_obs,'calibrazione')
         if sel_cal in ['dark', 'all']:
+            mean_dark = Spectrum.empty()
             dark = calibration['dark']
-            results += [dark]
+            for d in dark:
+                d = data_file_path(ch_obs,'calibrazione',d)
+                tmp, angle = get_data('dark', d, angle=angle) 
+                mean_dark.hdul += [tmp.hdul]
+                mean_dark.data += [tmp.data]
+            mean_dark.data = np.mean(mean_dark.data,axis=0)
+            results += [mean_dark]
         if sel_cal in ['flat', 'all']:
+            mean_flat = Spectrum.empty()
             flat = calibration['flat'] 
-            results += [[flat,lims]]
+            for f in flat:
+                f = data_file_path(ch_obs,'calibrazione',f)
+                tmp, angle = get_data('flat', f, lims_fit=lims, angle=angle) 
+                mean_flat.hdul += [tmp.hdul]
+                mean_flat.data += [tmp.data]
+                mean_flat.lims = lims
+            mean_flat.data = np.mean(mean_flat.data,axis=0)
+            results += [mean_flat]
         if sel_cal in ['bias', 'all']:
+            master_bias = Spectrum.empty() 
             bias = calibration['bias'] 
-            results += [bias]
+            for d in dark:
+                d = data_file_path(ch_obs,'calibrazione',d)
+                tmp, angle = get_data('dark', d, angle=angle) 
+                master_bias.hdul += [tmp.hdul]
+                master_bias.data += [tmp.data]
+            master_bias.data = np.mean(master_bias.data,axis=0)
+            results += [master_bias]
     elif ch_obs in ['18-11-27','22-07-26_ohp','22-07-27_ohp']:
         calibration, lims = collect_fits(ch_obs,'Calibration')
         if sel_cal in ['flat', 'all']:
