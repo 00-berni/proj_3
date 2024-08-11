@@ -1,0 +1,83 @@
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/16-08-26/Pleione/pleione-002.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      33   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2016-08-26T23:55:44 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	5.0 \ Exposure time in seconds
+EXPOSURE =	5.0 \ Exposure time in seconds
+SET-TEMP =	-25.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-3.5999999046325684 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Light Frame \ Type of image
+JD =	2457627.497037037 \ Julian Date at start of exposure
+FOCALLEN =	0.0 \ Focal length of telescope in mm
+APTDIA =	0.0 \ Aperture diameter of telescope in mm
+APTAREA =	0.0 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.24 131112 123C8 \ Name of software that created
+ =	 the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	pleione
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	MaxIm DL \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/16-08-26/Pleione/pleione_lamp.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      40   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2016-08-27T00:24:57 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	20.0 \ Exposure time in seconds
+EXPOSURE =	20.0 \ Exposure time in seconds
+SET-TEMP =	-25.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-3.700000047683716 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Light Frame \ Type of image
+JD =	2457627.517326389 \ Julian Date at start of exposure
+FOCALLEN =	0.0 \ Focal length of telescope in mm
+APTDIA =	0.0 \ Aperture diameter of telescope in mm
+APTAREA =	0.0 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.24 131112 123C8 \ Name of software that created
+ =	 the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+ANMISCH =	1 arc sec
+ANMISLE =	400
+ANMISLG =	1
+ANM00000 =	"<Measurements version=%221%22></Measurements>"
+CBLACK =	2311 \ Initial display black level in ADUs
+CWHITE =	18089 \ Initial display white level in ADUs
+PEDESTAL =	0 \ Correction to add for zero-based ADU
+SWOWNER =	MaxIm DL \ Licensed owner of software
+
