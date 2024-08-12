@@ -54,7 +54,7 @@ def data_extraction(path_file: str) -> dict:
 
 
 NIGHTS = ('16-08-26','17-03-27','18-04-22','18-11-27',
-          '22-07-26_ohp','22-07-26_ohp','23-03-28')         #: nights of observation
+          '22-07-26_ohp','22-07-27_ohp','23-03-28')         #: nights of observation
 PWD = os.path.dirname(os.path.realpath(__file__))           #: path of the current dir
 PROJECT_DIR = os.path.split(PWD)[0]                         #: path of the project dir
 DATA_DIR = os.path.join(PROJECT_DIR, 'data_files')          #: path of the data dir
@@ -90,7 +90,8 @@ def collect_fits(night: str, obj: str) -> tuple[NDArray, ArrayLike]:
         cut = np.loadtxt(lims_path, dtype=int, unpack=False)
         cut = np.where(cut == -1, None, cut)
     except:
-        cut = make_cut_indicies(lims_path,len(extracted[0])+1)
+        numlines = len(extracted[0])+1 if isinstance(extracted[0],list) else 2
+        cut = make_cut_indicies(lims_path,numlines)
     return extracted, cut
 
 def data_file_path(night: str, obj: str, data_file: str) -> str:
@@ -149,6 +150,7 @@ def get_data_fit(path: str, lims: Sequence[int | None] = [0,None,0,None], hotpx:
     # data extraction
     #.. format -> data[Y,X]
     data = hdul[0].data
+    if len(lims) == 1: lims = lims[0]
     ly,ry,lx,rx = lims
     # cut the image
     data = data[ly:ry,lx:rx]
@@ -200,7 +202,7 @@ def get_data(ch_obj: str, obj_fit: str, lims_fit: list[int | None] = [None,None,
     angle, target.data = angle_correction(target.data, angle=angle, display_plots=display_plots)
     # display the target image
     if display_plots == True:
-        showfits(target.data, title='Rotated image', subtitle=ch_obj+f', exp. time: {target.get_exposure()} s', n=2)
+        showfits(target.data, title='Rotated image', subtitle=ch_obj+f', exp. time: {target.get_exposure()} s', n=4)
         plt.show()
     return target, angle
 
@@ -295,7 +297,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             mean_dark = Spectrum.empty()
             dark = calibration['dark'] 
             for d in dark:
-                d = data_file_path(ch_obs,'calibrazione',d)
+                d = data_file_path(ch_obs,'Calibration',d)
                 tmp, angle = get_data('dark', d, angle=angle) 
                 mean_dark.hdul += [tmp.hdul]
                 mean_dark.data += [tmp.data]
@@ -307,7 +309,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             mean_flat = Spectrum.empty()
             flat = calibration['flat'] 
             for (f, lim) in zip(flat,lims):
-                f = data_file_path(ch_obs,'calibrazione',f)
+                f = data_file_path(ch_obs,'Calibration',f)
                 tmp, angle = get_data('flat', f, lims_fit=lim, angle=angle) 
                 mean_flat.hdul += [tmp.hdul]
                 mean_flat.data += [tmp.data]
@@ -364,7 +366,7 @@ def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], ang
         # collect info of the target and the lamp
         obj_fit, lims_fit = obj[0], lims[:-1]
         obj_lamp, lims_lamp = obj[1], lims[-1]
-
+        print(lims_fit,lims_lamp)
     ## Data
     # collect the target data
     if isinstance(obj_fit, list):
@@ -389,4 +391,22 @@ def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], ang
     if obj_lamp is not None:
         obj_lamp = data_file_path(ch_obs, ch_obj, obj_lamp)
         lamp, angle = get_data(ch_obj,obj_lamp,lims_lamp,angle=angle,display_plots=display_plots,**kwargs)
+    else: 
+        lamp = Spectrum.empty()
     return target, lamp       
+
+def quick_view(ch_obs: str, ch_obj: str, selection: int | Literal['mean'],**kwargs) -> None:
+    if ch_obj in ['dark','flat','bias','all']:
+        results = extract_cal_data(ch_obs,sel_cal=ch_obj)
+        for obj in results:
+            obj = obj.data
+            plt.figure(1)
+            showfits(obj,n=1,**kwargs)
+            plt.show()
+    else:
+        results = extract_data(ch_obs,ch_obj,selection,display_plots=False)
+        for obj in results:
+            obj = obj.hdul[0].data
+            plt.figure(1)
+            showfits(obj,n=1,**kwargs)
+            plt.show()
