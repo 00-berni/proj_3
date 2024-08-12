@@ -32,7 +32,7 @@ from typing import Sequence, Literal
 
 
 def data_extraction(path_file: str) -> dict:
-    """Extracting data from a .json file
+    """To extract data from a .json file
 
     Parameters
     ----------
@@ -64,7 +64,7 @@ OBJ_FILE = os.path.join(DATA_DIR, 'objs_per_night.json')    #: path of file with
 DATA_ALL = data_extraction(OBJ_FILE)                        #: dictionary with the targets per night
 
 def collect_fits(night: str, obj: str) -> tuple[NDArray, ArrayLike]:
-    """Collecting data fits for a chosen night observation and object.
+    """To collect data fits for a chosen night observation and object.
 
     Parameters
     ----------
@@ -94,7 +94,7 @@ def collect_fits(night: str, obj: str) -> tuple[NDArray, ArrayLike]:
     return extracted, cut
 
 def data_file_path(night: str, obj: str, data_file: str) -> str:
-    """ Compute the exact path of a fits file
+    """To compute the exact path of a fits file
 
     Parameters
     ----------
@@ -114,7 +114,7 @@ def data_file_path(night: str, obj: str, data_file: str) -> str:
 
 ##* 
 def get_data_fit(path: str, lims: Sequence[int | None] = [0,None,0,None], hotpx: bool = True, display_plots: bool = True, **kwargs) -> Spectrum:
-    """Function to open fits file and extract data.
+    """To open fits file and extract data.
 
     Parameters
     ----------
@@ -165,7 +165,7 @@ def get_data_fit(path: str, lims: Sequence[int | None] = [0,None,0,None], hotpx:
 ##*
 
 def get_data(ch_obj: str, obj_fit: str, lims_fit: list[int | None] = [None,None,None,None] , angle: float | None = None, display_plots: bool = False) -> tuple[Spectrum, float]:
-    """Extracting the fits data
+    """To extract the fits data
   
     Parameters
     ----------
@@ -177,7 +177,8 @@ def get_data(ch_obj: str, obj_fit: str, lims_fit: list[int | None] = [None,None,
         extrema of the image, by default `[None,None,None,None]`
     angle : float | None, optional
         the inclination angle to rotate the image, by default `None`
-        If it is `None` it will be estimated, see `stuff.angle_correction()`
+        If `angle is None` then the value is estimated by a 
+        fitting rountine, see `stuff.angle_correction()`
     display_plots : bool, optional
         parameter to plot data, by default `True`
    
@@ -214,7 +215,9 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
         selected kind of calibration file, by default 'all'
         If `sel_cal == 'all'` function returns all possible files
     angle : float | None, optional
-        inclination angle of the slit, by default 0
+        inclination angle of the slit, by default `0`
+        If `angle is None` then the value is estimated by a 
+        fitting rountine, see `stuff.angle_correction()`
 
     Returns
     -------
@@ -317,58 +320,72 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
 
 
 def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = 0, display_plots: bool = True, **kwargs) -> tuple[Spectrum, Spectrum]:
-    """Collecting data from data files.
+    """To get data of target and calibration lamp spectrum.
     
     Parameters
     ----------
-    ch_obs : int
+    ch_obs : str
         chosen obeservation night
     ch_obj : str
-        chosen object name
-    sel : list[str] | str, optional
-        _description_, by default 'all'
+        chosen target name
+    selection : int | Literal['mean']
+        if there are more than one acquisition it is possible to select 
+        one of them (`selection` is the number of the chosen acquisition)
+        or to average on them (`selection == 'mean'`) 
+    angle : float | None, optional
+        inclination angle of the slit, by default `0`
+        If `angle is None` then the value is estimated by a 
+        fitting rountine, see `stuff.angle_correction()`
+    display_plots : bool, optional
+        parameter to plot data, by default `True`
 
     Returns
     -------
-    data : list[str]
-        the list with paths and extrema
+    target : Spectrum
+        information of the target spectrum
+    lamp : Spectrum
+        information of the calibration lamp spectrum
     
-    Notes
-    -----
-    Given a selected observation night and object, the function 
-    returns both the paths of the target and the calibration lamp
-    (also the flat if any) and the corrisponding values for the 
-    edges of the images. 
-
     """
+    ## Paths
+    # get the information about the paths
     obj, lims = collect_fits(ch_obs, ch_obj)
+    # each observation night has different ways of acquisition
     if ch_obs in NIGHTS[:4]:
+        # collect info of the target
         obj_fit, lims_fit = obj[0], lims[:-1]
+        # Aldebaran has no lamp data
         if ch_obj != 'Aldebaran':
+            # collect info of the lamp
             obj_lamp, lims_lamp = obj[1], lims[-1]
         else:
             obj_lamp, lims_lamp = None, None
-    # only for the first two observation nights Alpy was used
     elif ch_obs in NIGHTS[4:]:
-        # collecting in different variables
+        # collect info of the target and the lamp
         obj_fit, lims_fit = obj[0], lims[:-1]
         obj_lamp, lims_lamp = obj[1], lims[-1]
 
-    # appending the path
-    if isinstance(selection, int):
-        obj_fit, lims_fit = obj_fit[selection], lims_fit[selection]
+    ## Data
+    # collect the target data
+    if isinstance(obj_fit, list):
+        # for more acquisitions it is possible to select one or average on all
+        if isinstance(selection, int):
+            obj_fit, lims_fit = obj_fit[selection], lims_fit[selection]
+            obj_fit = data_file_path(ch_obs, ch_obj, obj_fit)
+            target, angle = get_data(ch_obj,obj_fit,lims_fit,angle=angle,display_plots=display_plots,**kwargs)
+        elif selection == 'mean':
+            target = Spectrum.empty()
+            for (fit, lim) in zip(obj_fit, lims_fit):
+                fit = data_file_path(ch_obs, ch_obj, fit)
+                tmp, angle = get_data(ch_obj,fit,lim,angle=angle,display_plots=display_plots,**kwargs)
+                target.hdul += [tmp.hdul]
+                target.data += [tmp.data]
+                target.lims = lim
+            target.data = np.mean(target.data, axis=0)
+    else:
         obj_fit = data_file_path(ch_obs, ch_obj, obj_fit)
         target, angle = get_data(ch_obj,obj_fit,lims_fit,angle=angle,display_plots=display_plots,**kwargs)
-    elif selection == 'mean':
-        target = Spectrum.empty()
-        for (fit, lim) in zip(obj_fit, lims_fit):
-            fit = data_file_path(ch_obs, ch_obj, fit)
-            tmp, angle = get_data(ch_obj,fit,lim,angle=angle,display_plots=display_plots,**kwargs)
-            target.hdul += [tmp.hdul]
-            target.data += [tmp.data]
-            target.lims = lim
-        target.data = np.mean(target.data, axis=0)
-
+    # collect the lamp data, if any
     if obj_lamp is not None:
         obj_lamp = data_file_path(ch_obs, ch_obj, obj_lamp)
         lamp, angle = get_data(ch_obj,obj_lamp,lims_lamp,angle=angle,display_plots=display_plots,**kwargs)
