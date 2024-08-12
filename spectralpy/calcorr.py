@@ -25,7 +25,7 @@ from numpy.typing import NDArray
 from typing import Callable
 from scipy import odr
 from .display import *
-from .stuff import angle_correction, fit_routine
+from .stuff import angle_correction
 from .data import get_data_fit, extract_data, get_data
 
 
