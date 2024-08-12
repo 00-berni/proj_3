@@ -1,0 +1,9 @@
+#	The section of image to display
+#
+#	The first row is for the target acquisition
+#	The last one is for the lamp
+#
+#yl	yu	xl	xu
+0	-1	0	-1
+0	-1	0	-1
+0	-1	0	-1
