@@ -24,10 +24,10 @@ STUFF PACKAGE
 import numpy as np
 from numpy.typing import NDArray
 from scipy import ndimage
-from typing import Callable, Sequence
+from typing import Callable, Sequence, Any
 from .display import fastplot
 from astropy.io.fits import HDUList
-
+import matplotlib.pyplot as plt
 
 class Spectrum():
     
@@ -61,12 +61,171 @@ class Spectrum():
         target = Spectrum(self.hdul, self.data, self.lims, hotpx=False)
         return target
 
+class FuncFit():
+    """To compute the fit procedure of some data
 
-# definition of function type to use in docstring of functions
-FUNC_TYPE = type(abs)
+    Attributes
+    ----------
+    data : list[NDArray | None]
+        the x and y data and (if there are) their uncertanties
+    fit_par : NDArray | None
+        fit estimated parameters
+    fit_err : NDArray | None
+        uncertanties of `fit_par`
+    res : dict
+        it collects all the results
+
+    Examples
+    --------
+    Simple use:
+    >>> def lin_fun(x,m,q):
+    ...     return m*x + q
+    >>> initial_values = [1,1]
+    >>> fit = FuncFit(xdata=xfit, ydata=yfit, yerr=yerr)
+    >>> fit.pipeline(lin_fun, initial_values, names=['m','q'])
+    Fit results:
+        m = 3 +- 1
+        q = 0.31 +- 0.02
+        red_chi = 80 +- 5 %
+    >>> pop, Dpop = fit.results()
+
+    A method provides the gaussian fit:
+    >>> fit = FuncFit(xdata=xfit, ydata=yfit, yerr=errfit)
+    >>> fit.gaussian_fit(initial_values, names=['k','mu','sigma'])
+    Fit results:
+        k = 10 +- 1
+        mu = 0.01 +- 0.003
+        sigma = 0.20 +- 0.01
+        red_chi = 72 +- 15 %
+    """
+    def __init__(self, xdata: Any, ydata: Any, yerr: Any = None, xerr: Any = None) -> None:
+        """Constructor of the class
+
+        Parameters
+        ----------
+        xdata : Any
+            x data points
+        ydata : Any
+            y data points
+        yerr : Any, default None
+            if there is, the uncertainties of `ydata` 
+        xerr : Any, default None
+            if there is, the uncertainties of `xdata` 
+        """
+        self.data = [xdata, ydata, yerr, xerr]
+        self.fit_par: NDArray | None = None
+        self.fit_err: NDArray | None = None
+        self.res = {}
+
+
+    def fit(self, method: Callable[[Any,Any],Any], initial_values: Sequence[Any],**kwargs) -> None:
+        """To compute the fit
+
+        Parameters
+        ----------
+        method : Callable[[Any,Any],Any]
+            the fit function
+        initial_values : Sequence[Any]
+            initial values
+        """
+        # importing the function
+        xdata, ydata = self.data[:2]
+        sigma = self.data[2]
+        Dx = self.data[3]
+        self.res['func'] = method
+        from scipy import odr
+        def fit_model(pars, x):
+            return method(x, *pars)
+        model = odr.Model(fit_model)
+        data = odr.RealData(xdata,ydata,sx=Dx,sy=sigma)
+        alg = odr.ODR(data, model, beta0=initial_values)
+        out = alg.run()
+        pop = out.beta
+        pcov = out.cov_beta
+
+        # computing the fit
+        # from scipy.optimize import curve_fit
+        # pop, pcov = curve_fit(method, xdata, ydata, initial_values, sigma=sigma,**kwargs)
+        # extracting the errors
+        Dpop = np.sqrt(pcov.diagonal())
+        self.fit_par = pop
+        self.fit_err = Dpop
+        self.res['cov'] = pcov
+        # if sigma is not None:
+        #     # evaluating function in `xdata`
+        #     fit = method(xdata,*pop)
+        #     # computing chi squared
+        #     chisq = (((ydata-fit)/sigma)**2).sum()
+        #     chi0 = len(ydata) - len(pop)
+        #     self.res['chisq'] = (chisq, chi0)
+        if sigma is not None or Dx is not None:
+            chisq = out.sum_square
+            chi0 = len(ydata) - len(pop)
+            self.res['chisq'] = (chisq, chi0)
+    
+    def infos(self, names: list[str] | None = None) -> None:
+        """To plot information about the fit
+
+        Parameters
+        ----------
+        names : list[str] | None, default None
+            list of fit parameters names
+        """
+        pop  = self.fit_par
+        Dpop = self.fit_err
+        print('\nFit results:')
+        if names is None:
+            names = [f'par{i}' for i in range(len(pop))]
+        for name, par, Dpar in zip(names,pop,Dpop):
+            print(f'\t{name}: {par:.2} +- {Dpar:.2}')
+        if 'chisq' in self.res:
+            chisq, chi0 = self.res['chisq']
+            print(f'\tred_chi = {chisq/chi0*100:.2f} +- {np.sqrt(2/chi0)*100:.2f} %')
+
+    def results(self) -> tuple[NDArray, NDArray] | tuple[None, None]:
+        return self.fit_par, self.fit_err
+
+    def pipeline(self,method: Callable[[Any,Any],Any], initial_values: Sequence[Any], names: list[str] | None = None,**kwargs) -> None:
+        self.fit(method=method,initial_values=initial_values,**kwargs)
+        self.infos(names=names)
+    
+    def gaussian_fit(self, initial_values: Sequence[Any], names: list[str] | None = None,**kwargs) -> None:
+        """_summary_
+
+        Parameters
+        ----------
+        intial_values : Sequence[Any]
+            k, mu, sigma
+        names : list[str] | None, optional
+            names, by default None
+        """
+        def gauss_func(data: float | NDArray, *args) -> float | NDArray:
+            k, mu, sigma = args
+            z = (data - mu) / sigma
+            return k * np.exp(-z**2/2)
+
+        if names is None: 
+            names = ['k','mu','sigma']
+        self.pipeline(method=gauss_func,initial_values=initial_values,names=names,**kwargs)
+
 
 def make_cut_indicies(file_path: str, lines_num: int) -> NDArray:
-    cut = np.array([[0,-1,0,-1]]*lines_num,dtype=int)
+    """To make a `cut_indicies.txt` file when it is not
+
+    Parameters
+    ----------
+    file_path : str
+        path of the chosen target directory
+    lines_num : int
+        number of acquisitions fot that target
+
+    Returns
+    -------
+    cut : NDArray
+        array of the edges of each acquisition 
+    """
+    cut = np.array([[0,-1,0,-1]]*lines_num,dtype=int)   #: array of the edges of each acquisition
+    # compute the string to print in the file
     content = "#\tThe section of image to display\n#\n#\tThe first row is for the target acquisition\n#\tThe last one is for the lamp\n#\n#yl\tyu\txl\txu"
     for line in cut.astype(str):
         content = content + '\n' + '\t'.join(line)
@@ -76,7 +235,7 @@ def make_cut_indicies(file_path: str, lines_num: int) -> NDArray:
     return cut
 
 def hotpx_remove(data: NDArray) -> NDArray:
-    """Removing hot pixels from the image
+    """To remove hot pixels from the image
 
     Parameters
     ----------
@@ -90,124 +249,121 @@ def hotpx_remove(data: NDArray) -> NDArray:
     
     Notes
     -----
-    The function replacing `NaN` values from the image if there are.
+    The function replacing `NaN` values from the image, if there are.
     I did not implement this function, I took it from [*astropy documentation*](https://docs.astropy.org/en/stable/convolution/index.html)
 
     """
     from astropy.convolution import Gaussian2DKernel, interpolate_replace_nans
-    # checking the presence of `NaNs`
+    # check the presence of `NaNs`
     if True in np.isnan(data):
-        # building a gaussian kernel for the interpolation
+        # build a gaussian kernel for the interpolation
         kernel = Gaussian2DKernel(x_stddev=1)
-        # removing the `NaNs`
+        # remove the `NaNs`
         data = interpolate_replace_nans(data, kernel)
     return data
 
 
-def fit_routine(xdata: NDArray, ydata: NDArray, initial_values: list[float], fit_func: Callable[[NDArray],NDArray], xerr: NDArray | float | int | None = None, yerr: NDArray | float | None = None, iter: int | None = None, return_res: list[str] | tuple[str] | None = None, display_res: bool = False) -> list[NDArray]:
-    """_summary_
+# def fit_routine(xdata: NDArray, ydata: NDArray, initial_values: list[float], fit_func: Callable[[NDArray],NDArray], xerr: NDArray | float | int | None = None, yerr: NDArray | float | None = None, iter: int | None = None, return_res: list[str] | tuple[str] | None = None, display_res: bool = False) -> list[NDArray]:
+#     """_summary_
 
-    Parameters
-    ----------
-    xdata : NDArray
-        _description_
-    ydata : NDArray
-        _description_
-    initial_values : list[float]
-        _description_
-    fit_func : Callable[[NDArray],NDArray]
-        _description_
-    xerr : NDArray | float | int | None, optional
-        _description_, by default None
-    yerr : NDArray | float | None, optional
-        _description_, by default None
-    iter : int | None, optional
-        _description_, by default None
-    return_res : list[str] | tuple[str] | None, optional
-        _description_, by default None
-    display_res : bool, optional
-        _description_, by default False
+#     Parameters
+#     ----------
+#     xdata : NDArray
+#         _description_
+#     ydata : NDArray
+#         _description_
+#     initial_values : list[float]
+#         _description_
+#     fit_func : Callable[[NDArray],NDArray]
+#         _description_
+#     xerr : NDArray | float | int | None, optional
+#         _description_, by default None
+#     yerr : NDArray | float | None, optional
+#         _description_, by default None
+#     iter : int | None, optional
+#         _description_, by default None
+#     return_res : list[str] | tuple[str] | None, optional
+#         _description_, by default None
+#     display_res : bool, optional
+#         _description_, by default False
 
-    Returns
-    -------
-    list[NDArray]
-        _description_
-    """
-    if isinstance(xerr,(float,int)):
-        xerr = np.full(xdata.shape,xerr)
-    if isinstance(yerr,(float,int)):
-        yerr = np.full(ydata.shape,yerr)
+#     Returns
+#     -------
+#     list[NDArray]
+#         _description_
+#     """
+#     if isinstance(xerr,(float,int)):
+#         xerr = np.full(xdata.shape,xerr)
+#     if isinstance(yerr,(float,int)):
+#         yerr = np.full(ydata.shape,yerr)
 
-    if xerr is not None:
-        from scipy import odr
-        data = odr.RealData(xdata,ydata,sx=xerr,sy=yerr)
-        model = odr.Model(fit_func)
-        fit = odr.ODR(data,model,beta0=initial_values)
-        out = fit.run()
-        pop = out.beta
-        pcov = out.cov_beta
-        perr = np.sqrt(pcov.diagonal())
-        chisq = out.sum_square
-        free = len(xdata) - len(pop)
+#     if xerr is not None:
+#         from scipy import odr
+#         data = odr.RealData(xdata,ydata,sx=xerr,sy=yerr)
+#         model = odr.Model(fit_func)
+#         fit = odr.ODR(data,model,beta0=initial_values)
+#         out = fit.run()
+#         pop = out.beta
+#         pcov = out.cov_beta
+#         perr = np.sqrt(pcov.diagonal())
+#         chisq = out.sum_square
+#         free = len(xdata) - len(pop)
 
-        results = [pop,perr]
-        if return_res is not None:
-            if 'pcov' in return_res:
-                results += [pcov]
-            if 'chisq' in return_res:
-                results += [chisq]
-            if 'free' in return_res:
-                results += [free]
-            if 'out' in return_res:
-                results += [out]
-            if 'fit' in return_res:
-                results += [fit]
+#         results = [pop,perr]
+#         if return_res is not None:
+#             if 'pcov' in return_res:
+#                 results += [pcov]
+#             if 'chisq' in return_res:
+#                 results += [chisq]
+#             if 'free' in return_res:
+#                 results += [free]
+#             if 'out' in return_res:
+#                 results += [out]
+#             if 'fit' in return_res:
+#                 results += [fit]
         
-    else:
-        if iter is None:
-            iter = 2
-        from scipy.optimize import curve_fit
-        pop, pcov = curve_fit(fit_func,xdata,ydata,initial_values)
-        for i in range(iter):
-            initial_values = pop
-            pop, pcov = curve_fit(fit_func,xdata,ydata,initial_values,sigma=yerr)
-        perr = np.sqrt(pcov.diagonal())
-        chisq = (((ydata-fit_func(xdata,*pop))/yerr)**2).sum()
-        free = len(xdata) - len(pop)
+#     else:
+#         if iter is None:
+#             iter = 2
+#         from scipy.optimize import curve_fit
+#         pop, pcov = curve_fit(fit_func,xdata,ydata,initial_values)
+#         for i in range(iter):
+#             initial_values = pop
+#             pop, pcov = curve_fit(fit_func,xdata,ydata,initial_values,sigma=yerr)
+#         perr = np.sqrt(pcov.diagonal())
+#         chisq = (((ydata-fit_func(xdata,*pop))/yerr)**2).sum()
+#         free = len(xdata) - len(pop)
         
-        results = [pop,perr]
-        if return_res is not None:
-            if 'pcov' in return_res:
-                results += [pcov]
-            if 'chisq' in return_res:
-                results += [chisq]
-            if 'free' in return_res:
-                results += [free]
+#         results = [pop,perr]
+#         if return_res is not None:
+#             if 'pcov' in return_res:
+#                 results += [pcov]
+#             if 'chisq' in return_res:
+#                 results += [chisq]
+#             if 'free' in return_res:
+#                 results += [free]
 
 
-    if display_res:
+#     if display_res:
 
-        str_res = '\n'.join([f'p{i} = {pop[i]:e} +- {perr[i]:e}\t-> {perr[i]/pop[i]*100:.2f} %' for i in range(len(pop))])
-        if len(pop) > 1:
-            str_corr = []
-            for i in range(pcov.shape[0]):
-                str_corr += [f'corr_{i}{j} =\t {pcov[i,j]/np.sqrt(pcov[i,i]*pcov[j,j])*100:.2f} %' for j in range(i+1,pcov.shape[1])]
-            str_corr = '\n'.join(str_corr)
-            str_res += '\n' + str_corr
+#         str_res = '\n'.join([f'p{i} = {pop[i]:e} +- {perr[i]:e}\t-> {perr[i]/pop[i]*100:.2f} %' for i in range(len(pop))])
+#         if len(pop) > 1:
+#             str_corr = []
+#             for i in range(pcov.shape[0]):
+#                 str_corr += [f'corr_{i}{j} =\t {pcov[i,j]/np.sqrt(pcov[i,i]*pcov[j,j])*100:.2f} %' for j in range(i+1,pcov.shape[1])]
+#             str_corr = '\n'.join(str_corr)
+#             str_res += '\n' + str_corr
         
-        print('\n--- Results of the fit ---\n' + str_res + f'\n\u03C7\u00b2_red =\t{chisq/free:.2f} +- {np.sqrt(2/free):.2f}\n----------------------\n')
+#         print('\n--- Results of the fit ---\n' + str_res + f'\n\u03C7\u00b2_red =\t{chisq/free:.2f} +- {np.sqrt(2/free):.2f}\n----------------------\n')
 
-    return results
+#     return results
 
 
 
 
 def angle_correction(data: NDArray, init: list[float] = [0.9, 0.], angle: float | None = None, display_plots: bool = True) -> tuple[float, NDArray]:
-    """Function to correct the inclination, rotating the image.
+    """To correct the inclination, rotating the image.
     
-    It takes the maximum of each column and fit in order to find 
-    the angle with the horizontal. The the image is rotated.
-
     Parameters
     ----------
     data : NDArray
@@ -225,27 +381,83 @@ def angle_correction(data: NDArray, init: list[float] = [0.9, 0.], angle: float 
         inclination angle
     data_rot : NDArray
         the corrected data
+    
+    Notes
+    -----
+    It takes the maximum of each column and fit in order to find 
+    the angle with the horizontal. The the image is rotated.
     """
     if angle == None:
         y_pos = np.argmax(data, axis=0)
         x_pos = np.arange(len(y_pos))
         
-        Dy = 1
+        Dy = 0.5
+        Dx = 0.5
 
         def fitlin(x,m,q):
             return x*m+q
 
-        pop, perr = fit_routine(x_pos,y_pos,init,fitlin,display_res=display_plots,yerr=Dy)
+        fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy, xerr=Dx)
+        fit.pipeline(fitlin,init,names=['m','q'])
+        pop, perr = fit.results()
         m, q = pop
         Dm, _ = perr
+
+        angle = np.arctan(m)*180/np.pi   # degrees
+        Dangle = 180/np.pi * Dm/(1+m**2)
+        data = ndimage.rotate(data, angle, reshape=False).copy()
+
+        if display_plots == True:
+            print(f'Estimated Angle:\ntheta = {angle:e} +- {Dangle:e} deg\t-> {Dangle/angle*100} %')
+            plt.figure(2)
+            plt.errorbar(x_pos,y_pos,Dy,Dx,fmt='.')
+            fastplot(x_pos,fitlin(x_pos,*pop),2,'-',labels=['x','y'])
+            plt.show()
+
+        fig, ax = plt.subplots(1,1) 
+        y_pos, Dy = np.array([]), np.array([])
+        x_pos = x_pos[::50]
+        for i in x_pos:
+            values = data[:,i]
+            y = np.arange(len(values))
+            hwhm = abs(np.argmax(values) - np.argmin(abs(values - max(values)/2)))
+            initial_values = [max(values),np.argmax(values),hwhm]
+            pos = np.where(values > np.mean(values)*2)
+            values = values[pos]
+            y = y[pos]
+            fit = FuncFit(xdata=y, ydata=values,xerr=0.5)
+            fit.gaussian_fit(initial_values)
+            pop, perr = fit.results()
+            y_pos = np.append(y_pos,pop[1])
+            Dy = np.append(Dy,pop[2])
+            method = fit.res['func']
+            plt.figure()
+            plt.plot(y,values)
+            plt.plot(y, method(y,*pop), '--')
+            plt.show()
+            # ax.plot(y,values)
+            # ax.plot(y, method(y,*pop), '--')
+        
+        print(len(x_pos),len(y_pos))
+
+        fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy)
+        fit.pipeline(fitlin,init,names=['m','q'])
+        pop, perr = fit.results()
+        m  = pop[0]
+        Dm = perr[0]
 
         angle = np.arctan(m)*180/np.pi   # degrees
         Dangle = 180/np.pi * Dm/(1+m**2)
 
         if display_plots == True:
             print(f'Estimated Angle:\ntheta = {angle:e} +- {Dangle:e} deg\t-> {Dangle/angle*100} %')
-            fastplot(x_pos,y_pos,2,'+')
-            fastplot(x_pos,fitlin(x_pos,*pop),2,'-',labels=['x','y'])
+            plt.figure(3)
+            plt.errorbar(x_pos,y_pos,Dy,fmt='.')
+            fastplot(x_pos,fitlin(x_pos,*pop),3,'-',labels=['x','y'])
+            plt.show()
+            plt.figure(4)
+            plt.errorbar(x_pos,y_pos,Dy,fmt='.')
+            fastplot(x_pos,fitlin(x_pos,*pop),4,'-',labels=['x','y'])
 
     data_rot  = ndimage.rotate(data, angle, reshape=False)
     return angle, data_rot
