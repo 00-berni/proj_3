@@ -1,3 +1,427 @@
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/Polluce/polluce_10sec_1.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      37   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-27T22:30:36 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	10.0 \ Exposure time in seconds
+EXPOSURE =	10.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-18.299999237060547 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Light Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.4379166667 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+CBLACK =	2618 \ Initial display black level in ADUs
+CWHITE =	48081 \ Initial display white level in ADUs
+PEDESTAL =	0 \ Correction to add for zero-based ADU
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+
+Fit results:
+	m: -0.019 +- 4.6e-05
+	q: 4.1e+01 +- 0.03
+	red_chi = 235.50 +- 4.23 %
+
+Fit results:
+	k: 3.8e+03 +- 4.3
+	mu: 3.1e+01 +- 0.12
+	sigma: 1.4e+01 +- 0.25
+	red_chi = 601.61 +- 32.44 %
+
+Fit results:
+	k: 1.2e+04 +- 1.8e+01
+	mu: 3e+01 +- 0.17
+	sigma: 7.2 +- 0.36
+	red_chi = 266.73 +- 50.00 %
+
+Fit results:
+	k: 2e+04 +- 3.1e+01
+	mu: 3e+01 +- 0.16
+	sigma: 7.0 +- 0.31
+	red_chi = 400.30 +- 47.14 %
+
+Fit results:
+	k: 2.9e+04 +- 1.2e+02
+	mu: 3.1e+01 +- 0.14
+	sigma: 7.2 +- 0.3
+	red_chi = 216.17 +- 44.72 %
+
+Fit results:
+	k: 4.1e+04 +- 1.7e+02
+	mu: 3.1e+01 +- 0.14
+	sigma: 6.8 +- 0.25
+	red_chi = 313.25 +- 42.64 %
+
+Fit results:
+	k: 4.6e+04 +- 2.1e+02
+	mu: 3.1e+01 +- 0.14
+	sigma: 6.9 +- 0.25
+	red_chi = 305.46 +- 42.64 %
+
+Fit results:
+	k: 4.9e+04 +- 2.4e+02
+	mu: 3.1e+01 +- 0.14
+	sigma: 6.9 +- 0.26
+	red_chi = 252.49 +- 42.64 %
+
+Fit results:
+	k: 4.9e+04 +- 2.2e+02
+	mu: 3.1e+01 +- 0.14
+	sigma: 6.9 +- 0.25
+	red_chi = 265.88 +- 42.64 %
+
+Fit results:
+	k: 4.9e+04 +- 2.2e+02
+	mu: 3.1e+01 +- 0.14
+	sigma: 7.1 +- 0.26
+	red_chi = 228.32 +- 42.64 %
+
+Fit results:
+	k: 4.9e+04 +- 2.9e+02
+	mu: 3.1e+01 +- 0.13
+	sigma: 7.2 +- 0.28
+	red_chi = 343.80 +- 42.64 %
+
+Fit results:
+	k: 4.8e+04 +- 2.6e+02
+	mu: 3.1e+01 +- 0.14
+	sigma: 7.1 +- 0.3
+	red_chi = 366.62 +- 44.72 %
+
+Fit results:
+	k: 4.6e+04 +- 2.3e+02
+	mu: 3.1e+01 +- 0.14
+	sigma: 7.6 +- 0.33
+	red_chi = 272.29 +- 44.72 %
+
+Fit results:
+	k: 4.6e+04 +- 2.6e+02
+	mu: 3.1e+01 +- 0.14
+	sigma: 7.3 +- 0.32
+	red_chi = 273.17 +- 44.72 %
+
+Fit results:
+	k: 4.6e+04 +- 2.9e+02
+	mu: 3.1e+01 +- 0.14
+	sigma: 7.1 +- 0.31
+	red_chi = 202.43 +- 44.72 %
+
+Fit results:
+	k: 4.2e+04 +- 2.5e+02
+	mu: 3.1e+01 +- 0.15
+	sigma: 7.4 +- 0.38
+	red_chi = 155.84 +- 47.14 %
+
+Fit results:
+	k: 3.8e+04 +- 2.4e+02
+	mu: 3.1e+01 +- 0.15
+	sigma: 6.8 +- 0.34
+	red_chi = 186.56 +- 47.14 %
+
+Fit results:
+	k: 3.7e+04 +- 2.9e+02
+	mu: 3e+01 +- 0.14
+	sigma: 6.3 +- 0.32
+	red_chi = 185.92 +- 47.14 %
+
+Fit results:
+	k: 3.2e+04 +- 2.3e+02
+	mu: 3e+01 +- 0.15
+	sigma: 6.2 +- 0.3
+	red_chi = 87.43 +- 47.14 %
+
+Fit results:
+	k: 2.7e+04 +- 1.5e+02
+	mu: 3e+01 +- 0.15
+	sigma: 5.7 +- 0.26
+	red_chi = 88.17 +- 47.14 %
+
+Fit results:
+	k: 2.3e+04 +- 1.1e+02
+	mu: 3e+01 +- 0.16
+	sigma: 5.6 +- 0.29
+	red_chi = 17.29 +- 50.00 %
+
+Fit results:
+	k: 1.9e+04 +- 7.5e+01
+	mu: 2.9e+01 +- 0.15
+	sigma: 5.5 +- 0.27
+	red_chi = 22.99 +- 50.00 %
+
+Fit results:
+	k: 1.7e+04 +- 3.1e+01
+	mu: 2.9e+01 +- 0.17
+	sigma: 5.2 +- 0.29
+	red_chi = 22.12 +- 53.45 %
+
+Fit results:
+	k: 8.2e+03 +- 4.5e+01
+	mu: 2.9e+01 +- 0.18
+	sigma: 4.9 +- 0.4
+	red_chi = 20.73 +- 63.25 %
+23 23
+
+Fit results:
+	m: -0.0017 +- 0.0041
+	q: 3.1e+01 +- 2.9
+	red_chi = 0.77 +- 30.86 %
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/Polluce/polluce_10sec_2.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      37   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-27T22:31:20 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	10.0 \ Exposure time in seconds
+EXPOSURE =	10.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-18.899999618530273 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Light Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.438425926 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+CBLACK =	2618 \ Initial display black level in ADUs
+CWHITE =	48081 \ Initial display white level in ADUs
+PEDESTAL =	0 \ Correction to add for zero-based ADU
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+
+Fit results:
+	m: -0.018 +- 4.6e-05
+	q: 4.1e+01 +- 0.03
+	red_chi = 1944.35 +- 4.23 %
+
+Fit results:
+	k: 3.6e+03 +- 3.8
+	mu: 3.1e+01 +- 0.11
+	sigma: 1.6e+01 +- 0.3
+	red_chi = 910.79 +- 32.44 %
+
+Fit results:
+	k: 1e+04 +- 2e+01
+	mu: 3e+01 +- 0.2
+	sigma: 1e+01 +- 0.59
+	red_chi = 843.31 +- 50.00 %
+
+Fit results:
+	k: 1.7e+04 +- 6.6e+01
+	mu: 3.1e+01 +- 0.15
+	sigma: 8.7 +- 0.45
+	red_chi = 565.00 +- 47.14 %
+
+Fit results:
+	k: 2.5e+04 +- 1.5e+02
+	mu: 3.1e+01 +- 0.15
+	sigma: 8.9 +- 0.47
+	red_chi = 706.21 +- 44.72 %
+
+Fit results:
+	k: 3.5e+04 +- 2.5e+02
+	mu: 3.1e+01 +- 0.13
+	sigma: 8.0 +- 0.37
+	red_chi = 729.43 +- 42.64 %
+
+Fit results:
+	k: 4e+04 +- 3.3e+02
+	mu: 3.1e+01 +- 0.14
+	sigma: 7.6 +- 0.36
+	red_chi = 1153.66 +- 42.64 %
+
+Fit results:
+	k: 4.3e+04 +- 3.2e+02
+	mu: 3.1e+01 +- 0.14
+	sigma: 7.6 +- 0.35
+	red_chi = 1078.24 +- 42.64 %
+
+Fit results:
+	k: 4.4e+04 +- 4.4e+02
+	mu: 3.2e+01 +- 0.14
+	sigma: 7.1 +- 0.36
+	red_chi = 1270.12 +- 42.64 %
+
+Fit results:
+	k: 4.4e+04 +- 2.5e+02
+	mu: 3.3e+01 +- 0.15
+	sigma: 8.6 +- 0.44
+	red_chi = 1033.26 +- 44.72 %
+
+Fit results:
+	k: 4.4e+04 +- 3.3e+02
+	mu: 3.3e+01 +- 0.16
+	sigma: 7.9 +- 0.44
+	red_chi = 1401.35 +- 44.72 %
+
+Fit results:
+	k: 4.4e+04 +- 4.3e+02
+	mu: 3.2e+01 +- 0.15
+	sigma: 7.1 +- 0.41
+	red_chi = 1121.22 +- 44.72 %
+
+Fit results:
+	k: 4.3e+04 +- 2.2e+02
+	mu: 3.2e+01 +- 0.15
+	sigma: 6.8 +- 0.34
+	red_chi = 2137.47 +- 44.72 %
+
+Fit results:
+	k: 4.9e+04 +- 3.7e+03
+	mu: 3.1e+01 +- 0.14
+	sigma: 3.2 +- 0.46
+	red_chi = 5878.30 +- 42.64 %
+
+Fit results:
+	k: 4.2e+04 +- 2.3e+02
+	mu: 3.2e+01 +- 0.17
+	sigma: 8.0 +- 0.4
+	red_chi = 968.22 +- 44.72 %
+
+Fit results:
+	k: 4e+04 +- 2.6e+02
+	mu: 3.2e+01 +- 0.16
+	sigma: 6.9 +- 0.34
+	red_chi = 1162.80 +- 44.72 %
+
+Fit results:
+	k: 3.5e+04 +- 2.1e+02
+	mu: 3.1e+01 +- 0.15
+	sigma: 6.7 +- 0.3
+	red_chi = 1074.50 +- 44.72 %
+
+Fit results:
+	k: 3.4e+04 +- 2.6e+02
+	mu: 3.1e+01 +- 0.17
+	sigma: 6.9 +- 0.39
+	red_chi = 569.72 +- 47.14 %
+
+Fit results:
+	k: 2.9e+04 +- 1e+02
+	mu: 3e+01 +- 0.15
+	sigma: 6.7 +- 0.27
+	red_chi = 538.79 +- 44.72 %
+
+Fit results:
+	k: 2.4e+04 +- 1.2e+02
+	mu: 3e+01 +- 0.17
+	sigma: 6.7 +- 0.33
+	red_chi = 344.34 +- 47.14 %
+
+Fit results:
+	k: 2.1e+04 +- 1.2e+02
+	mu: 2.9e+01 +- 0.15
+	sigma: 6.2 +- 0.29
+	red_chi = 516.20 +- 47.14 %
+
+Fit results:
+	k: 1.7e+04 +- 1.1e+02
+	mu: 2.9e+01 +- 0.16
+	sigma: 6.2 +- 0.34
+	red_chi = 345.73 +- 50.00 %
+
+Fit results:
+	k: 1.5e+04 +- 1.2e+02
+	mu: 2.8e+01 +- 0.17
+	sigma: 6.1 +- 0.42
+	red_chi = 241.97 +- 53.45 %
+
+Fit results:
+	k: 7.3e+03 +- 9.4
+	mu: 2.8e+01 +- 0.2
+	sigma: 6.8 +- 0.55
+	red_chi = 146.90 +- 63.25 %
+23 23
+
+Fit results:
+	m: -0.0029 +- 0.0049
+	q: 3.2e+01 +- 3.4
+	red_chi = 2.09 +- 30.86 %
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/Polluce/polluce_lamp.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      37   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-27T22:32:35 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	10.0 \ Exposure time in seconds
+EXPOSURE =	10.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.100000381469727 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Light Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.4392939815 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+CBLACK =	2618 \ Initial display black level in ADUs
+CWHITE =	8637 \ Initial display white level in ADUs
+PEDESTAL =	0 \ Correction to add for zero-based ADU
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
 Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-001__dark.fit
 No.    Name      Ver    Type      Cards   Dimensions   Format
   0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
