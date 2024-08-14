@@ -120,7 +120,7 @@ def data_file_path(night: str, obj: str, data_file: str) -> str:
 
     Parameters
     ----------
-    night : int
+    night : str
         selected observation night
     obj : str
         name of the target
