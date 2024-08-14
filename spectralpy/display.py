@@ -27,7 +27,7 @@ from .stuff import Spectrum
 from typing import Sequence, Any
 
 ##*
-def fastplot(x: NDArray, y: NDArray, numfig: int = None, fmt: str = '-', title: str = '', labels: list[str] = ['',''], dim: list[int] = [10,7], grid: bool = False,**kwargs) -> None:
+def quickplot(x: NDArray, y: NDArray, numfig: int = None, fmt: str = '-', title: str = '', labels: list[str] = ['',''], dim: list[int] = [10,7], grid: bool = False,**kwargs) -> None:
     """Function to display a plot quickly.
 
     Parameters
@@ -62,11 +62,10 @@ def fastplot(x: NDArray, y: NDArray, numfig: int = None, fmt: str = '-', title: 
     plt.plot(x,y,fmt,**kwargs)
     plt.xlabel(xl)
     plt.ylabel(yl)
-    if grid:
-        plt.grid(which='both',linestyle='--',alpha=0.2,color='grey')
+    if grid: plt.grid(which='both',linestyle='--',alpha=0.2,color='grey')
 
 
-def fits_image(fig: Figure, ax: Axes, data: Spectrum, v: int = -1, **kwargs) -> None:
+def fits_image(fig: Figure, ax: Axes, data: Spectrum, v: int = -1, subtitle: str = '', **kwargs) -> None:
     """To plot fits images
 
     Parameters
@@ -79,10 +78,12 @@ def fits_image(fig: Figure, ax: Axes, data: Spectrum, v: int = -1, **kwargs) -> 
         target
     v : int, optional
         color-code, by default `-1`
+    subtitle : str 
+        subtitle, by default `''`
     **kwargs
         parameters of `matplotlib.pyplot.imshow()`
     """
-    subtitle = data.name + f', exposure time: {data.get_exposure()} s'
+    subtitle = data.name + f', exposure time: {data.get_exposure()} s ' + subtitle
     ax.set_title(subtitle, fontsize=18)
     ax.set_xlabel('x [px]')
     ax.set_ylabel('y [px]')
@@ -109,7 +110,8 @@ def show_fits(data: Spectrum, num_plots: Sequence[int] = (1,1), dim: Sequence[in
         title of the image, by default `''`
     show : bool, optional
         if `True` it displays the figure, by default `False`
-
+    **kwargs
+        parameters of `fits_image()` and `matplotlib.pyplot.imshow()`
     Returns
     -------
     fig : Figure
