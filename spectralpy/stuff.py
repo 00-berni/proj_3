@@ -23,19 +23,54 @@ STUFF PACKAGE
 
 import numpy as np
 from numpy.typing import NDArray
-from scipy import ndimage
 from typing import Callable, Sequence, Any
-from .display import fastplot
 from astropy.io.fits import HDUList
 import matplotlib.pyplot as plt
 
+
 class Spectrum():
-    
+    """To store spectrum information
+
+    Attributes
+    ----------
+    name : str
+        the name of the object
+    hdul : HDUList | Sequence[HDUList] | None
+        hdul information
+    data : NDArray | None
+        spectrum values
+    lims : NDArray | None
+        edges of cutted image
+    spec : NDArray | None
+        _description_
+    """
     @staticmethod
     def empty():
-        return Spectrum([],[],[],False)
+        """To generate an empty object
+
+        Returns
+        -------
+        Spectrum
+            empty object
+        """
+        return Spectrum([],[],[],False,name='empty')
 
     def __init__(self, hdul: HDUList | Sequence[HDUList] | None, data: NDArray | None, lims: NDArray | None, hotpx: bool = True, name: str = '') -> None:
+        """Constructor of the class
+
+        Parameters
+        ----------
+        hdul : HDUList | Sequence[HDUList] | None
+            hdul information
+        data : NDArray | None
+            spectrum values
+        lims : NDArray | None
+            edges of cutted image
+        hotpx : bool, optional
+            to filter and remove hot pixels, by default `True`
+        name : str, optional
+            the name of the object, by default `''`
+        """
         self.name = name
         self.hdul = hdul
         self.data = hotpx_remove(data) if hotpx else data 
@@ -43,7 +78,8 @@ class Spectrum():
         self.spec = None
 
     def print_header(self) -> None:
-        # print header
+        """To print the header of fits file"""
+        # take the header
         hdr = self.hdul[0].header
         print(' - HEADER -')
         for parameter in hdr:
@@ -54,12 +90,151 @@ class Spectrum():
         print()
     
     def get_exposure(self) -> float:
-        header = self.hdul[0].header
-        return header['EXPOSURE']
+        """To get the exposure time
+
+        Returns
+        -------
+        exp_time : float
+            exposure time
+            For different acquisitions the mean is computed
+        """
+        if isinstance(self.hdul[0], HDUList):
+            exp_time = []
+            for hd in self.hdul:
+                header = hd[0].header
+                exp_time += [header['EXPOSURE']]
+            exp_time = np.mean(exp_time)
+        else:
+            header = self.hdul[0].header
+            exp_time = header['EXPOSURE']
+        return exp_time
     
+    def cut_image(self) -> None:
+        """To cut the image"""
+        lims = (slice(*self.lims[:2]),slice(*self.lims[2:]))
+        self.data = self.data[lims]
+
+    def angle_correction(self, angle: float | None = None, init: list[float] = [0.9, 0.]) -> tuple:
+        """To correct the inclination of spectrum, rotating the image.
+        
+        Parameters
+        ----------
+        angle : float | None, optional
+            inclination angle of the slit, by default `None`
+            If `angle is None` then the value is estimated by a 
+            fitting rountine
+        init : list[float], optional
+            initial values for the fit, by default `[0.9, 0.]`
+
+        Returns
+        -------
+        target : Spectrum
+            the corrected data
+        angle : float
+            inclination angle
+        
+        Notes
+        -----
+        The method consists of two steps:
+          1. Take the maximum of each column and compute a linear fit in order to find 
+          the inclination angle
+          2. Fit each column with a gaussian profile, get the mean position and repeat
+          the linear fit to estimate the angle
+        After then the image is rotated
+        """
+        target = self.copy()
+        data = target.data
+        from scipy import ndimage
+        if angle == None:
+            y_pos = np.argmax(data, axis=0)
+            x_pos = np.arange(len(y_pos))
+            
+            Dy = 0.5
+            Dx = 0.5
+
+            def fitlin(x,m,q):
+                return x*m+q
+
+            fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy, xerr=Dx)
+            fit.pipeline(fitlin,init,names=['m','q'])
+            pop, perr = fit.results()
+            m, q = pop
+            Dm, _ = perr
+            angle = np.arctan(m)*180/np.pi   # degrees
+            Dangle = 180/np.pi * Dm/(1+m**2)
+            data = ndimage.rotate(data, angle, reshape=False).copy()
+
+            fig, ax = plt.subplots(1,1) 
+            y_pos, Dy = np.array([]), np.array([])
+            x_pos = x_pos[::50]
+            for i in x_pos:
+                values = data[:,i]
+                y = np.arange(len(values))
+                hwhm = abs(np.argmax(values) - np.argmin(abs(values - max(values)/2)))
+                initial_values = [max(values),np.argmax(values),hwhm]
+                pos = np.where(values > np.mean(values)*2)
+                values = values[pos]
+                y = y[pos]
+                fit = FuncFit(xdata=y, ydata=values,xerr=0.5)
+                fit.gaussian_fit(initial_values)
+                pop, perr = fit.results()
+                y_pos = np.append(y_pos,pop[1])
+                Dy = np.append(Dy,pop[2])
+                method = fit.res['func']
+                color = (1-i/max(x_pos),i/max(x_pos),i/(2*max(x_pos))+0.5)
+                ax.plot(data[:,i],color=color,label='fit')
+                ax.plot(y, method(y,*pop), '--',color=color)
+            ax.legend()
+            
+            print(len(x_pos),len(y_pos))
+
+            fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy)
+            fit.pipeline(fitlin,init,names=['m','q'])
+            pop, perr = fit.results()
+            m  = pop[0]
+            Dm = perr[0]
+
+            angle = np.arctan(m)*180/np.pi   # degrees
+            Dangle = 180/np.pi * Dm/(1+m**2)
+
+        data_rot = ndimage.rotate(data, angle, reshape=False)
+        target.data = data_rot
+        return target, angle
+
     def copy(self):
-        target = Spectrum(self.hdul, self.data, self.lims, hotpx=False)
+        """To make an identical copy of a Spectrum object
+
+        Returns
+        -------
+        target : Spectrum
+            the copy
+        """
+        target = Spectrum([*self.hdul], self.data.copy(), self.lims.copy(), hotpx=False, name=self.name)
         return target
+
+    def __add__(self, spec: Any) -> NDArray:
+        if isinstance(spec, Spectrum):
+            return self.data + spec.data
+        else:
+            return self.data + spec
+
+    def __radd__(self, other):
+            return self.__add__(other)
+
+    def __sub__(self, spec: Any) -> NDArray:
+        if isinstance(spec, Spectrum):
+            return self.data - spec.data
+        else:
+            return self.data - spec
+
+    def __rsub__(self, other):
+            return -self.__sub__(other)
+
+    def __mul__(self, spec: Any) -> NDArray:
+        if isinstance(spec, Spectrum):
+            return self.data * spec.data
+        else:
+            return self.data * spec
 
 class FuncFit():
     """To compute the fit procedure of some data
@@ -142,22 +317,10 @@ class FuncFit():
         out = alg.run()
         pop = out.beta
         pcov = out.cov_beta
-
-        # computing the fit
-        # from scipy.optimize import curve_fit
-        # pop, pcov = curve_fit(method, xdata, ydata, initial_values, sigma=sigma,**kwargs)
-        # extracting the errors
         Dpop = np.sqrt(pcov.diagonal())
         self.fit_par = pop
         self.fit_err = Dpop
         self.res['cov'] = pcov
-        # if sigma is not None:
-        #     # evaluating function in `xdata`
-        #     fit = method(xdata,*pop)
-        #     # computing chi squared
-        #     chisq = (((ydata-fit)/sigma)**2).sum()
-        #     chi0 = len(ydata) - len(pop)
-        #     self.res['chisq'] = (chisq, chi0)
         if sigma is not None or Dx is not None:
             chisq = out.sum_square
             chi0 = len(ydata) - len(pop)
@@ -190,7 +353,7 @@ class FuncFit():
         self.infos(names=names)
     
     def gaussian_fit(self, initial_values: Sequence[Any], names: list[str] | None = None,**kwargs) -> None:
-        """_summary_
+        """To fit with a Gaussian
 
         Parameters
         ----------
@@ -261,203 +424,3 @@ def hotpx_remove(data: NDArray) -> NDArray:
         # remove the `NaNs`
         data = interpolate_replace_nans(data, kernel)
     return data
-
-
-# def fit_routine(xdata: NDArray, ydata: NDArray, initial_values: list[float], fit_func: Callable[[NDArray],NDArray], xerr: NDArray | float | int | None = None, yerr: NDArray | float | None = None, iter: int | None = None, return_res: list[str] | tuple[str] | None = None, display_res: bool = False) -> list[NDArray]:
-#     """_summary_
-
-#     Parameters
-#     ----------
-#     xdata : NDArray
-#         _description_
-#     ydata : NDArray
-#         _description_
-#     initial_values : list[float]
-#         _description_
-#     fit_func : Callable[[NDArray],NDArray]
-#         _description_
-#     xerr : NDArray | float | int | None, optional
-#         _description_, by default None
-#     yerr : NDArray | float | None, optional
-#         _description_, by default None
-#     iter : int | None, optional
-#         _description_, by default None
-#     return_res : list[str] | tuple[str] | None, optional
-#         _description_, by default None
-#     display_res : bool, optional
-#         _description_, by default False
-
-#     Returns
-#     -------
-#     list[NDArray]
-#         _description_
-#     """
-#     if isinstance(xerr,(float,int)):
-#         xerr = np.full(xdata.shape,xerr)
-#     if isinstance(yerr,(float,int)):
-#         yerr = np.full(ydata.shape,yerr)
-
-#     if xerr is not None:
-#         from scipy import odr
-#         data = odr.RealData(xdata,ydata,sx=xerr,sy=yerr)
-#         model = odr.Model(fit_func)
-#         fit = odr.ODR(data,model,beta0=initial_values)
-#         out = fit.run()
-#         pop = out.beta
-#         pcov = out.cov_beta
-#         perr = np.sqrt(pcov.diagonal())
-#         chisq = out.sum_square
-#         free = len(xdata) - len(pop)
-
-#         results = [pop,perr]
-#         if return_res is not None:
-#             if 'pcov' in return_res:
-#                 results += [pcov]
-#             if 'chisq' in return_res:
-#                 results += [chisq]
-#             if 'free' in return_res:
-#                 results += [free]
-#             if 'out' in return_res:
-#                 results += [out]
-#             if 'fit' in return_res:
-#                 results += [fit]
-        
-#     else:
-#         if iter is None:
-#             iter = 2
-#         from scipy.optimize import curve_fit
-#         pop, pcov = curve_fit(fit_func,xdata,ydata,initial_values)
-#         for i in range(iter):
-#             initial_values = pop
-#             pop, pcov = curve_fit(fit_func,xdata,ydata,initial_values,sigma=yerr)
-#         perr = np.sqrt(pcov.diagonal())
-#         chisq = (((ydata-fit_func(xdata,*pop))/yerr)**2).sum()
-#         free = len(xdata) - len(pop)
-        
-#         results = [pop,perr]
-#         if return_res is not None:
-#             if 'pcov' in return_res:
-#                 results += [pcov]
-#             if 'chisq' in return_res:
-#                 results += [chisq]
-#             if 'free' in return_res:
-#                 results += [free]
-
-
-#     if display_res:
-
-#         str_res = '\n'.join([f'p{i} = {pop[i]:e} +- {perr[i]:e}\t-> {perr[i]/pop[i]*100:.2f} %' for i in range(len(pop))])
-#         if len(pop) > 1:
-#             str_corr = []
-#             for i in range(pcov.shape[0]):
-#                 str_corr += [f'corr_{i}{j} =\t {pcov[i,j]/np.sqrt(pcov[i,i]*pcov[j,j])*100:.2f} %' for j in range(i+1,pcov.shape[1])]
-#             str_corr = '\n'.join(str_corr)
-#             str_res += '\n' + str_corr
-        
-#         print('\n--- Results of the fit ---\n' + str_res + f'\n\u03C7\u00b2_red =\t{chisq/free:.2f} +- {np.sqrt(2/free):.2f}\n----------------------\n')
-
-#     return results
-
-
-
-
-def angle_correction(data: NDArray, init: list[float] = [0.9, 0.], angle: float | None = None, display_plots: bool = True) -> tuple[float, NDArray]:
-    """To correct the inclination, rotating the image.
-    
-    Parameters
-    ----------
-    data : NDArray
-        image matrix
-    init : list[float], optional
-        initial values for the fit, by default `[0.9, 0.]`
-    angle : float | None, optional
-        _description_, by default `None`
-    display_plots : bool, optional
-        _description_, by default `True`
-
-    Returns
-    -------
-    angle : float
-        inclination angle
-    data_rot : NDArray
-        the corrected data
-    
-    Notes
-    -----
-    It takes the maximum of each column and fit in order to find 
-    the angle with the horizontal. The the image is rotated.
-    """
-    if angle == None:
-        y_pos = np.argmax(data, axis=0)
-        x_pos = np.arange(len(y_pos))
-        
-        Dy = 0.5
-        Dx = 0.5
-
-        def fitlin(x,m,q):
-            return x*m+q
-
-        fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy, xerr=Dx)
-        fit.pipeline(fitlin,init,names=['m','q'])
-        pop, perr = fit.results()
-        m, q = pop
-        Dm, _ = perr
-
-        angle = np.arctan(m)*180/np.pi   # degrees
-        Dangle = 180/np.pi * Dm/(1+m**2)
-        data = ndimage.rotate(data, angle, reshape=False).copy()
-
-        if display_plots == True:
-            print(f'Estimated Angle:\ntheta = {angle:e} +- {Dangle:e} deg\t-> {Dangle/angle*100} %')
-            plt.figure(2)
-            plt.errorbar(x_pos,y_pos,Dy,Dx,fmt='.')
-            fastplot(x_pos,fitlin(x_pos,*pop),2,'-',labels=['x','y'])
-            plt.show()
-
-        fig, ax = plt.subplots(1,1) 
-        y_pos, Dy = np.array([]), np.array([])
-        x_pos = x_pos[::50]
-        for i in x_pos:
-            values = data[:,i]
-            y = np.arange(len(values))
-            hwhm = abs(np.argmax(values) - np.argmin(abs(values - max(values)/2)))
-            initial_values = [max(values),np.argmax(values),hwhm]
-            pos = np.where(values > np.mean(values)*2)
-            values = values[pos]
-            y = y[pos]
-            fit = FuncFit(xdata=y, ydata=values,xerr=0.5)
-            fit.gaussian_fit(initial_values)
-            pop, perr = fit.results()
-            y_pos = np.append(y_pos,pop[1])
-            Dy = np.append(Dy,pop[2])
-            method = fit.res['func']
-            plt.figure()
-            plt.plot(y,values)
-            plt.plot(y, method(y,*pop), '--')
-            plt.show()
-            # ax.plot(y,values)
-            # ax.plot(y, method(y,*pop), '--')
-        
-        print(len(x_pos),len(y_pos))
-
-        fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy)
-        fit.pipeline(fitlin,init,names=['m','q'])
-        pop, perr = fit.results()
-        m  = pop[0]
-        Dm = perr[0]
-
-        angle = np.arctan(m)*180/np.pi   # degrees
-        Dangle = 180/np.pi * Dm/(1+m**2)
-
-        if display_plots == True:
-            print(f'Estimated Angle:\ntheta = {angle:e} +- {Dangle:e} deg\t-> {Dangle/angle*100} %')
-            plt.figure(3)
-            plt.errorbar(x_pos,y_pos,Dy,fmt='.')
-            fastplot(x_pos,fitlin(x_pos,*pop),3,'-',labels=['x','y'])
-            plt.show()
-            plt.figure(4)
-            plt.errorbar(x_pos,y_pos,Dy,fmt='.')
-            fastplot(x_pos,fitlin(x_pos,*pop),4,'-',labels=['x','y'])
-
-    data_rot  = ndimage.rotate(data, angle, reshape=False)
-    return angle, data_rot
