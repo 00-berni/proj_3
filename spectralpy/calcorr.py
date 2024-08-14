@@ -22,64 +22,173 @@ CALCORR PACKAGE
 import os
 import numpy as np
 from numpy.typing import NDArray
-from typing import Callable
+from typing import Callable, Literal
 from scipy import odr
 from .display import *
-from .stuff import angle_correction
-from .data import get_data_fit, extract_data, get_data
+from .data import get_data_fit, extract_data, extract_cal_data
 
-
-
-def compute_flat(ch_obs: int, display_plots: bool = False) -> NDArray:
-    """Evaluating the flat gain
+def compute_master_dark(mean_dark: Spectrum | None, master_bias: Spectrum | None = None, display_plots: bool = False) -> Spectrum:
+    """To compute master dark
 
     Parameters
     ----------
-    ch_obs : int
-        chosen observation night
+    mean_dark : Spectrum | None
+        averaged dark data
+    master_bias : Spectrum | None, optional
+        averaged bias data, by default `None`
     display_plots : bool, optional
-        if it is `True` images/plots are displayed, by default `False`
+        to plot figures, by default `False`
 
     Returns
     -------
-    flat_value : NDArray
-        flat gain for each x coordinate
+    master_dark : Spectrum
+        dark corrected
     
     Notes
     -----
-    After extracting the data of the flat acquisition, the function finds the
-    maximum and computes the cumulative spectrum over the y axis. Then the 
-    gain is extimated for each x coordinate by normalization through the 
-    maximum and returned.
+    According to [] (see README), master dark is defined as
+    ```
+        mean_dark - master_bias
+    ```
     """
-    # name of the target for which flat was acquired
-    if ch_obs == 0:
-        flat_obj = 'giove'  
-    elif ch_obs == 1:
-        flat_obj = 'arturo'
-    # collecting informations for the target and the flat
-    obj_fit, lims_fit, obj_flat, lims_flat = extract_data(ch_obs, flat_obj,sel=['obj','flat'])
-    # extracting target spectrum data and evaluating the inclination angle
-    _, _, angle = get_data(flat_obj,obj_fit,lims_fit, display_plots=display_plots)
-    # extracting flat spectrum data and correcting for inclination
-    _, sp_flat, _ = get_data(flat_obj,obj_flat,lims_flat, angle=angle, display_plots=display_plots)
-    
-    # flat gain estimation
-    # finding the x coordinate for the maximum
-    _, x_max = np.unravel_index(np.argmax(sp_flat), sp_flat.shape)
-    # computing the cumulative value over the column
-    tot_flat = sp_flat[:,x_max].sum()
-    # computing the normalized flat depending on position x
-    flat_value = sp_flat.sum(axis=0)/tot_flat
+    master_dark = mean_dark.copy()
+    if master_bias is not None: 
+        master_dark.data = mean_dark - master_bias
     # condition to display the images/plots
     if display_plots == True:
-        fastplot(np.arange(len(flat_value)), flat_value, title='Flat spectrum', labels=['x','norm counts'])
+        show_fits(master_dark,show=True)
+    return master_dark
+
+def compute_master_flat(flat: Spectrum, master_dark: Spectrum | None = None, master_bias: Spectrum | None = None, display_plots: bool = False) -> Spectrum:
+    """To estimate the flat gain
+
+    Parameters
+    ----------
+    flat : Spectrum
+        flat data
+    master_dark : Spectrum | None, optional
+        master dark if any, by default `None`
+    master_bias : Spectrum | None, optional
+        master bias if any, by default `None`
+    display_plots : bool, optional
+        to plot figures, by default `False`
+
+    Returns
+    -------
+    master_flat : Spectrum
+        estimated master flat
+    
+    Notes
+    -----
+    According to [] (see README), master flat is defined as
+    ```
+        flat = flat - mean_dark - master_bias
+        master_flat = flat / mean(flat)
+    ```
+    If bias and/or dark data are not given the first step is skipped
+    """
+    # correct by bias, if any
+    if master_bias is not None: flat.data = flat - master_bias
+    # correct by dark, if any
+    if master_dark is not None: 
+        # check the exposure times
+        fl_exp = flat.get_exposure()
+        dk_exp = master_dark.get_exposure()
+        if fl_exp != dk_exp:
+            master_dark.data = master_dark.data / dk_exp * fl_exp
+        flat.data = flat - master_dark 
+    
+    master_flat = flat.copy()
+    master_flat.data = flat.data / np.mean(flat.data)
+    master_flat.name = 'Master Flat'
+    # condition to display the images/plots
+    if display_plots == True:
+        show_fits(master_flat,show=True)
+    return master_flat
+
+def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], cut: bool = True, angle: float | None = 0, display_plots: bool = False,**kwargs) -> tuple[Spectrum, Spectrum]:
+    """To get the science frames of target and its calibration lamp
+
+    Parameters
+    ----------
+    ch_obs : str
+        chosen obeservation night
+    ch_obj : str
+        chosen target name
+    selection : int | Literal['mean']
+        if there are more than one acquisition it is possible to select 
+        one of them (`selection` is the number of the chosen acquisition)
+        or to average on them (`selection == 'mean'`) 
+    cut : bool, optional
+        to cut the image, by default `True`
+    angle : float | None, optional
+        inclination angle of the slit, by default `0`
+        If `angle is None` then the value is estimated by a 
+        fitting rountine
+    display_plots : bool, optional
+        to plot figures, by default `False`
+
+    Returns
+    -------
+    target : Spectrum 
+        science frame of the target
+    lamp : Spectrum
+        science frame of its calibration lamp
+    """
+    ## Data extraction
+    # get the light frames
+    target, lamp = extract_data(ch_obs,ch_obj,selection,display_plots=display_plots,**kwargs)
+    if not display_plots: 
+        show_fits(target, title='Light Frame',**kwargs)
+        if lamp.name != 'empty':
+            show_fits(lamp, title='Light Frame',**kwargs)
         plt.show()
+    
+    ## Calibration correction
+    # if there is calibration information
+    # try:
+    calibration = extract_cal_data(ch_obs)
+    if len(calibration) > 1:
+        if len(calibration) == 3:   #: in this case `calibration = [flat, dark, bias]` 
+            # compute master dark
+            calibration[1] = compute_master_dark(*calibration[1:],display_plots=display_plots,**kwargs)
+            # bias correction
+            target.data = target - calibration[2]
+            if lamp.name != 'empty':
+                lamp.data = lamp - calibration[2]
+        # check the exposure times
+        tg_exp = target.get_exposure()
+        dk_exp = calibration[1].get_exposure()
+        if tg_exp != dk_exp:
+            calibration[1].data = calibration[1].data / dk_exp * tg_exp
+        # dark correction
+        target.data = target - calibration[1]
+        if lamp.name != 'empty':
+            lamp.data = lamp - calibration[1]
+    # compute master flat
+    master_flat = compute_master_flat(*calibration,display_plots=display_plots,**kwargs)
+    print('MIN',master_flat.data.min())
+    # flat correction
+    target.data = target.data / master_flat.data
+    if lamp.name != 'empty':
+        lamp.data = lamp.data / master_flat.data  
+    # except Exception:
+    #     print('!EXception')
+    #     pass
+    if cut:    
+        target.cut_image()
+        target, angle = target.angle_correction(angle=angle)      
+        if lamp.name != 'empty':
+            lamp.cut_image()
+            lamp, _ = lamp.angle_correction(angle=angle)      
+    show_fits(target, title='Science Frame',**kwargs)
+    if lamp.name != 'empty':
+        show_fits(lamp, title='Science Frame',**kwargs)
+    plt.show()
+    return target, lamp
 
-    return flat_value
 
-
-def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, initial_values: list[float] = [3600, 2.6,0.], display_plots: bool = False) -> tuple[Callable[[NDArray],NDArray], Callable[[NDArray],NDArray]]:
+def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, initial_values: list[float] = [3600, 2.6, 0.], display_plots: bool = False) -> tuple[Callable[[NDArray],NDArray], Callable[[NDArray],NDArray]]:
     """Evaluating the calibration function to pass from a.u. to Armstrong
 
     Parameters
@@ -125,7 +234,7 @@ def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, ini
     spectrum_lamp = sp_lamp[height]
     # condition to display the images/plots
     if display_plots == True:
-        fastplot(np.arange(len(spectrum_lamp)), spectrum_lamp, title=f'Lamp spectrum at y = {height}',labels=['x','counts'],grid=True)
+        quickplot(np.arange(len(spectrum_lamp)), spectrum_lamp, title=f'Lamp spectrum at y = {height}',labels=['x','counts'],grid=True)
         plt.show()
 
     # fit method
@@ -230,7 +339,7 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | NDArray = None, c
       - `extract_data()`
       - `get_data()`
       - `showfits()`
-      - `fastplot()`
+      - `quickplot()`
       - `compute_flat()`
       - `calibration()`
 
@@ -246,7 +355,7 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | NDArray = None, c
     # computing the cumulative spectrum over columns
     spectrum = sp_data.sum(axis=0)
     if display_plots == True:
-        fastplot(np.arange(len(spectrum)), spectrum, title='Cumulative spectrum', labels=['x','counts'],grid=True)
+        quickplot(np.arange(len(spectrum)), spectrum, title='Cumulative spectrum', labels=['x','counts'],grid=True)
         plt.show()
 
     ret_cond = (flat is None) and (cal_func is None) and (err_func is None)
@@ -256,7 +365,7 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | NDArray = None, c
     # correcting for the flat gain
     spectrum = spectrum / flat_value[:len(spectrum)]
     if display_plots == True:
-        fastplot(np.arange(len(spectrum)), spectrum, title='Cumulative spectrum corrected by flat', labels=['x','counts'],grid=True)    
+        quickplot(np.arange(len(spectrum)), spectrum, title='Cumulative spectrum corrected by flat', labels=['x','counts'],grid=True)    
         plt.show()
         
     # condition to compute the calibration function
@@ -268,7 +377,7 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | NDArray = None, c
     # getting the corrisponding wavelengths
     lengths = cal_func(np.arange(len(spectrum)))
     # displaying the calibrated spectrum
-    fastplot(lengths, spectrum,title='Corrected and calibrated spectrum of ' + ch_obj,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9],grid=True)
+    quickplot(lengths, spectrum,title='Corrected and calibrated spectrum of ' + ch_obj,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9],grid=True)
     plt.show()
 
     if (ret_values == 'all') or (ret_values == 'few') or (ret_values == 'data') or (ret_values == 'calibration'):
