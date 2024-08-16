@@ -188,7 +188,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     return target, lamp
 
 
-def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, initial_values: list[float] = [3600, 2.6, 0.], display_plots: bool = False) -> tuple[Callable[[NDArray],NDArray], Callable[[NDArray],NDArray]]:
+def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: int | None = None, initial_values: list[float] = [3600, 2.6, 0.], display_plots: bool = False, **kwargs) -> tuple[Callable[[NDArray],NDArray], Callable[[NDArray],NDArray]]:
     """Evaluating the calibration function to pass from a.u. to Armstrong
 
     Parameters
@@ -221,69 +221,62 @@ def calibration(cal_file: str, obj_lamp: str, lims_lamp: list, angle: float, ini
     function is implemented
 
     """
-    # extracting lamp spectrum and correcting for inclination
-    _, sp_lamp = get_data_fit(obj_lamp,lims=lims_lamp, title='Row spectrum lamp', n=1, display_plots=display_plots)
-    _, sp_lamp = angle_correction(sp_lamp, angle=angle, display_plots=display_plots)
-    height = int(np.mean(np.argmax(sp_lamp,axis=0)))
-    # condition to display the images/plots
-    if display_plots == True:
-        showfits(sp_lamp, title='Rotated lamp image')
-        plt.hlines(height,0,len(sp_lamp[0])-1,color='blue')
-        plt.show()
-    # taking the spectrum of the lamp at `height`
-    spectrum_lamp = sp_lamp[height]
-    # condition to display the images/plots
-    if display_plots == True:
-        quickplot(np.arange(len(spectrum_lamp)), spectrum_lamp, title=f'Lamp spectrum at y = {height}',labels=['x','counts'],grid=True)
+    target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, display_plots=display_plots)
+    target.spec = np.mean(target.data, axis=0)
+    if height is None: height = int(len(lamp.data)/2) 
+    lamp.spec = lamp.data[height]
+    if display_plots:
+        quickplot(target.spec,title='Uncalibrated spectrum of '+target.name,labels=('x [a.u.]','y [a.u.]'),numfig=1)
+        quickplot(lamp.spec,title='Uncalibrated spectrum of its lamp',labels=('x [a.u.]','y [a.u.]'),numfig=2)
         plt.show()
 
-    # fit method
-    # defining the linear function for the fit
-    def fit_func(param,x):
-        p0,p1,p2 = param
-        return p0 + p1*x + p2*x**2
-    # extracting the data for the calibration from `cal_file`
-    lines, x, Dx = np.loadtxt(cal_file, unpack=True)
-    Dy = np.full(lines.shape,3.63)
+    # # fit method
+    # # defining the linear function for the fit
+    # def fit_func(param,x):
+    #     p0,p1,p2 = param
+    #     return p0 + p1*x + p2*x**2
+    # # extracting the data for the calibration from `cal_file`
+    # lines, x, Dx = np.loadtxt(cal_file, unpack=True)
+    # Dy = np.full(lines.shape,3.63)
 
-    pop, perr, pcov = fit_routine(x,lines,initial_values=initial_values,fit_func=fit_func,xerr=Dx,yerr=Dy,display_res=display_plots,return_res=['pcov'])
-    _,p1,p2 = pop
-    Dp0,Dp1,Dp2 = perr
+    # pop, perr, pcov = fit_routine(x,lines,initial_values=initial_values,fit_func=fit_func,xerr=Dx,yerr=Dy,display_res=display_plots,return_res=['pcov'])
+    # _,p1,p2 = pop
+    # Dp0,Dp1,Dp2 = perr
 
-    # defining the calibration function
-    cal_func = lambda x : fit_func(pop,x)
+    # # defining the calibration function
+    # cal_func = lambda x : fit_func(pop,x)
     
-    def err_func(x: NDArray, dx: NDArray, all_res: bool = False):
-        dfdx = p1 + p2*2*x
-        err = (dfdx*dx)**2
-        if all_res:
-            dfdp1 = x
-            dfdp2 = x**2
-            err += Dp0**2 + (dfdp1*Dp1)**2 + (dfdp2*Dp2)**2 + 2*( dfdp1*pcov[0,1] + dfdp2*pcov[0,2] + dfdp1*dfdp2*pcov[1,2]) 
-        return np.sqrt(err)
+    # def err_func(x: NDArray, dx: NDArray, all_res: bool = False):
+    #     dfdx = p1 + p2*2*x
+    #     err = (dfdx*dx)**2
+    #     if all_res:
+    #         dfdp1 = x
+    #         dfdp2 = x**2
+    #         err += Dp0**2 + (dfdp1*Dp1)**2 + (dfdp2*Dp2)**2 + 2*( dfdp1*pcov[0,1] + dfdp2*pcov[0,2] + dfdp1*dfdp2*pcov[1,2]) 
+    #     return np.sqrt(err)
         
-    # condition to display the images/plots
-    if display_plots == True:
-        sigma = np.sqrt(Dy**2 + (p1*Dx + p2*x*Dx*2)**2)
-        fig = plt.figure('Calibration',figsize=[8,7])
-        fig.suptitle('Fit for lamp calibration')
-        ax1, ax2 = fig.subplots(2, 1, sharex=True, gridspec_kw=dict(height_ratios=[2, 1], hspace=0.05))
-        # plt.title('Calibration fit')
-        ax1.errorbar(x,lines,xerr=Dx,yerr=Dy,fmt='.',color='green',label='data')
-        ax1.plot(x,cal_func(x),color='orange',label='Best-fit')
-        ax1.set_ylabel('$\lambda$ [$\AA$]')
-        ax1.legend(numpoints=1)
+    # # condition to display the images/plots
+    # if display_plots == True:
+    #     sigma = np.sqrt(Dy**2 + (p1*Dx + p2*x*Dx*2)**2)
+    #     fig = plt.figure('Calibration',figsize=[8,7])
+    #     fig.suptitle('Fit for lamp calibration')
+    #     ax1, ax2 = fig.subplots(2, 1, sharex=True, gridspec_kw=dict(height_ratios=[2, 1], hspace=0.05))
+    #     # plt.title('Calibration fit')
+    #     ax1.errorbar(x,lines,xerr=Dx,yerr=Dy,fmt='.',color='green',label='data')
+    #     ax1.plot(x,cal_func(x),color='orange',label='Best-fit')
+    #     ax1.set_ylabel('$\lambda$ [$\AA$]')
+    #     ax1.legend(numpoints=1)
 
-        # plt.figure(figsize=[10,7])
-        # plt.title('Residuals')
-        ax2.axhline(0,xmin=0,xmax=1,linestyle='-.',color='black',alpha=0.5)
-        ax2.errorbar(x,lines-cal_func(x),xerr=Dx,yerr=sigma,fmt='v',linestyle=':',color='green')
-        ax2.set_xlabel('x [px]')
-        ax2.set_ylabel('Residuals [$\AA$]')
+    #     # plt.figure(figsize=[10,7])
+    #     # plt.title('Residuals')
+    #     ax2.axhline(0,xmin=0,xmax=1,linestyle='-.',color='black',alpha=0.5)
+    #     ax2.errorbar(x,lines-cal_func(x),xerr=Dx,yerr=sigma,fmt='v',linestyle=':',color='green')
+    #     ax2.set_xlabel('x [px]')
+    #     ax2.set_ylabel('Residuals [$\AA$]')
 
-        plt.show()
+    #     plt.show()
 
-    return cal_func, err_func
+    # return cal_func, err_func
 
 
 
