@@ -19,7 +19,7 @@ DISPLAY PACKAGE
 -------------------
 """
 import numpy as np
-from numpy.typing import NDArray
+from numpy import ndarray
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
@@ -27,14 +27,14 @@ from .stuff import Spectrum
 from typing import Sequence, Any
 
 ##*
-def quickplot(x: NDArray, y: NDArray, numfig: int = None, fmt: str = '-', title: str = '', labels: list[str] = ['',''], dim: list[int] = [10,7], grid: bool = False,**kwargs) -> None:
+def quickplot(data: Sequence[ndarray] | ndarray, numfig: int = None, fmt: str = '-', title: str = '', labels: Sequence[str] = ('',''), dim: list[int] = [10,7], grid: bool = False,**kwargs) -> None:
     """Function to display a plot quickly.
 
     Parameters
     ----------
-    x : NDArray
+    x : ndarray
         Data on x axis
-    y : NDArray
+    y : ndarray
         Data on y axis
     numfig : int, optional
         figure number, by default `None`
@@ -59,7 +59,8 @@ def quickplot(x: NDArray, y: NDArray, numfig: int = None, fmt: str = '-', title:
     xl,yl = labels
     plt.figure(numfig,figsize=dim)
     plt.title(title)
-    plt.plot(x,y,fmt,**kwargs)
+    if isinstance(data,ndarray): data = [data]
+    plt.plot(*data,fmt,**kwargs)
     plt.xlabel(xl)
     plt.ylabel(yl)
     if grid: plt.grid(which='both',linestyle='--',alpha=0.2,color='grey')
@@ -95,7 +96,7 @@ def fits_image(fig: Figure, ax: Axes, data: Spectrum, v: int = -1, subtitle: str
     cbar.set_label('intensity [a.u.]')
 
 ##*
-def show_fits(data: Spectrum, num_plots: Sequence[int] = (1,1), dim: Sequence[int] = (10,7), title: str = '', show: bool = False, **kwargs) -> tuple[Figure, Axes | NDArray]:
+def show_fits(data: Spectrum, num_plots: Sequence[int] = (1,1), dim: Sequence[int] = (10,7), title: str = '', show: bool = False, **kwargs) -> tuple[Figure, Axes | ndarray]:
     """To plot quickly one or a set of fits pictures
     
     Parameters
@@ -116,7 +117,7 @@ def show_fits(data: Spectrum, num_plots: Sequence[int] = (1,1), dim: Sequence[in
     -------
     fig : Figure
         figure
-    axs : Axes | NDArray
+    axs : Axes | ndarray
         axes
     """
     fig, axs = plt.subplots(*num_plots, figsize=dim) 
