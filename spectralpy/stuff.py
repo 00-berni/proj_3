@@ -22,7 +22,7 @@ STUFF PACKAGE
 """
 
 import numpy as np
-from numpy.typing import NDArray
+from numpy import ndarray
 from typing import Callable, Sequence, Any
 from astropy.io.fits import HDUList
 import matplotlib.pyplot as plt
@@ -37,11 +37,11 @@ class Spectrum():
         the name of the object
     hdul : HDUList | Sequence[HDUList] | None
         hdul information
-    data : NDArray | None
+    data : ndarray | None
         spectrum values
-    lims : NDArray | None
+    lims : ndarray | None
         edges of cutted image
-    spec : NDArray | None
+    spec : ndarray | None
         _description_
     """
     @staticmethod
@@ -55,16 +55,16 @@ class Spectrum():
         """
         return Spectrum([],[],[],False,name='empty')
 
-    def __init__(self, hdul: HDUList | Sequence[HDUList] | None, data: NDArray | None, lims: NDArray | None, hotpx: bool = True, name: str = '') -> None:
+    def __init__(self, hdul: HDUList | Sequence[HDUList] | None, data: ndarray | None, lims: ndarray | None, hotpx: bool = True, name: str = '') -> None:
         """Constructor of the class
 
         Parameters
         ----------
         hdul : HDUList | Sequence[HDUList] | None
             hdul information
-        data : NDArray | None
+        data : ndarray | None
             spectrum values
-        lims : NDArray | None
+        lims : ndarray | None
             edges of cutted image
         hotpx : bool, optional
             to filter and remove hot pixels, by default `True`
@@ -212,7 +212,7 @@ class Spectrum():
         target = Spectrum([*self.hdul], self.data.copy(), self.lims.copy(), hotpx=False, name=self.name)
         return target
 
-    def __add__(self, spec: Any) -> NDArray:
+    def __add__(self, spec: Any) -> ndarray:
         if isinstance(spec, Spectrum):
             return self.data + spec.data
         else:
@@ -221,7 +221,7 @@ class Spectrum():
     def __radd__(self, other):
             return self.__add__(other)
 
-    def __sub__(self, spec: Any) -> NDArray:
+    def __sub__(self, spec: Any) -> ndarray:
         if isinstance(spec, Spectrum):
             return self.data - spec.data
         else:
@@ -230,7 +230,7 @@ class Spectrum():
     def __rsub__(self, other):
             return -self.__sub__(other)
 
-    def __mul__(self, spec: Any) -> NDArray:
+    def __mul__(self, spec: Any) -> ndarray:
         if isinstance(spec, Spectrum):
             return self.data * spec.data
         else:
@@ -241,11 +241,11 @@ class FuncFit():
 
     Attributes
     ----------
-    data : list[NDArray | None]
+    data : list[ndarray | None]
         the x and y data and (if there are) their uncertanties
-    fit_par : NDArray | None
+    fit_par : ndarray | None
         fit estimated parameters
-    fit_err : NDArray | None
+    fit_err : ndarray | None
         uncertanties of `fit_par`
     res : dict
         it collects all the results
@@ -288,12 +288,12 @@ class FuncFit():
             if there is, the uncertainties of `xdata` 
         """
         self.data = [xdata, ydata, yerr, xerr]
-        self.fit_par: NDArray | None = None
-        self.fit_err: NDArray | None = None
+        self.fit_par: ndarray | None = None
+        self.fit_err: ndarray | None = None
         self.res = {}
 
 
-    def fit(self, method: Callable[[Any,Any],Any], initial_values: Sequence[Any],**kwargs) -> None:
+    def fit(self, method: Callable[[Any,Any],Any], initial_values: Sequence[Any], **kwargs) -> None:
         """To compute the fit
 
         Parameters
@@ -326,7 +326,7 @@ class FuncFit():
             chi0 = len(ydata) - len(pop)
             self.res['chisq'] = (chisq, chi0)
     
-    def infos(self, names: list[str] | None = None) -> None:
+    def infos(self, names: Sequence[str] | None = None) -> None:
         """To plot information about the fit
 
         Parameters
@@ -340,19 +340,19 @@ class FuncFit():
         if names is None:
             names = [f'par{i}' for i in range(len(pop))]
         for name, par, Dpar in zip(names,pop,Dpop):
-            print(f'\t{name}: {par:.2} +- {Dpar:.2}')
+            print(f'\t{name}: {par:.2} +- {Dpar:.2}  -->  {Dpar/par*100:.2} %')
         if 'chisq' in self.res:
             chisq, chi0 = self.res['chisq']
             print(f'\tred_chi = {chisq/chi0*100:.2f} +- {np.sqrt(2/chi0)*100:.2f} %')
 
-    def results(self) -> tuple[NDArray, NDArray] | tuple[None, None]:
+    def results(self) -> tuple[ndarray, ndarray] | tuple[None, None]:
         return self.fit_par, self.fit_err
 
-    def pipeline(self,method: Callable[[Any,Any],Any], initial_values: Sequence[Any], names: list[str] | None = None,**kwargs) -> None:
+    def pipeline(self,method: Callable[[Any,Any],Any], initial_values: Sequence[Any], names: Sequence[str] | None = None,**kwargs) -> None:
         self.fit(method=method,initial_values=initial_values,**kwargs)
         self.infos(names=names)
     
-    def gaussian_fit(self, initial_values: Sequence[Any], names: list[str] | None = None,**kwargs) -> None:
+    def gaussian_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('k','mu','sigma'),**kwargs) -> None:
         """To fit with a Gaussian
 
         Parameters
@@ -362,17 +362,23 @@ class FuncFit():
         names : list[str] | None, optional
             names, by default None
         """
-        def gauss_func(data: float | NDArray, *args) -> float | NDArray:
+        def gauss_func(data: float | ndarray, *args) -> float | ndarray:
             k, mu, sigma = args
             z = (data - mu) / sigma
             return k * np.exp(-z**2/2)
 
-        if names is None: 
-            names = ['k','mu','sigma']
         self.pipeline(method=gauss_func,initial_values=initial_values,names=names,**kwargs)
 
+    def pol_fit(self, ord: int, initial_values: Sequence[float], names: Sequence[str] | None = None) -> None:
+        def pol_func(x, *args):
+            poly = [ args[i] * x**(ord - i) for i in range(len(args))]
+            return np.sum(poly,axis=0)
+        self.pipeline(pol_func,initial_values=initial_values,names=names)
 
-def make_cut_indicies(file_path: str, lines_num: int) -> NDArray:
+    def linear_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('m','q')) -> None:
+        self.pol_fit(ord=1, initial_values=initial_values, names=names)
+
+def make_cut_indicies(file_path: str, lines_num: int) -> ndarray:
     """To make a `cut_indicies.txt` file when it is not
 
     Parameters
@@ -384,7 +390,7 @@ def make_cut_indicies(file_path: str, lines_num: int) -> NDArray:
 
     Returns
     -------
-    cut : NDArray
+    cut : ndarray
         array of the edges of each acquisition 
     """
     cut = np.array([[0,-1,0,-1]]*lines_num,dtype=int)   #: array of the edges of each acquisition
@@ -397,17 +403,17 @@ def make_cut_indicies(file_path: str, lines_num: int) -> NDArray:
     f.close()
     return cut
 
-def hotpx_remove(data: NDArray) -> NDArray:
+def hotpx_remove(data: ndarray) -> ndarray:
     """To remove hot pixels from the image
 
     Parameters
     ----------
-    data : NDArray
+    data : ndarray
         spectrum data
 
     Returns
     -------
-    data : NDArray
+    data : ndarray
         spectrum data without `NaN` values
     
     Notes
