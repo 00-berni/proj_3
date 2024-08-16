@@ -21,11 +21,12 @@ CALCORR PACKAGE
 """
 import os
 import numpy as np
-from numpy.typing import NDArray
+from numpy import ndarray
 from typing import Callable, Literal
 from scipy import odr
 from .display import *
-from .data import get_data_fit, extract_data, extract_cal_data
+from .data import get_data_fit, extract_data, extract_cal_data, get_cal_lines
+from .stuff import FuncFit
 
 def compute_master_dark(mean_dark: Spectrum | None, master_bias: Spectrum | None = None, display_plots: bool = False) -> Spectrum:
     """To compute master dark
@@ -187,8 +188,26 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     plt.show()
     return target, lamp
 
+def lines_calibration(ch_obs: str, ch_obj: str, initial_values: Sequence[float] | None = None) -> FuncFit:
+    lines, pxs, errs = get_cal_lines(ch_obs,ch_obj)
+    Dlines = np.full(lines.shape,3.63)
+    if initial_values is None:
+       initial_values = [0,1,np.mean(pxs)]
+    fit = FuncFit(xdata=pxs,ydata=lines,xerr=errs,yerr=Dlines)
+    fit.pol_fit(ord=2,initial_values=initial_values)
+    pop, _ = fit.results()
+    px_to_arm = lambda x : fit.res['func'](x, *pop)
+    plt.figure()
+    pp = np.linspace(pxs.min(),pxs.max(),200)
+    plt.errorbar(pxs,lines,Dlines,errs,'.',color='orange')
+    plt.plot(pp,px_to_arm(pp))
+    plt.figure()
+    plt.errorbar(pxs,lines-fit.res['func'](pxs,*pop),Dlines,errs,'.',color='orange')
+    plt.axhline(0,0,1)
+    plt.show()
+    return px_to_arm
 
-def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: int | None = None, initial_values: list[float] = [3600, 2.6, 0.], display_plots: bool = False, **kwargs) -> tuple[Callable[[NDArray],NDArray], Callable[[NDArray],NDArray]]:
+def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: int | None = None, other_lamp: Spectrum | None = None, display_plots: bool = False, **kwargs) -> tuple[Callable[[ndarray],ndarray], Callable[[ndarray],ndarray]]:
     """Evaluating the calibration function to pass from a.u. to Armstrong
 
     Parameters
@@ -208,9 +227,9 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
 
     Returns
     -------
-    cal_func : Callable[[NDArray],NDArray]
+    cal_func : Callable[[ndarray],ndarray]
         the calibration function
-    err_func : Callable[[NDArray],NDArray]
+    err_func : Callable[[ndarray],ndarray]
         _description_
     
     Notes
@@ -226,9 +245,15 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     if height is None: height = int(len(lamp.data)/2) 
     lamp.spec = lamp.data[height]
     if display_plots:
-        quickplot(target.spec,title='Uncalibrated spectrum of '+target.name,labels=('x [a.u.]','y [a.u.]'),numfig=1)
-        quickplot(lamp.spec,title='Uncalibrated spectrum of its lamp',labels=('x [a.u.]','y [a.u.]'),numfig=2)
+        quickplot(target.spec,title='Uncalibrated spectrum of '+target.name,labels=('x [a.u.]','I [a.u.]'),numfig=1)
+        quickplot(lamp.spec,title='Uncalibrated spectrum of its lamp',labels=('x [a.u.]','I [a.u.]'),numfig=2)
         plt.show()
+    if other_lamp is None:
+        cal_func = lines_calibration(ch_obs, ch_obj)
+    pxs = np.arange(len(target.spec))
+    lines = cal_func(pxs)
+    quickplot((lines,target.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'))
+    plt.show()        
 
     # # fit method
     # # defining the linear function for the fit
@@ -246,7 +271,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     # # defining the calibration function
     # cal_func = lambda x : fit_func(pop,x)
     
-    # def err_func(x: NDArray, dx: NDArray, all_res: bool = False):
+    # def err_func(x: ndarray, dx: ndarray, all_res: bool = False):
     #     dfdx = p1 + p2*2*x
     #     err = (dfdx*dx)**2
     #     if all_res:
@@ -281,7 +306,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
 
 
 
-def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | NDArray = None, cal_func: Callable[[NDArray],NDArray] | None = None, err_func: Callable[[NDArray,NDArray,bool],NDArray] | None = None, display_plots: bool = False, initial_values: list[float] | tuple[float] = [3600, 2.6,0.], ret_values: str = 'few') -> list[NDArray] | list[NDArray | dict]:
+def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | ndarray = None, cal_func: Callable[[ndarray],ndarray] | None = None, err_func: Callable[[ndarray,ndarray,bool],ndarray] | None = None, display_plots: bool = False, initial_values: list[float] | tuple[float] = [3600, 2.6,0.], ret_values: str = 'few') -> list[ndarray] | list[ndarray | dict]:
     """Getting the spectrum of a selceted target for a chosen observation night
 
     Parameters
@@ -290,11 +315,11 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | NDArray = None, c
         chosen observation night
     ch_obj : str
         chosen obj
-    flat : None | NDArray, optional
+    flat : None | ndarray, optional
         if the flat gain is not evaluated yet, the flat target name is passed, by default `None`
-    cal_func : Callable[[NDArray],NDArray] | None, optional
+    cal_func : Callable[[ndarray],ndarray] | None, optional
         if it is None, the calibration function will be computed, by default `None`
-    err_func : Callable[[NDArray,NDArray,bool],NDArray] | None, optional
+    err_func : Callable[[ndarray,ndarray,bool],ndarray] | None, optional
         _description_, by default `None`
     display_plots : bool, optional
         if it is True images/plots are displayed, by default `False`
@@ -305,16 +330,16 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | NDArray = None, c
 
     Returns
     -------
-    spectrum : NDArray
+    spectrum : ndarray
         cumulative spectrum 
-    lengths : NDArray
+    lengths : ndarray
         corrisponding wavelenghts
-    data : dict[str,NDArray], optional
+    data : dict[str,ndarray], optional
         information about the image
             * `'hdul'` : fits information
             * `'sp_data'` : spectrum image data
         It is returned only if `ret_values == 'data' or 'all'` 
-    cal_data : dict[str, float | NDArray | Callable], optional
+    cal_data : dict[str, float | ndarray | Callable], optional
         information about calibration
             * `'angle'` : correction angle value
             * `'flat_value'` : estimate flat value
@@ -393,14 +418,14 @@ def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | NDArray = None, c
     return results
 
 
-def mean_line(peaks: NDArray, spectrum: NDArray, dist: int = 3, height: int | float = 800) -> tuple[NDArray,NDArray]:
+def mean_line(peaks: ndarray, spectrum: ndarray, dist: int = 3, height: int | float = 800) -> tuple[ndarray,ndarray]:
     """    
 
     Parameters
     ----------
-    peaks : NDArray
+    peaks : ndarray
         peaks
-    spectrum : NDArray
+    spectrum : ndarray
         spectrum
     dist : int, optional
         maximum distance between peaks, by default `3`
@@ -409,9 +434,9 @@ def mean_line(peaks: NDArray, spectrum: NDArray, dist: int = 3, height: int | fl
 
     Returns
     -------
-    peaks : NDArray
+    peaks : ndarray
         average peaks
-    spectrum[peaks] : NDArray
+    spectrum[peaks] : ndarray
         corresponding values of the spectrum
     """
     # making a copy of data
