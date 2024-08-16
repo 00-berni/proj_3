@@ -3,31 +3,38 @@ import matplotlib.pyplot as plt
 # from .spectralpy import data
 from spectralpy.calcorr import calibrated_spectrum, lamp_corr, compute_master_flat
 # from spectralpy.display import fastplot, showfits            
-import spectralpy.data as spdata
+import spectralpy.data as dt
 import spectralpy.calcorr as clcr
 import spectralpy.display as dsp
 if __name__ == '__main__':
     from spectralpy.data import NIGHTS
     from spectralpy.stuff import FuncFit
-    TARGETS = spdata.open_targets_list()
+    TARGETS = dt.open_targets_list()
     night, target_name, selection = TARGETS[:,0]
 
     sc_frame, lamp = clcr.get_target_data(night,target_name,selection,angle=None)
 
-    spectr = np.mean(sc_frame.data, axis=1)
+    spectr = np.mean(sc_frame.data, axis=0)
 
     dsp.quickplot(np.arange(len(spectr)),spectr)
     plt.show()
 
-    spec_lamp = lamp.data[300]
+    height = int(len(lamp.data)/2)
+    spec_lamp = lamp.data[height]
+    fig,ax = dsp.show_fits(lamp)
+    ax.axhline(height,0,1,color='blue')
+    plt.show()
+    l, px, err = np.loadtxt(dt.os.path.join(dt.DATA_DIR,night,target_name,'calibration_lines.txt'),unpack=True)
     dsp.quickplot(np.arange(len(spec_lamp)),spec_lamp)
+    for p in px:
+        plt.axvline(p,0,1,color='red',linestyle='dashed')
     plt.show()
 
 
     # height = int(input('Choose the height for the spectrum of the lamp\n> '))
 
 
-    # tmp = spdata.data_extraction(spdata.os.path.join(spdata.DATA_DIR,night,target_name,'line_curv.json'))
+    # tmp = dt.data_extraction(dt.os.path.join(dt.DATA_DIR,night,target_name,'line_curv.json'))
     # print(tmp)
     # centre = []
     # fig, ax = plt.subplots(1,1)
@@ -69,8 +76,8 @@ if __name__ == '__main__':
     # plt.show()
     # m = pop[0]
     # angle = np.arctan(m)*180/np.pi   # degrees
-    # _, lamp = spdata.angle_correction(lamp.data,angle=angle)
-    # spdata.showfits(lamp)
+    # _, lamp = dt.angle_correction(lamp.data,angle=angle)
+    # dt.showfits(lamp)
     # plt.show()
     #     ax.plot(*c,'x',color='red')
     #     ax.plot(fitfunc(xx,*pop),xx,'--',color='violet')
