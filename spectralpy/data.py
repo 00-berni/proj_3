@@ -27,8 +27,9 @@ from astropy.io import fits
 from astropy.io.fits import HDUList
 from .stuff import make_cut_indicies, Spectrum, FuncFit
 from .display import show_fits, quickplot
-from numpy.typing import NDArray, ArrayLike
+from numpy.typing import ArrayLike
 from typing import Sequence, Literal
+from numpy import ndarray
 
 
 def data_extraction(path_file: str) -> dict:
@@ -63,7 +64,12 @@ RESULT_DIR = os.path.join(PROJECT_DIR, 'results')           #: path of results d
 OBJ_FILE = os.path.join(DATA_DIR, 'objs_per_night.json')    #: path of file with objects collection
 DATA_ALL = data_extraction(OBJ_FILE)                        #: dictionary with the targets per night
 
-def open_targets_list(filename: str = 'targets.csv', delimiter: str = ',') -> NDArray:
+def get_cal_lines(ch_obs: str, ch_obj: str) -> ndarray:
+    file_path = os.path.join(DATA_DIR,ch_obs,ch_obj,'calibration_lines.txt')
+    data = np.loadtxt(file_path, unpack=True)
+    return data
+
+def open_targets_list(filename: str = 'targets.csv', delimiter: str = ',') -> ndarray:
     """To collect chosen targets
 
     Parameters
@@ -75,7 +81,7 @@ def open_targets_list(filename: str = 'targets.csv', delimiter: str = ',') -> ND
 
     Returns
     -------
-    data : NDArray
+    data : ndarray
         list of chosen targets
     """
     from pandas import read_csv
@@ -84,7 +90,7 @@ def open_targets_list(filename: str = 'targets.csv', delimiter: str = ',') -> ND
     return data
     
 
-def collect_fits(night: str, obj: str) -> tuple[NDArray, ArrayLike]:
+def collect_fits(night: str, obj: str) -> tuple[ndarray, ArrayLike]:
     """To collect data fits for a chosen night observation and object.
 
     Parameters
@@ -96,7 +102,7 @@ def collect_fits(night: str, obj: str) -> tuple[NDArray, ArrayLike]:
 
     Returns
     -------
-    extracted : NDArray
+    extracted : ndarray
         object in that night
     cut : ArrayLike
         section limits for the images
