@@ -12,23 +12,25 @@ if __name__ == '__main__':
     TARGETS = dt.open_targets_list()
     night, target_name, selection = TARGETS[:,0]
 
-    sc_frame, lamp = clcr.get_target_data(night,target_name,selection,angle=None)
+    clcr.calibration(night,target_name,selection)
 
-    spectr = np.mean(sc_frame.data, axis=0)
+    # sc_frame, lamp = clcr.get_target_data(night,target_name,selection,angle=None)
 
-    dsp.quickplot(np.arange(len(spectr)),spectr)
-    plt.show()
+    # spectr = np.mean(sc_frame.data, axis=0)
 
-    height = int(len(lamp.data)/2)
-    spec_lamp = lamp.data[height]
-    fig,ax = dsp.show_fits(lamp)
-    ax.axhline(height,0,1,color='blue')
-    plt.show()
-    l, px, err = np.loadtxt(dt.os.path.join(dt.DATA_DIR,night,target_name,'calibration_lines.txt'),unpack=True)
-    dsp.quickplot(np.arange(len(spec_lamp)),spec_lamp)
-    for p in px:
-        plt.axvline(p,0,1,color='red',linestyle='dashed')
-    plt.show()
+    # dsp.quickplot(np.arange(len(spectr)),spectr)
+    # plt.show()
+
+    # height = int(len(lamp.data)/2)
+    # spec_lamp = lamp.data[height]
+    # fig,ax = dsp.show_fits(lamp)
+    # ax.axhline(height,0,1,color='blue')
+    # plt.show()
+    # l, px, err = np.loadtxt(dt.os.path.join(dt.DATA_DIR,night,target_name,'calibration_lines.txt'),unpack=True)
+    # dsp.quickplot(np.arange(len(spec_lamp)),spec_lamp)
+    # for p in px:
+    #     plt.axvline(p,0,1,color='red',linestyle='dashed')
+    # plt.show()
 
 
     # height = int(input('Choose the height for the spectrum of the lamp\n> '))
