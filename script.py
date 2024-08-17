@@ -1,18 +1,18 @@
 import numpy as np
 import matplotlib.pyplot as plt
-# from .spectralpy import data
-from spectralpy.calcorr import calibrated_spectrum, lamp_corr, compute_master_flat
-# from spectralpy.display import fastplot, showfits            
 import spectralpy.data as dt
 import spectralpy.calcorr as clcr
 import spectralpy.display as dsp
+
 if __name__ == '__main__':
-    from spectralpy.data import NIGHTS
-    from spectralpy.stuff import FuncFit
     TARGETS = dt.open_targets_list()
     night, target_name, selection = TARGETS[:,0]
 
-    clcr.calibration(night,target_name,selection)
+    target, lamp = clcr.calibration(night, target_name, selection, ord=2)
+    
+    night, target_name, selection = TARGETS[:,1]
+    target2, lamp2 = clcr.calibration(night, target_name, selection, other_lamp=lamp)
+
 
     # sc_frame, lamp = clcr.get_target_data(night,target_name,selection,angle=None)
 

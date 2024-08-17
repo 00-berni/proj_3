@@ -712,156 +712,1099 @@ SWOWNER =	FOXMASTER \ Licensed owner of software
 MIN -0.0028622347559140414
 
 Fit results:
-	m: -0.018 +- 4.6e-05  -->  -0.26 %
-	q: 4.1e+01 +- 0.03  -->  0.073 %
+	m: -0.018 +- 4.6e-05  -->  0.26 %
+	q: 4.1e+01 +- 0.03  -->  0.07 %
 	red_chi = 1302.87 +- 4.23 %
 
 Fit results:
 	k: 5e+03 +- 2.3e+01  -->  0.46 %
 	mu: 3.1e+01 +- 0.13  -->  0.43 %
-	sigma: 7.5 +- 0.25  -->  3.4 %
+	sigma: 7.5 +- 0.25  -->  3.37 %
 	red_chi = 538.48 +- 40.82 %
 
 Fit results:
 	k: 2.1e+04 +- 1e+02  -->  0.49 %
 	mu: 3.1e+01 +- 0.14  -->  0.46 %
-	sigma: 6.3 +- 0.23  -->  3.7 %
+	sigma: 6.3 +- 0.23  -->  3.70 %
 	red_chi = 540.78 +- 42.64 %
 
 Fit results:
 	k: 2.1e+04 +- 9.7e+01  -->  0.47 %
 	mu: 3.1e+01 +- 0.14  -->  0.45 %
-	sigma: 6.6 +- 0.24  -->  3.7 %
+	sigma: 6.6 +- 0.24  -->  3.70 %
 	red_chi = 477.12 +- 42.64 %
 
 Fit results:
 	k: 2.4e+04 +- 1.6e+02  -->  0.66 %
 	mu: 3.1e+01 +- 0.14  -->  0.44 %
-	sigma: 7.2 +- 0.29  -->  4.1 %
+	sigma: 7.2 +- 0.29  -->  4.09 %
 	red_chi = 445.59 +- 42.64 %
 
 Fit results:
 	k: 2.6e+04 +- 2.1e+02  -->  0.82 %
 	mu: 3.1e+01 +- 0.14  -->  0.44 %
-	sigma: 7.0 +- 0.31  -->  4.4 %
+	sigma: 7.0 +- 0.31  -->  4.36 %
 	red_chi = 591.66 +- 42.64 %
 
 Fit results:
 	k: 2.3e+04 +- 1.4e+02  -->  0.61 %
 	mu: 3.1e+01 +- 0.14  -->  0.44 %
-	sigma: 7.2 +- 0.29  -->  4.0 %
+	sigma: 7.2 +- 0.29  -->  4.00 %
 	red_chi = 710.95 +- 42.64 %
 
 Fit results:
 	k: 2.1e+04 +- 1.1e+02  -->  0.51 %
 	mu: 3.1e+01 +- 0.14  -->  0.45 %
-	sigma: 7.1 +- 0.27  -->  3.8 %
+	sigma: 7.1 +- 0.27  -->  3.82 %
 	red_chi = 624.00 +- 42.64 %
 
 Fit results:
 	k: 1.7e+04 +- 1.4e+02  -->  0.83 %
 	mu: 3.1e+01 +- 0.13  -->  0.43 %
-	sigma: 7.1 +- 0.31  -->  4.4 %
+	sigma: 7.1 +- 0.31  -->  4.38 %
 	red_chi = 550.61 +- 42.64 %
 
 Fit results:
 	k: 1.5e+04 +- 1.3e+02  -->  0.85 %
 	mu: 3.1e+01 +- 0.13  -->  0.43 %
-	sigma: 7.2 +- 0.32  -->  4.5 %
+	sigma: 7.2 +- 0.32  -->  4.46 %
 	red_chi = 542.55 +- 42.64 %
 
 Fit results:
 	k: 1.4e+04 +- 1.1e+02  -->  0.78 %
 	mu: 3.1e+01 +- 0.14  -->  0.44 %
-	sigma: 7.0 +- 0.31  -->  4.4 %
+	sigma: 7.0 +- 0.31  -->  4.37 %
 	red_chi = 918.18 +- 42.64 %
 
 Fit results:
-	k: 1.3e+04 +- 1e+02  -->  0.8 %
+	k: 1.3e+04 +- 1e+02  -->  0.80 %
 	mu: 3.1e+01 +- 0.14  -->  0.44 %
-	sigma: 7.0 +- 0.3  -->  4.3 %
+	sigma: 7.0 +- 0.3  -->  4.34 %
 	red_chi = 892.00 +- 42.64 %
 
 Fit results:
 	k: 1.2e+04 +- 7.2e+01  -->  0.62 %
 	mu: 3.2e+01 +- 0.15  -->  0.45 %
-	sigma: 7.5 +- 0.31  -->  4.1 %
+	sigma: 7.5 +- 0.31  -->  4.09 %
 	red_chi = 1019.55 +- 42.64 %
 
 Fit results:
 	k: 1.1e+04 +- 3.7e+01  -->  0.35 %
 	mu: 3.2e+01 +- 0.14  -->  0.45 %
-	sigma: 7.6 +- 0.28  -->  3.7 %
+	sigma: 7.6 +- 0.28  -->  3.65 %
 	red_chi = 812.46 +- 42.64 %
 
 Fit results:
 	k: 1e+04 +- 7.2e+01  -->  0.71 %
 	mu: 3.1e+01 +- 0.14  -->  0.44 %
-	sigma: 6.9 +- 0.28  -->  4.0 %
+	sigma: 6.9 +- 0.28  -->  4.04 %
 	red_chi = 627.57 +- 42.64 %
 
 Fit results:
-	k: 9.4e+03 +- 6.7e+01  -->  0.7 %
+	k: 9.4e+03 +- 6.7e+01  -->  0.70 %
 	mu: 3.1e+01 +- 0.14  -->  0.44 %
-	sigma: 6.5 +- 0.26  -->  4.0 %
+	sigma: 6.5 +- 0.26  -->  3.96 %
 	red_chi = 707.65 +- 42.64 %
 
 Fit results:
 	k: 8.9e+03 +- 3.3e+01  -->  0.37 %
 	mu: 3.1e+01 +- 0.15  -->  0.47 %
-	sigma: 6.9 +- 0.28  -->  4.0 %
+	sigma: 6.9 +- 0.28  -->  4.01 %
 	red_chi = 506.78 +- 44.72 %
 
 Fit results:
 	k: 9.2e+03 +- 6.7e+01  -->  0.73 %
 	mu: 3.1e+01 +- 0.14  -->  0.46 %
-	sigma: 6.2 +- 0.27  -->  4.3 %
+	sigma: 6.2 +- 0.27  -->  4.35 %
 	red_chi = 421.95 +- 44.72 %
 
 Fit results:
 	k: 8.7e+03 +- 5.6e+01  -->  0.64 %
 	mu: 3e+01 +- 0.15  -->  0.48 %
-	sigma: 6.2 +- 0.25  -->  4.1 %
+	sigma: 6.2 +- 0.25  -->  4.12 %
 	red_chi = 128.44 +- 44.72 %
 
 Fit results:
 	k: 7.9e+03 +- 5e+01  -->  0.64 %
-	mu: 3e+01 +- 0.15  -->  0.5 %
-	sigma: 5.7 +- 0.23  -->  4.1 %
+	mu: 3e+01 +- 0.15  -->  0.50 %
+	sigma: 5.7 +- 0.23  -->  4.09 %
 	red_chi = 142.23 +- 44.72 %
 
 Fit results:
-	k: 7.1e+03 +- 7.3e+01  -->  1.0 %
+	k: 7.1e+03 +- 7.3e+01  -->  1.03 %
 	mu: 2.9e+01 +- 0.14  -->  0.48 %
-	sigma: 5.2 +- 0.22  -->  4.3 %
+	sigma: 5.2 +- 0.22  -->  4.29 %
 	red_chi = 146.23 +- 44.72 %
 
 Fit results:
-	k: 6e+03 +- 6e+01  -->  1.0 %
+	k: 6e+03 +- 6e+01  -->  1.01 %
 	mu: 2.9e+01 +- 0.15  -->  0.51 %
-	sigma: 5.1 +- 0.25  -->  4.8 %
+	sigma: 5.1 +- 0.25  -->  4.79 %
 	red_chi = 91.81 +- 47.14 %
 
 Fit results:
 	k: 5.7e+03 +- 4.7e+01  -->  0.83 %
 	mu: 2.8e+01 +- 0.15  -->  0.54 %
-	sigma: 4.9 +- 0.22  -->  4.6 %
+	sigma: 4.9 +- 0.22  -->  4.59 %
 	red_chi = 70.67 +- 47.14 %
 
 Fit results:
 	k: 2.5e+03 +- 9.5  -->  0.37 %
 	mu: 2.8e+01 +- 0.15  -->  0.55 %
-	sigma: 4.4 +- 0.19  -->  4.3 %
+	sigma: 4.4 +- 0.19  -->  4.26 %
 	red_chi = 44.87 +- 47.14 %
 23 23
 
 Fit results:
-	m: -0.0026 +- 0.0037  -->  -1.4e+02 %
-	q: 3.2e+01 +- 2.7  -->  8.5 %
+	m: -0.0026 +- 0.0037  -->  144.76 %
+	q: 3.2e+01 +- 2.7  -->  8.54 %
 	red_chi = 1.91 +- 30.86 %
 
 Fit results:
-	par0: -0.00021 +- 1e-05  -->  -5.0 %
-	par1: 3.6 +- 0.011  -->  0.31 %
-	par2: 4.2e+03 +- 2.9  -->  0.07 %
+	par0: -0.00021 +- 1e-05  -->  4.98 %
+	par1: 3.8 +- 0.019  -->  0.50 %
+	par2: 2.8e+03 +- 8.1  -->  0.29 %
 	red_chi = 53.83 +- 26.26 %
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/Regolo/Regolo-0015sec.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-27T22:37:52 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	5.0 \ Exposure time in seconds
+EXPOSURE =	5.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.100000381469727 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Light Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.442962963 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/Regolo/Regolo-0025sec.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-27T22:37:58 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	5.0 \ Exposure time in seconds
+EXPOSURE =	5.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.100000381469727 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Light Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.443032407 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/Regolo/Regolo-0035sec.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-27T22:38:04 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	5.0 \ Exposure time in seconds
+EXPOSURE =	5.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-18.100000381469727 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Light Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.4431018517 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/Regolo/Regolo-0045sec.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-27T22:38:10 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	5.0 \ Exposure time in seconds
+EXPOSURE =	5.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-17.600000381469727 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Light Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.4431712963 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/Regolo/Regolo_lamp.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      37   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-27T22:38:47 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	10.0 \ Exposure time in seconds
+EXPOSURE =	10.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-18.399999618530273 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Light Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.443599537 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+CBLACK =	2618 \ Initial display black level in ADUs
+CWHITE =	8637 \ Initial display white level in ADUs
+PEDESTAL =	0 \ Correction to add for zero-based ADU
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-001__flat.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:32:15 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	10.0 \ Exposure time in seconds
+EXPOSURE =	10.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-20.0 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Flat Field \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.6473958334 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-002__flat.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:32:26 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	10.0 \ Exposure time in seconds
+EXPOSURE =	10.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-20.0 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Flat Field \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.647523148 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-003__flat.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:32:37 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	10.0 \ Exposure time in seconds
+EXPOSURE =	10.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.5 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Flat Field \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.647650463 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-004__flat.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:32:48 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	10.0 \ Exposure time in seconds
+EXPOSURE =	10.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.200000762939453 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Flat Field \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.6477777776 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-005__flat.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:32:59 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	10.0 \ Exposure time in seconds
+EXPOSURE =	10.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.100000381469727 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Flat Field \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.6479050927 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-001__dark.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:15:26 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	100.0 \ Exposure time in seconds
+EXPOSURE =	100.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-20.0 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Dark Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.6357175927 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-002__dark.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:17:08 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	100.0 \ Exposure time in seconds
+EXPOSURE =	100.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.899999618530273 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Dark Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.6368981483 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-003__dark.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:18:50 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	100.0 \ Exposure time in seconds
+EXPOSURE =	100.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-18.5 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Dark Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.6380787035 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-004__dark.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:20:32 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	100.0 \ Exposure time in seconds
+EXPOSURE =	100.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.799999237060547 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Dark Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.639259259 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-005__dark.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:22:14 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	100.0 \ Exposure time in seconds
+EXPOSURE =	100.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.799999237060547 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Dark Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.640439815 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-001_bias.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:17:07 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	0.0 \ Exposure time in seconds
+EXPOSURE =	0.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.899999618530273 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Bias Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.636886574 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-002_bias.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:18:49 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	0.0 \ Exposure time in seconds
+EXPOSURE =	0.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.799999237060547 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Bias Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.6380671295 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-003_bias.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:20:31 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	0.0 \ Exposure time in seconds
+EXPOSURE =	0.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.799999237060547 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Bias Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.639247685 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-004_bias.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:22:13 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	0.0 \ Exposure time in seconds
+EXPOSURE =	0.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.799999237060547 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Bias Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.640428241 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/17-03-27/calibrazione/cal-005_bias.fit
+No.    Name      Ver    Type      Cards   Dimensions   Format
+  0  PRIMARY       1 PrimaryHDU      34   (1392, 1040)   int16 (rescales to uint16)   
+ - HEADER -
+SIMPLE =	True
+BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
+NAXIS =	2 \ number of axes
+NAXIS1 =	1392 \ fastest changing axis
+NAXIS2 =	1040 \ next to fastest changing axis
+BSCALE =	1.0 \ physical = BZERO + BSCALE*array_value
+BZERO =	32768.0 \ physical = BZERO + BSCALE*array_value
+DATE-OBS =	2017-03-28T03:23:55 \ YYYY-MM-DDThh:mm:ss observation start, UT
+EXPTIME =	0.0 \ Exposure time in seconds
+EXPOSURE =	0.0 \ Exposure time in seconds
+SET-TEMP =	-40.0 \ CCD temperature setpoint in C
+CCD-TEMP =	-19.899999618530273 \ CCD temperature at start of exposure in C
+XPIXSZ =	6.44922 \ Pixel Width in microns (after binning)
+YPIXSZ =	6.44922 \ Pixel Height in microns (after binning)
+XBINNING =	1 \ Binning factor in width
+YBINNING =	1 \ Binning factor in height
+XORGSUBF =	0 \ Subframe X position in binned pixels
+YORGSUBF =	0 \ Subframe Y position in binned pixels
+IMAGETYP =	Bias Frame \ Type of image
+SITELAT =	42 55 58 \ Latitude of the imaging location
+SITELONG =	10 29 53 \ Longitude of the imaging location
+JD =	2457840.641608796 \ Julian Date at start of exposure
+FOCALLEN =	2880.0 \ Focal length of telescope in mm
+APTDIA =	360.0 \ Aperture diameter of telescope in mm
+APTAREA =	84677.10844044686 \ Aperture area of telescope in mm^2
+SWCREATE =	MaxIm DL Version 5.15 \ Name of software that created the image
+SBSTDVER =	SBFITSEXT Version 1.0 \ Version of SBFITSEXT standard in effect
+OBJECT =	
+TELESCOP =	 \ telescope used to acquire this image
+INSTRUME =	SXV-H9 \ instrument or camera used
+OBSERVER =	
+NOTES =	
+FLIPSTAT =	
+SWOWNER =	FOXMASTER \ Licensed owner of software
+
+MIN -0.0028462315177697115
+
+Fit results:
+	m: -0.023 +- 4.4e-05  -->  0.19 %
+	q: 4.6e+01 +- 0.029  -->  0.06 %
+	red_chi = 94.21 +- 4.17 %
+
+Fit results:
+	k: 2.1e+03 +- 1.6e+01  -->  0.77 %
+	mu: 3.2e+01 +- 0.15  -->  0.46 %
+	sigma: 5.8 +- 0.2  -->  3.54 %
+	red_chi = 560.22 +- 40.82 %
+
+Fit results:
+	k: 2.2e+04 +- 9e+01  -->  0.41 %
+	mu: 3.3e+01 +- 0.13  -->  0.41 %
+	sigma: 5.8 +- 0.18  -->  3.13 %
+	red_chi = 217.84 +- 40.82 %
+
+Fit results:
+	k: 1.2e+04 +- 6.1e+01  -->  0.51 %
+	mu: 3.3e+01 +- 0.13  -->  0.40 %
+	sigma: 5.7 +- 0.18  -->  3.15 %
+	red_chi = 140.30 +- 40.82 %
+
+Fit results:
+	k: 1.9e+04 +- 9.6e+01  -->  0.51 %
+	mu: 3.3e+01 +- 0.14  -->  0.44 %
+	sigma: 5.6 +- 0.2  -->  3.54 %
+	red_chi = 137.00 +- 42.64 %
+
+Fit results:
+	k: 1.5e+04 +- 8.1e+01  -->  0.53 %
+	mu: 3.3e+01 +- 0.14  -->  0.43 %
+	sigma: 5.5 +- 0.19  -->  3.52 %
+	red_chi = 145.86 +- 42.64 %
+
+Fit results:
+	k: 1.2e+04 +- 6.5e+01  -->  0.56 %
+	mu: 3.3e+01 +- 0.14  -->  0.42 %
+	sigma: 5.5 +- 0.19  -->  3.52 %
+	red_chi = 137.27 +- 42.64 %
+
+Fit results:
+	k: 9e+03 +- 5.2e+01  -->  0.57 %
+	mu: 3.3e+01 +- 0.14  -->  0.42 %
+	sigma: 5.4 +- 0.19  -->  3.53 %
+	red_chi = 154.51 +- 42.64 %
+
+Fit results:
+	k: 7.2e+03 +- 3.9e+01  -->  0.54 %
+	mu: 3.3e+01 +- 0.14  -->  0.41 %
+	sigma: 5.5 +- 0.19  -->  3.49 %
+	red_chi = 96.12 +- 42.64 %
+
+Fit results:
+	k: 5.4e+03 +- 3.4e+01  -->  0.64 %
+	mu: 3.3e+01 +- 0.14  -->  0.41 %
+	sigma: 5.7 +- 0.2  -->  3.58 %
+	red_chi = 119.15 +- 42.64 %
+
+Fit results:
+	k: 4.3e+03 +- 2.6e+01  -->  0.60 %
+	mu: 3.3e+01 +- 0.14  -->  0.41 %
+	sigma: 5.6 +- 0.2  -->  3.54 %
+	red_chi = 135.97 +- 42.64 %
+
+Fit results:
+	k: 3.5e+03 +- 2.0  -->  0.06 %
+	mu: 3.3e+01 +- 0.14  -->  0.42 %
+	sigma: 5.5 +- 0.18  -->  3.35 %
+	red_chi = 118.12 +- 42.64 %
+
+Fit results:
+	k: 2.9e+03 +- 2.9  -->  0.10 %
+	mu: 3.3e+01 +- 0.14  -->  0.43 %
+	sigma: 5.6 +- 0.19  -->  3.35 %
+	red_chi = 122.76 +- 42.64 %
+
+Fit results:
+	k: 2.5e+03 +- 2e+01  -->  0.81 %
+	mu: 3.3e+01 +- 0.14  -->  0.43 %
+	sigma: 5.3 +- 0.2  -->  3.68 %
+	red_chi = 152.92 +- 42.64 %
+
+Fit results:
+	k: 2.2e+03 +- 1.1e+01  -->  0.51 %
+	mu: 3.3e+01 +- 0.13  -->  0.41 %
+	sigma: 5.3 +- 0.18  -->  3.46 %
+	red_chi = 152.76 +- 42.64 %
+
+Fit results:
+	k: 1.9e+03 +- 2.1  -->  0.11 %
+	mu: 3.3e+01 +- 0.14  -->  0.42 %
+	sigma: 5.2 +- 0.17  -->  3.35 %
+	red_chi = 130.85 +- 42.64 %
+
+Fit results:
+	k: 1.7e+03 +- 2.4  -->  0.14 %
+	mu: 3.3e+01 +- 0.14  -->  0.42 %
+	sigma: 5.3 +- 0.18  -->  3.35 %
+	red_chi = 99.02 +- 42.64 %
+
+Fit results:
+	k: 1.5e+03 +- 1.1e+01  -->  0.73 %
+	mu: 3.3e+01 +- 0.14  -->  0.42 %
+	sigma: 5.0 +- 0.18  -->  3.55 %
+	red_chi = 148.28 +- 42.64 %
+
+Fit results:
+	k: 1.4e+03 +- 1.1e+01  -->  0.80 %
+	mu: 3.3e+01 +- 0.14  -->  0.42 %
+	sigma: 4.9 +- 0.18  -->  3.57 %
+	red_chi = 117.18 +- 42.64 %
+
+Fit results:
+	k: 1e+03 +- 1.4  -->  0.14 %
+	mu: 3.3e+01 +- 0.14  -->  0.42 %
+	sigma: 4.8 +- 0.16  -->  3.34 %
+	red_chi = 88.69 +- 42.64 %
+
+Fit results:
+	k: 1.1e+03 +- 1e+01  -->  0.97 %
+	mu: 3.3e+01 +- 0.14  -->  0.43 %
+	sigma: 4.6 +- 0.19  -->  4.04 %
+	red_chi = 83.07 +- 44.72 %
+
+Fit results:
+	k: 8.2e+02 +- 8.3  -->  1.02 %
+	mu: 3.3e+01 +- 0.14  -->  0.43 %
+	sigma: 4.5 +- 0.18  -->  4.01 %
+	red_chi = 33.18 +- 44.72 %
+
+Fit results:
+	k: 7.5e+02 +- 5.9  -->  0.78 %
+	mu: 3.3e+01 +- 0.14  -->  0.44 %
+	sigma: 4.2 +- 0.16  -->  3.88 %
+	red_chi = 62.03 +- 44.72 %
+
+Fit results:
+	k: 6.5e+02 +- 8.0  -->  1.24 %
+	mu: 3.2e+01 +- 0.14  -->  0.43 %
+	sigma: 4.2 +- 0.17  -->  4.02 %
+	red_chi = 34.09 +- 44.72 %
+
+Fit results:
+	k: 6.7e+02 +- 1.3e+01  -->  1.90 %
+	mu: 2.9e+01 +- 0.096  -->  0.33 %
+	sigma: 4.2 +- 0.068  -->  1.61 %
+	red_chi = 7545.57 +- 22.36 %
+24 24
+
+Fit results:
+	m: -0.00088 +- 0.003  -->  334.97 %
+	q: 3.3e+01 +- 2.2  -->  6.54 %
+	red_chi = 2.59 +- 30.15 %
+DIM 1032 1018
+EDGE [-14 0]
+DIM 1018 1018
+MAX POS:  49.975429975429975 2
