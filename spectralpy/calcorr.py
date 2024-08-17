@@ -188,15 +188,54 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     plt.show()
     return target, lamp
 
-def lines_calibration(ch_obs: str, ch_obj: str, initial_values: Sequence[float] | None = None) -> FuncFit:
+def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, ord: int = 2, initial_values: Sequence[float] | None = None) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
+    """To compute the calibration function
+
+    Parameters
+    ----------
+    ch_obs : str
+        chosen obeservation night
+    ch_obj : str
+        chosen target name
+    trsl : int
+        values of the pixels have to be traslated by
+        the value of pixel at which the image is cut
+    ord : int, optional
+        order of the polynomial function used for the
+        fit, by default `2`
+    initial_values : Sequence[float] | None, optional
+        inital values for the fit, by default `None`
+
+    Returns
+    -------
+    px_to_arm : Callable[[ndarray], ndarray] 
+        function to convert pixel values in armstrong
+    err_func : Callable[[ndarray],ndarray]
+        uncertainties related to the estimated function values
+    """
+    ## Data
+    # extract the data for the fit
     lines, pxs, errs = get_cal_lines(ch_obs,ch_obj)
-    Dlines = np.full(lines.shape,3.63)
+    # traslate the pixels
+    pxs += trsl
+    Dlines = np.full(lines.shape,3.63)      #: uncertainties of the lines in armstrong
     if initial_values is None:
-       initial_values = [0,1,np.mean(pxs)]
+       initial_values = [0] + [1]*(ord-1) + [np.mean(pxs)]
+    
+    ## Fit
     fit = FuncFit(xdata=pxs,ydata=lines,xerr=errs,yerr=Dlines)
-    fit.pol_fit(ord=2,initial_values=initial_values)
+    fit.pol_fit(ord=ord,initial_values=initial_values)
     pop, _ = fit.results()
-    px_to_arm = lambda x : fit.res['func'](x, *pop)
+    cov = fit.res['cov']
+    
+    ## Functions 
+    px_to_arm = lambda x : fit.res['func'](x, *pop)     #: function to pass from px to A
+    # compute the function to evaluate the uncertainty associated with `px_to_arm`
+    def err_func(x):
+        err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
+        return np.sum(err, axis=0)
+    
+    ## Plot
     plt.figure()
     pp = np.linspace(pxs.min(),pxs.max(),200)
     plt.errorbar(pxs,lines,Dlines,errs,'.',color='orange')
@@ -205,105 +244,136 @@ def lines_calibration(ch_obs: str, ch_obj: str, initial_values: Sequence[float] 
     plt.errorbar(pxs,lines-fit.res['func'](pxs,*pop),Dlines,errs,'.',color='orange')
     plt.axhline(0,0,1)
     plt.show()
-    return px_to_arm
+    return px_to_arm, err_func
 
-def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: int | None = None, other_lamp: Spectrum | None = None, display_plots: bool = False, **kwargs) -> tuple[Callable[[ndarray],ndarray], Callable[[ndarray],ndarray]]:
-    """Evaluating the calibration function to pass from a.u. to Armstrong
+def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum) -> float:
+    """To compute the lag to pass from a lamp to another
 
     Parameters
     ----------
-    cal_file : str
-        file with calibration lines sampled from the `SpecrteArNeLISA.pdf` file
-    obj_lamp : str
-        path for the lamp file
-    lims_lamp : list
-        extrema of the lamp image
-    angle : float
-        inclination angle
-    initial_values : list[float], optional
-        initial values for the fit, by default `[3600, 2.6, 0.]`
+    lamp1 : Spectrum
+        first lamp
+    lamp2 : Spectrum
+        second lamp
+
+    Returns
+    -------
+    shift : float
+        lag between the two lamps
+        If it is negative, `lamp1` has to be shifted
+        If it is positive, vice versa
+    """
+    ## Data elaboration 
+    # prevent errors
+    lamp1 = lamp1.copy()
+    lamp2 = lamp2.copy()
+    # data must have same length
+    edge1 = lamp1.lims[2:]
+    edge2 = lamp2.lims[2:]
+    edge = edge1 - edge2
+    edge1 = [-edge[0] if edge[0] < 0 else 0, edge[1] if edge[1] < 0 else None]
+    edge2 = [edge[0] if edge[0] > 0 else 0, -edge[1] if edge[1] > 0 else None]
+    lamp1 = lamp1.spec[slice(*edge1)].copy()
+    lamp2 = lamp2.spec[slice(*edge2)].copy()
+
+    ## Correlation procedure
+    # normalize the data
+    lamp1 = lamp1.copy()/lamp1.max()
+    lamp2 = lamp2.copy()/lamp2.max()
+    # compute cross-correlation
+    from scipy.signal import correlate
+    corr = correlate(lamp1,lamp2)
+    print('MAX POS: ',np.argmax(corr)/len(corr)*100, len(corr) // np.argmax(corr))
+    quickplot(corr,title=f'Cross corr -> {np.argmax(corr)/len(corr)*100} : {len(corr) // np.argmax(corr)}')
+    plt.show()
+    # compute the lag
+    shift = np.argmax(corr) - (len(corr)/2)  
+    return shift
+
+def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: int | None = None, other_lamp: Spectrum | None = None, ord: int = 2, initial_values: Sequence[float] | None = None, display_plots: bool = False, **kwargs) -> tuple[Spectrum, Spectrum]:
+    """To open and calibrate data
+
+    Parameters
+    ----------
+    ch_obs : str
+        chosen obeservation night
+    ch_obj : str
+        chosen target name
+    selection : int | Literal['mean']
+        if there are more than one acquisition it is possible to select 
+        one of them (`selection` is the number of the chosen acquisition)
+        or to average on them (`selection == 'mean'`) 
+    angle : float | None, optional
+        inclination angle of the slit, by default `None`
+        If `angle is None` then the value is estimated by a 
+        fitting rountine
+    height : int | None, optional
+        height at which the lamp spectrum is taken, by default `None`
+        If `height is None`, the mean height is taken 
+    other_lamp : Spectrum | None, optional
+        parameter for the computing of the calibration function, by default `None`
+          * If `other_lamp is None`, the calibration function is obtained by a fit,
+          using the lines in `data_files/calibration/SpecrteArNeLISA.pdf` file
+          * Otherwise instead of sampling the lamp, the cross-correlation with a 
+          sampled previous one is computed and the data is shifted by the estimated
+          lag
+    ord : int, optional
+        order of the polynomial function used for the
+        fit, by default `2`
+    initial_values : Sequence[float] | None, optional
+        inital values for the fit, by default `None`
     display_plots : bool, optional
         if it is `True` images/plots are displayed, by default `False`
 
     Returns
     -------
-    cal_func : Callable[[ndarray],ndarray]
-        the calibration function
-    err_func : Callable[[ndarray],ndarray]
-        _description_
-    
-    Notes
-    -----
-    From spectrum data of the selected calibration lamp and corrisponding detected lines 
-    (obtained from `SpecrteArNeLISA.pdf` file) the function to map positions along the x 
-    axis in wavelengths is computed. To estimate the parameters a fit for a linear 
-    function is implemented
-
+    target : Spectrum 
+        calibrated science frame of the target
+    lamp : Spectrum
+        calibrated science frame of its lamp
     """
-    target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, display_plots=display_plots)
+    ## Data
+    # extract data
+    target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, display_plots=display_plots,**kwargs)
+    # average along the y axis
     target.spec = np.mean(target.data, axis=0)
-    if height is None: height = int(len(lamp.data)/2) 
+    # compute the height for the lamp
+    if height is None: height = int(len(lamp.data)/2)
+    # take lamp spectrum at `height` 
     lamp.spec = lamp.data[height]
     if display_plots:
         quickplot(target.spec,title='Uncalibrated spectrum of '+target.name,labels=('x [a.u.]','I [a.u.]'),numfig=1)
         quickplot(lamp.spec,title='Uncalibrated spectrum of its lamp',labels=('x [a.u.]','I [a.u.]'),numfig=2)
         plt.show()
-    if other_lamp is None:
-        cal_func = lines_calibration(ch_obs, ch_obj)
-    pxs = np.arange(len(target.spec))
-    lines = cal_func(pxs)
-    quickplot((lines,target.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'))
-    plt.show()        
-
-    # # fit method
-    # # defining the linear function for the fit
-    # def fit_func(param,x):
-    #     p0,p1,p2 = param
-    #     return p0 + p1*x + p2*x**2
-    # # extracting the data for the calibration from `cal_file`
-    # lines, x, Dx = np.loadtxt(cal_file, unpack=True)
-    # Dy = np.full(lines.shape,3.63)
-
-    # pop, perr, pcov = fit_routine(x,lines,initial_values=initial_values,fit_func=fit_func,xerr=Dx,yerr=Dy,display_res=display_plots,return_res=['pcov'])
-    # _,p1,p2 = pop
-    # Dp0,Dp1,Dp2 = perr
-
-    # # defining the calibration function
-    # cal_func = lambda x : fit_func(pop,x)
     
-    # def err_func(x: ndarray, dx: ndarray, all_res: bool = False):
-    #     dfdx = p1 + p2*2*x
-    #     err = (dfdx*dx)**2
-    #     if all_res:
-    #         dfdp1 = x
-    #         dfdp2 = x**2
-    #         err += Dp0**2 + (dfdp1*Dp1)**2 + (dfdp2*Dp2)**2 + 2*( dfdp1*pcov[0,1] + dfdp2*pcov[0,2] + dfdp1*dfdp2*pcov[1,2]) 
-    #     return np.sqrt(err)
-        
-    # # condition to display the images/plots
-    # if display_plots == True:
-    #     sigma = np.sqrt(Dy**2 + (p1*Dx + p2*x*Dx*2)**2)
-    #     fig = plt.figure('Calibration',figsize=[8,7])
-    #     fig.suptitle('Fit for lamp calibration')
-    #     ax1, ax2 = fig.subplots(2, 1, sharex=True, gridspec_kw=dict(height_ratios=[2, 1], hspace=0.05))
-    #     # plt.title('Calibration fit')
-    #     ax1.errorbar(x,lines,xerr=Dx,yerr=Dy,fmt='.',color='green',label='data')
-    #     ax1.plot(x,cal_func(x),color='orange',label='Best-fit')
-    #     ax1.set_ylabel('$\lambda$ [$\AA$]')
-    #     ax1.legend(numpoints=1)
-
-    #     # plt.figure(figsize=[10,7])
-    #     # plt.title('Residuals')
-    #     ax2.axhline(0,xmin=0,xmax=1,linestyle='-.',color='black',alpha=0.5)
-    #     ax2.errorbar(x,lines-cal_func(x),xerr=Dx,yerr=sigma,fmt='v',linestyle=':',color='green')
-    #     ax2.set_xlabel('x [px]')
-    #     ax2.set_ylabel('Residuals [$\AA$]')
-
-    #     plt.show()
-
-    # return cal_func, err_func
-
-
+    ## Calibration
+    if other_lamp is None:      
+        # compute the calibration function via fit
+        cal_func, err_func = lines_calibration(ch_obs, ch_obj, trsl=lamp.lims[2], ord=ord)
+        # store results
+        lamp.func = [cal_func, err_func]
+        target.func = [*lamp.func]
+        # compute the values in armstrong
+        lamp.compute_lines()
+        target.compute_lines()
+        # plot
+        quickplot((lamp.lines,lamp.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=3,**kwargs)
+        plt.errorbar(lamp.lines, lamp.spec,xerr=lamp.errs,fmt='.')
+    else:
+        # compute the lag between the two lamps
+        shift = lamp_correlation(lamp, other_lamp)
+        # store the functions
+        lamp.func = [*other_lamp.func]
+        target.func = [*other_lamp.func]
+        # compute the values in armstrong
+        lamp.compute_lines(shift=shift)
+        target.compute_lines(shift=shift)
+        # plot
+        quickplot((lamp.lines,lamp.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=3,**kwargs)
+        plt.errorbar(lamp.lines, lamp.spec,xerr=lamp.errs,fmt='.')
+    quickplot((target.lines,target.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=4,**kwargs)
+    plt.show()        
+    return target, lamp
 
 
 def calibrated_spectrum(ch_obs: int, ch_obj: str, flat: None | ndarray = None, cal_func: Callable[[ndarray],ndarray] | None = None, err_func: Callable[[ndarray,ndarray,bool],ndarray] | None = None, display_plots: bool = False, initial_values: list[float] | tuple[float] = [3600, 2.6,0.], ret_values: str = 'few') -> list[ndarray] | list[ndarray | dict]:
