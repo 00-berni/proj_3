@@ -1,0 +1,11 @@
+#	The section of image to display
+#
+#	The first row is for the target acquisition
+#	The last one is for the lamp
+#
+#yl	yu	xl	xu
+408	475	240	-1
+408	475	240	-1
+408	475	240	-1
+408	475	240	-1
+259 748 352 1384
