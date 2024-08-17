@@ -75,7 +75,10 @@ class Spectrum():
         self.hdul = hdul
         self.data = hotpx_remove(data) if hotpx else data 
         self.lims = lims
-        self.spec = None
+        self.spec  = None
+        self.lines = None
+        self.errs  = None
+        self.func  = None
 
     def print_header(self) -> None:
         """To print the header of fits file"""
@@ -200,6 +203,12 @@ class Spectrum():
         data_rot = ndimage.rotate(data, angle, reshape=False)
         target.data = data_rot
         return target, angle
+    
+    def compute_lines(self, shift: float = 0 ) -> None:
+        pxs = np.arange(len(self.spec)) + self.lims[2] + shift
+        cal_func, err_func = self.func
+        self.lines = cal_func(pxs)
+        self.errs  = err_func(pxs)
 
     def copy(self):
         """To make an identical copy of a Spectrum object
@@ -210,6 +219,10 @@ class Spectrum():
             the copy
         """
         target = Spectrum([*self.hdul], self.data.copy(), self.lims.copy(), hotpx=False, name=self.name)
+        target.spec  = self.spec.copy()  if self.spec  is not None else None
+        target.lines = self.lines.copy() if self.lines is not None else None
+        target.errs  = self.errs.copy()  if self.errs  is not None else None
+        target.func  = [*self.func] if self.func is not None else None
         return target
 
     def __add__(self, spec: Any) -> ndarray:
@@ -340,7 +353,7 @@ class FuncFit():
         if names is None:
             names = [f'par{i}' for i in range(len(pop))]
         for name, par, Dpar in zip(names,pop,Dpop):
-            print(f'\t{name}: {par:.2} +- {Dpar:.2}  -->  {Dpar/par*100:.2} %')
+            print(f'\t{name}: {par:.2} +- {Dpar:.2}  -->  {abs(Dpar/par)*100:.2f} %')
         if 'chisq' in self.res:
             chisq, chi0 = self.res['chisq']
             print(f'\tred_chi = {chisq/chi0*100:.2f} +- {np.sqrt(2/chi0)*100:.2f} %')
@@ -371,7 +384,7 @@ class FuncFit():
 
     def pol_fit(self, ord: int, initial_values: Sequence[float], names: Sequence[str] | None = None) -> None:
         def pol_func(x, *args):
-            poly = [ args[i] * x**(ord - i) for i in range(len(args))]
+            poly = [ args[i] * x**(ord - i) for i in range(ord+1)]
             return np.sum(poly,axis=0)
         self.pipeline(pol_func,initial_values=initial_values,names=names)
 
