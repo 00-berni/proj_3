@@ -5,13 +5,78 @@ import spectralpy.calcorr as clcr
 import spectralpy.display as dsp
 
 if __name__ == '__main__':
+    from spectralpy.stuff import FuncFit
     TARGETS = dt.open_targets_list()
     night, target_name, selection = TARGETS[:,0]
 
     target, lamp = clcr.calibration(night, target_name, selection, ord=2)
-    
-    night, target_name, selection = TARGETS[:,1]
-    target2, lamp2 = clcr.calibration(night, target_name, selection, other_lamp=lamp)
+
+    exit()
+    # night, target_name, selection = TARGETS[:,1]
+    # target2, lamp2 = clcr.calibration(night, target_name, selection, other_lamp=lamp)
+
+    ## Vega
+    night = '17-03-27'
+    target_name = 'Vega'
+    selection = 'mean'
+    bin_width = 50
+    alt = np.array([20,35,43,58],dtype=float)
+    Dalt = np.full(alt.shape,0.5)
+    x  = np.sin(alt*np.pi/180)
+    Dx = Dalt * np.cos(alt*np.pi/180) * np.pi/180
+    vega : list[dt.Spectrum] = []
+    line = []
+    for i in range(len(alt)):
+        tmp, _ = clcr.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp)
+        vega += [tmp]
+        line += [[tmp.lines[0],tmp.lines[-1]]]
+    min_line = np.max(line,axis=0)[0]
+    max_line = np.min(line,axis=0)[1]
+    l_data = []
+    y_data = []
+    a_bin  = []
+    for obs in vega:
+        start = np.where(obs.lines == min_line)[0][0]
+        end = np.where(obs.lines == max_line)[0][0] + 1
+        obs.lines = obs.lines[start:end]
+        obs.spec = obs.spec[start:end]
+        l, y, bins = obs.binning(bin=bin_width)         
+        l_data +=  [l[0]]
+        y_data +=  [y[0]]
+        a_bin  +=  [bins]
+    print(l_data)
+    l_data = np.array(l_data)
+    y_data = np.array(y_data)
+    a_bin  = np.array(a_bin)
+    a_I0   = np.empty((0,2))
+    a_tau  = np.empty((0,2))
+    fig1, ax1 = plt.subplots(1,1)
+    fig2, ax2 = plt.subplots(1,1)
+    for i in range(l_data.shape[1]):
+        y = y_data[:,i]
+        print(y)
+        initial_values = [-0.5, np.log(y).max()]
+        fit = FuncFit(x, np.log(y), xerr=Dx)
+        fit.linear_fit(initial_values, names=('tau','ln(I0)'))
+        pop, Dpop = fit.results()
+        I0  = np.exp(pop[1])
+        DI0 = Dpop[1] * I0
+        a_I0  = np.append(a_I0, [ [I0, DI0] ], axis=0)
+        a_tau = np.append(a_tau, [ [-pop[0], Dpop[0]] ], axis=0)
+
+        func = fit.res['func']
+        xx = np.linspace(x.min(),x.max(),200)
+        color = (0.5,i/l_data.shape[1],1-i/l_data.shape[1])
+        ax1.errorbar(x, np.log(y), xerr=Dx, fmt='.', color=color)
+        ax1.plot(xx, func(xx,*pop), color=color)
+        ax2.errorbar(x, np.log(y) - func(x,*pop), xerr=Dx, fmt='.', color=color)
+    ax2.axhline(0, 0, 1, color='black')
+    plt.figure()
+    plt.errorbar(np.arange(len(a_I0)), a_I0[:,0], a_I0[:,1])
+    plt.show()
+
+
+
 
 
     # sc_frame, lamp = clcr.get_target_data(night,target_name,selection,angle=None)
