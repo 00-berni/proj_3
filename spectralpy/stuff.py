@@ -23,6 +23,7 @@ STUFF PACKAGE
 
 import numpy as np
 from numpy import ndarray
+from numpy.typing import ArrayLike
 from typing import Callable, Sequence, Any
 from astropy.io.fits import HDUList
 import matplotlib.pyplot as plt
@@ -55,7 +56,7 @@ class Spectrum():
         """
         return Spectrum([],[],[],False,name='empty')
 
-    def __init__(self, hdul: HDUList | Sequence[HDUList] | None, data: ndarray | None, lims: ndarray | None, hotpx: bool = True, name: str = '') -> None:
+    def __init__(self, hdul: HDUList | Sequence[HDUList] | None, data: ndarray | None, lims: ndarray | None, sigma: ndarray | None = None, hotpx: bool = True, name: str = '') -> None:
         """Constructor of the class
 
         Parameters
@@ -74,8 +75,10 @@ class Spectrum():
         self.name = name
         self.hdul = hdul
         self.data = hotpx_remove(data) if hotpx else data 
+        self.sigma = sigma
         self.lims = lims
         self.spec  = None
+        self.std   = None
         self.lines = None
         self.errs  = None
         self.func  = None
@@ -116,6 +119,8 @@ class Spectrum():
         """To cut the image"""
         lims = (slice(*self.lims[:2]),slice(*self.lims[2:]))
         self.data = self.data[lims]
+        if self.sigma is not None:
+            self.sigma = self.sigma[lims]
 
     def angle_correction(self, angle: float | None = None, init: list[float] = [0.9, 0.]) -> tuple:
         """To correct the inclination of spectrum, rotating the image.
@@ -148,7 +153,7 @@ class Spectrum():
         target = self.copy()
         data = target.data
         from scipy import ndimage
-        if angle == None:
+        if angle is None:
             y_pos = np.argmax(data, axis=0)
             x_pos = np.arange(len(y_pos))
             
@@ -163,9 +168,9 @@ class Spectrum():
             pop, perr = fit.results()
             m, q = pop
             Dm, _ = perr
-            angle = np.arctan(m)*180/np.pi   # degrees
+            angle1 = np.arctan(m)*180/np.pi   # degrees
             Dangle = 180/np.pi * Dm/(1+m**2)
-            data = ndimage.rotate(data, angle, reshape=False).copy()
+            data = ndimage.rotate(data, angle1, reshape=False).copy()
 
             fig, ax = plt.subplots(1,1) 
             y_pos, Dy = np.array([]), np.array([])
@@ -197,18 +202,64 @@ class Spectrum():
             m  = pop[0]
             Dm = perr[0]
 
-            angle = np.arctan(m)*180/np.pi   # degrees
+            angle2 = np.arctan(m)*180/np.pi   # degrees
             Dangle = 180/np.pi * Dm/(1+m**2)
-
-        data_rot = ndimage.rotate(data, angle, reshape=False)
-        target.data = data_rot
+            angle = angle1 + angle2
+        target.data = ndimage.rotate(target.data, angle, reshape=False)
+        print('ANGLE',angle)
+        if target.sigma is not None:
+            target.sigma = ndimage.rotate(target.sigma, angle, reshape=False)
         return target, angle
     
     def compute_lines(self, shift: float = 0 ) -> None:
+        """To compute and store calibrated values in Armstrong 
+        and their uncertainties 
+
+        Parameters
+        ----------
+        shift : float, optional
+            lag between two different lamps obtained from the
+            cross-correlation of them, by default `0`
+        """
         pxs = np.arange(len(self.spec)) + self.lims[2] + shift
         cal_func, err_func = self.func
         self.lines = cal_func(pxs)
         self.errs  = err_func(pxs)
+
+    def binning(self, bin: float = 50) -> tuple[tuple[ndarray,ndarray], tuple[ndarray,ndarray], ndarray]:
+        """To bin spectrum data
+
+        Parameters
+        ----------
+        bin : float, optional
+            width of the bins, by default `50`
+
+        Returns
+        -------
+        (bin_lines, err_lines) : tuple[ndarray, ndarray]
+            central values of bins and their uncertainties
+            Each value has an uncertainty equal to `bin / 2`
+        (bin_spect, err_spect) : tuple[ndarray, ndarray]
+            binned spectrum and the uncertainty
+            Each value is the average over the values in the bin
+            and the relative uncertainty is the STD
+        bins : ndarray
+            bins edges
+        """
+        half_bin = bin / 2
+        spectrum = self.spec
+        lines = self.lines
+        appr = lambda l : np.rint(l / bin) * bin
+        edges = (appr(lines[0]), appr(lines[-1]))
+        bin_num = int(np.diff(edges)[0] // bin)
+        print(edges,bin_num)
+        bins = np.linspace(*edges, bin_num)
+        bin_lines = bins[:-1] + half_bin
+        err_lines = np.full(bin_lines.shape,bin/2)
+        pos = lambda i : np.where((bin_lines[i] - half_bin <= lines) & (lines < bin_lines[i] + half_bin))[0]
+        spect_data = np.array([ [*mean_n_std(spectrum[pos(i)])] for i in range(bin_num-1)])
+        bin_spect, err_spect = spect_data[:,0], spect_data[:,1] 
+        return (bin_lines, err_lines), (bin_spect, err_spect), bins
 
     def copy(self):
         """To make an identical copy of a Spectrum object
@@ -218,11 +269,11 @@ class Spectrum():
         target : Spectrum
             the copy
         """
-        target = Spectrum([*self.hdul], self.data.copy(), self.lims.copy(), hotpx=False, name=self.name)
+        target = Spectrum([*self.hdul], self.data.copy(), self.lims.copy(), sigma=self.sigma, hotpx=False, name=self.name)
         target.spec  = self.spec.copy()  if self.spec  is not None else None
         target.lines = self.lines.copy() if self.lines is not None else None
         target.errs  = self.errs.copy()  if self.errs  is not None else None
-        target.func  = [*self.func] if self.func is not None else None
+        target.func  = [*self.func]      if self.func  is not None else None
         return target
 
     def __add__(self, spec: Any) -> ndarray:
@@ -320,6 +371,7 @@ class FuncFit():
         xdata, ydata = self.data[:2]
         sigma = self.data[2]
         Dx = self.data[3]
+        if len(xdata) != len(ydata): raise Exception(f'Different arrays length:\nxdata : {len(xdata)}\nydata : {len(ydata)}')
         self.res['func'] = method
         from scipy import odr
         def fit_model(pars, x):
@@ -389,7 +441,50 @@ class FuncFit():
         self.pipeline(pol_func,initial_values=initial_values,names=names)
 
     def linear_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('m','q')) -> None:
+        # def lin_func(x, m, q):
+        #     return m*x + q
+        # self.pipeline(lin_func,initial_values=initial_values,names=names)
         self.pol_fit(ord=1, initial_values=initial_values, names=names)
+
+def mean_n_std(data: ArrayLike, axis: int | None = None, weights: Sequence[Any] | None = None) -> tuple[float, float]:
+    """To compute the mean and standard deviation from it
+
+    Parameters
+    ----------
+    data : Sequence[Any]
+        values of the sample
+    axis : int | None, default None
+        axis over which averaging
+    weights : Sequence[Any] | None, default None
+        array of weights associated with data
+
+    Returns
+    -------
+    mean : float
+        the mean of the data
+    std : float
+        the STD from the mean
+    """
+    dim = len(data)     #: size of the sample
+    # data = np.array(data)
+    # compute the mean
+    mean = np.average(data,axis=axis,weights=weights)
+    # compute the STD from it
+    if weights is None:
+        std = np.sqrt( ((data-mean)**2).sum(axis=axis) / (dim*(dim-1)) )
+    else:
+        std = np.sqrt(np.average((data-mean)**2, axis=axis, weights=weights) / (dim-1) * dim)
+    return mean, std
+
+def compute_err(*args: Spectrum) -> ndarray | None:
+    sigma = 0
+    for elem in args:
+        elem = elem.copy()
+        if elem.sigma is None: elem.sigma = 0
+        sigma += elem.sigma**2
+    sigma = np.sqrt(sigma)
+    if isinstance(sigma,int) and sigma == 0: sigma = None
+    return sigma
 
 def make_cut_indicies(file_path: str, lines_num: int) -> ndarray:
     """To make a `cut_indicies.txt` file when it is not
