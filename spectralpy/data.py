@@ -25,8 +25,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
 from astropy.io.fits import HDUList
-from .stuff import make_cut_indicies, Spectrum, FuncFit
-from .display import show_fits, quickplot
+from .stuff import make_cut_indicies, Spectrum, mean_n_std
+from .display import *
 from numpy.typing import ArrayLike
 from typing import Sequence, Literal
 from numpy import ndarray
@@ -65,6 +65,20 @@ OBJ_FILE = os.path.join(DATA_DIR, 'objs_per_night.json')    #: path of file with
 DATA_ALL = data_extraction(OBJ_FILE)                        #: dictionary with the targets per night
 
 def get_cal_lines(ch_obs: str, ch_obj: str) -> ndarray:
+    """To load the edges of the image cut
+
+    Parameters
+    ----------
+    ch_obs : str
+        chosen obeservation night
+    ch_obj : str
+        chosen target name
+
+    Returns
+    -------
+    data : ndarray
+        information about the cut
+    """
     file_path = os.path.join(DATA_DIR,ch_obs,ch_obj,'calibration_lines.txt')
     data = np.loadtxt(file_path, unpack=True)
     return data
@@ -183,13 +197,13 @@ def get_data_fit(path: str, lims: Sequence[int | None] = [0,None,0,None], hotpx:
     # print the header
     target.print_header()
     # display target image
-    if display_plots == True: 
+    if display_plots: 
         _ = show_fits(target, **kwargs) 
     return target
 ##*
 
 
-def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07-27_ohp','23-03-28'], sel_cal: Literal['dark','flat','bias','all'] = 'all') -> list[Spectrum]:
+def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07-27_ohp','23-03-28'], sel_cal: Literal['dark','flat','bias','all'] = 'all', display_plot: bool = False) -> list[Spectrum]:
     """To get data of dark, flat or bias, if any
 
     Parameters
@@ -231,9 +245,9 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
                 mean_flat.hdul += [tmp.hdul]
                 mean_flat.data += [tmp.data]
                 mean_flat.lims = lim
-            mean_flat.data = np.mean(mean_flat.data,axis=0)
+            mean_flat.data, mean_flat.sigma = mean_n_std(mean_flat.data,axis=0)
             mean_flat.name = 'Mean Flat'
-            _ = show_fits(mean_flat)
+            if display_plot: _ = show_fits(mean_flat)
             # store the result
             results += [mean_flat]
         if sel_cal in ['dark', 'all']:
@@ -245,9 +259,9 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
                 tmp = get_data_fit(d, obj_name='dark',display_plots=False) 
                 mean_dark.hdul += [tmp.hdul]
                 mean_dark.data += [tmp.data]
-            mean_dark.data = np.mean(mean_dark.data,axis=0)
+            mean_dark.data, mean_dark.sigma = mean_n_std(mean_dark.data,axis=0)
             mean_dark.name = 'Mean Dark'
-            _ = show_fits(mean_dark)
+            if display_plot: _ = show_fits(mean_dark)
             # store the result
             results += [mean_dark]
         if sel_cal in ['bias', 'all']:
@@ -259,9 +273,9 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
                 tmp = get_data_fit (b, obj_name='bias',display_plots=False) 
                 master_bias.hdul += [tmp.hdul]
                 master_bias.data += [tmp.data]
-            master_bias.data = np.mean(master_bias.data,axis=0)
+            master_bias.data, master_bias.sigma = mean_n_std(master_bias.data,axis=0)
             master_bias.name = 'Master Bias'
-            _ = show_fits(master_bias)
+            if display_plot: _ = show_fits(master_bias)
             # store the result
             results += [master_bias]
     elif ch_obs in ['18-11-27','22-07-26_ohp','22-07-27_ohp']:
@@ -270,7 +284,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             flat = data_file_path(ch_obs,'Calibration',calibration)
             flat = get_data_fit(flat, lims, obj_name='flat',display_plots=False) 
             flat.name = 'flat'
-            _ = show_fits(flat)
+            if display_plot: _ = show_fits(flat)
             results += [flat]
         else: raise Exception(f'No {sel_cal} for this observation')
     elif ch_obs == '23-03-28':
@@ -286,9 +300,9 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
                 mean_flat.hdul += [tmp.hdul]
                 mean_flat.data += [tmp.data]
                 mean_flat.lims = lim
-            mean_flat.data = np.mean(mean_flat.data,axis=0)
+            mean_flat.data, mean_flat.sigma = mean_n_std(mean_flat.data,axis=0)
             mean_flat.name = 'Mean Flat'
-            _ = show_fits(mean_flat,title='Mean Flat')
+            if display_plot: _ = show_fits(mean_flat,title='Mean Flat')
             # store the result
             results += [mean_flat]
         if sel_cal in ['dark', 'all']:
@@ -300,9 +314,9 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
                 tmp = get_data_fit(d, obj_name='dark',display_plots=False) 
                 mean_dark.hdul += [tmp.hdul]
                 mean_dark.data += [tmp.data]
-            mean_dark.data = np.mean(mean_dark.data,axis=0)
+            mean_dark.data, mean_dark.sigma = mean_n_std(mean_dark.data,axis=0)
             mean_dark.name = 'Mean Dark'
-            _ = show_fits(mean_dark,title='Mean Dark')
+            if display_plot: _ = show_fits(mean_dark,title='Mean Dark')
             # store the result
             results += [mean_dark]
     # check the chosen night
@@ -367,21 +381,26 @@ def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], dis
             for (fits, lim) in zip(obj_fit, lims_fit):
                 fits = data_file_path(ch_obs, ch_obj, fits)
                 tmp = get_data_fit(fits,lim,obj_name=ch_obj,display_plots=display_plots,**kwargs)
-                _ = show_fits(tmp,title='Tmp',show=True)
+                # _ = show_fits(tmp,title='Tmp',show=True)
                 target.hdul += [tmp.hdul]
                 target.data += [tmp.data]
                 target.lims = lim
-            target.data = np.mean(target.data, axis=0)
+            target.data, target.sigma = mean_n_std(target.data,axis=0)
+            plt.figure()
+            plt.imshow(target.sigma)
+            plt.colorbar()
+            plt.show()            
+            # target.data = np.mean(target.data, axis=0)
             target.name = tmp.name
     else:
         obj_fit = data_file_path(ch_obs, ch_obj, obj_fit)
         target = get_data_fit(obj_fit,lims_fit,obj_name=ch_obj,display_plots=display_plots,**kwargs)
-    _ = show_fits(target, title='Target spectrum extracted', show=True)
+    if display_plots: _ = show_fits(target, title='Target spectrum extracted', show=True)
     # collect the lamp data, if any
     if obj_lamp is not None:
         obj_lamp = data_file_path(ch_obs, ch_obj, obj_lamp)
         lamp = get_data_fit(obj_lamp,lims_lamp,obj_name='Lamp of ' + ch_obj, display_plots=display_plots,**kwargs)
-        _ = show_fits(lamp, show='True')
+        if display_plots:  _ = show_fits(lamp, show='True')
     else: 
         lamp = Spectrum.empty()
     return target, lamp       
