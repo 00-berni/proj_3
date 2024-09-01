@@ -3,10 +3,14 @@
 #	The first row is for the target acquisition
 #	The last one is for the lamp
 #
-#yl	yu	xl	xu
-429	479	254	-1
-429	479	254	-1
-429	479	254	-1
-429	479	254	-1
-429	479	254	-1
-253	748 355	1384
+#   The first four columns are the edges of the 
+#   inclinated image
+#   The others are the edges of the corrected image
+#   
+#cyl cyu cxl cxu yl	yu	xl	xu   
+429	479	254	-1	439	470	236	1388
+429	479	254	-1	439	470	236	1388
+429	479	254	-1	439	470	236	1388
+429	479	254	-1	439	470	236	1388
+429	479	254	-1	439	470	236	1388
+253	748 355	1384	275	751	366	1383
