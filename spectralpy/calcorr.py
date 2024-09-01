@@ -161,8 +161,6 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
         plt.show()
     
     ## Calibration correction
-    # if there is calibration information
-    # try:
     calibration = extract_cal_data(ch_obs)
     if len(calibration) > 1:
         if len(calibration) == 3:   #: in this case `calibration = [flat, dark, bias]` 
@@ -190,6 +188,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
             lamp.sigma = compute_err(lamp, dark)
     # compute master flat
     master_flat = compute_master_flat(*calibration,display_plots=display_plots,**kwargs)
+    _ = show_fits(master_flat,title='Flat',show=True) 
     print('MIN',master_flat.data.min())
     flat_err = lambda data : 0 if master_flat.sigma is None else (data*master_flat.sigma / master_flat.data**2)**2
     # flat correction
@@ -202,29 +201,41 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
         lamp_err = flat_err(lamp.data) + err(lamp.sigma)
         lamp.data = lamp.data / master_flat.data  
         lamp.sigma = None if isinstance(lamp_err, int) else np.sqrt(lamp_err)
-    # except Exception:
-    #     print('!EXception')
-    #     pass
+        #? CHECK
+        pos = np.where(lamp.sigma < 0)
+        if len(pos[0]) != 0:
+            plt.figure()
+            plt.title('HELP')
+            plt.imshow(lamp.sigma,cmap='gray')
+            plt.plot(pos[1],pos[0],'.',color='red')
+            plt.show()
+            raise
+    exit_cond = False
+    norm = 'linear'
     if cut:    
-        target.cut_image()
         target, angle = target.angle_correction(angle=angle)      
+        if np.all(target.lims == [0, None, 0, None]): 
+            exit_cond = True
+            norm = 'log'
+        target.cut_image()
         if lamp.name != 'empty':
-            lamp.cut_image()
             lamp, _ = lamp.angle_correction(angle=angle)      
-    show_fits(target, title='Science Frame',v=0,**kwargs)
+            lamp.cut_image()
+    show_fits(target, title='Science Frame',norm=norm,**kwargs)
     # if target.sigma is not None: 
     #     plt.figure()
     #     plt.title('sigma targ')
     #     plt.imshow(target.sigma)
     #     plt.colorbar()
     if lamp.name != 'empty':
-        show_fits(lamp, title='Science Frame',**kwargs)
+        show_fits(lamp, title='Science Frame',norm=norm,**kwargs)
         # if lamp.sigma is not None: 
         #     plt.figure()
         #     plt.title('sigma lamp')
         #     plt.imshow(lamp.sigma)
         #     plt.colorbar()
     plt.show()
+    if exit_cond: exit()
     return target, lamp
 
 def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, ord: int = 2, initial_values: Sequence[float] | None = None) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
@@ -309,16 +320,22 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum) -> float:
     # data must have same length
     edge1 = lamp1.lims[2:]
     edge2 = lamp2.lims[2:]
+    print('LAMP2',lamp2)
     edge = edge1 - edge2
-    edge1 = [-edge[0] if edge[0] < 0 else 0, edge[1] if edge[1] < 0 else None]
-    edge2 = [edge[0] if edge[0] > 0 else 0, -edge[1] if edge[1] > 0 else None]
+    print('EDGE',edge1)
+    print('EDGE',edge2)
+    print('EDGE',edge)
+    edge1 = [0 if edge[0] > 0 else -edge[0], -edge[1] if edge[1] > 0 else None]
+    edge2 = [edge[0] if edge[0] > 0 else 0 , None if edge[1] > 0 else edge[1]]
+    print('EDGEs',edge1, edge2)
     lamp1 = lamp1.spec[slice(*edge1)].copy()
     lamp2 = lamp2.spec[slice(*edge2)].copy()
 
     ## Correlation procedure
+    print('LAMP2',lamp2)
     # normalize the data
-    lamp1 = lamp1.copy()/lamp1.max()
-    lamp2 = lamp2.copy()/lamp2.max()
+    lamp1 = lamp1/lamp1.max()
+    lamp2 = lamp2/lamp2.max()
     # compute cross-correlation
     from scipy.signal import correlate
     corr = correlate(lamp1,lamp2)
@@ -383,7 +400,15 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     if height is None: height = int(len(lamp.data)/2)
     # take lamp spectrum at `height` 
     lamp.spec = lamp.data[height]
-    if lamp.sigma is not None: lamp.std = lamp.sigma[height]
+    if lamp.sigma is not None: 
+        lamp.std = lamp.sigma[height]
+        pos = np.where(lamp.std < 0)[0]
+        if len(pos) != 0:
+            plt.figure()
+            plt.plot(lamp.std)
+            plt.plot(pos,lamp.std[pos],'.')
+            plt.show()
+            raise
     if display_plots:
         quickplot(target.spec,title='Uncalibrated spectrum of '+target.name,labels=('x [a.u.]','I [a.u.]'),numfig=1)
         quickplot(lamp.spec,title='Uncalibrated spectrum of its lamp',labels=('x [a.u.]','I [a.u.]'),numfig=2)
@@ -417,6 +442,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         plt.errorbar(lamp.lines, lamp.spec,xerr=lamp.errs,fmt='.')
     quickplot((target.lines,target.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=4,**kwargs)
     plt.errorbar(target.lines,target.spec,target.std,target.errs,fmt='.')
+    plt.yscale('log')
     plt.show()        
     return target, lamp
 
