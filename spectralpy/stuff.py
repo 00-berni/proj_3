@@ -46,7 +46,32 @@ class Spectrum():
         _description_
     """
     @staticmethod
-    def empty():
+    def check_edges(lims: ArrayLike, shape: tuple[int, int]) -> ndarray:
+        """To compute exact pixel value for cut image edges
+
+        Parameters
+        ----------
+        lims : ArrayLike
+            edges values
+        shape : tuple[int, int]
+            sizes of the image
+
+        Returns
+        -------
+        lims : ndarray
+            checked edges values
+        """
+        if lims is not None and 0 not in shape:
+            lims = np.copy(lims)
+            for i in [0,1]:
+                n = shape[i]    #: size of image
+                k = 2*i+1       #: position of upper edge 
+                if lims[k] is None: lims[k] = n
+                elif lims[k] < 0: lims[k] = n + lims[k]
+        return lims
+
+    @staticmethod
+    def empty() -> 'Spectrum':
         """To generate an empty object
 
         Returns
@@ -54,9 +79,9 @@ class Spectrum():
         Spectrum
             empty object
         """
-        return Spectrum([],[],[],False,name='empty')
+        return Spectrum([],[],[],[],False,hotpx=False,name='empty',check_edges=False)
 
-    def __init__(self, hdul: HDUList | Sequence[HDUList] | None, data: ndarray | None, lims: ndarray | None, sigma: ndarray | None = None, hotpx: bool = True, name: str = '') -> None:
+    def __init__(self, hdul: HDUList | Sequence[HDUList] | None, data: ndarray | None, lims: ArrayLike | None, cut: ArrayLike | None, sigma: ndarray | None = None, hotpx: bool = True, name: str = '', check_edges: bool = True) -> None:
         """Constructor of the class
 
         Parameters
@@ -65,18 +90,26 @@ class Spectrum():
             hdul information
         data : ndarray | None
             spectrum values
-        lims : ndarray | None
-            edges of cutted image
+        lims : ArrayLike | None
+            edges of cut image
+        cut : ArrayLike | None
+            cut image edges for inclination correction
         hotpx : bool, optional
             to filter and remove hot pixels, by default `True`
         name : str, optional
             the name of the object, by default `''`
+        check_edges: bool, optional
+            parameter to check edges values, by default `True`
         """
+        if check_edges:
+            lims = Spectrum.check_edges(lims, shape=data.shape)
+            cut  = Spectrum.check_edges(cut,  shape=data.shape)
         self.name = name
-        self.hdul = hdul
-        self.data = hotpx_remove(data) if hotpx else data 
-        self.sigma = sigma
+        self.hdul = hdul.copy()
+        self.data  = hotpx_remove(data) if hotpx else data 
+        self.sigma = np.copy(sigma) if sigma is not None else None
         self.lims = lims
+        self.cut  = cut 
         self.spec  = None
         self.std   = None
         self.lines = None
@@ -122,7 +155,7 @@ class Spectrum():
         if self.sigma is not None:
             self.sigma = self.sigma[lims]
 
-    def angle_correction(self, angle: float | None = None, init: list[float] = [0.9, 0.]) -> tuple:
+    def angle_correction(self, angle: float | None = None, init: list[float] = [0.9, 0.]) -> tuple['Spectrum',float]:
         """To correct the inclination of spectrum, rotating the image.
         
         Parameters
@@ -146,68 +179,88 @@ class Spectrum():
         The method consists of two steps:
           1. Take the maximum of each column and compute a linear fit in order to find 
           the inclination angle
-          2. Fit each column with a gaussian profile, get the mean position and repeat
-          the linear fit to estimate the angle
-        After then the image is rotated
+          2. Fit a column for every 50 points with a gaussian profile, estimate the mean 
+          for each one and repeat the linear fit to estimate the angle
+        After then the image is rotated (and its uncertainties too, if any)
         """
         target = self.copy()
-        data = target.data
         from scipy import ndimage
         if angle is None:
+            lims = target.cut       #: cut image edges to correct inclination 
+            print('CUT',lims)
+            # cut image
+            data = target.data[slice(*lims[:2]), slice(*lims[2:])]
+            # plt.figure(); plt.imshow(data); plt.show()
+
+            ## Fit of Maxima 
+            # compute maxima coordinates
             y_pos = np.argmax(data, axis=0)
             x_pos = np.arange(len(y_pos))
-            
+            # set a fixed uncertainty
             Dy = 0.5
             Dx = 0.5
-
+            # compute the fit
             def fitlin(x,m,q):
                 return x*m+q
-
+            
             fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy, xerr=Dx)
             fit.pipeline(fitlin,init,names=['m','q'])
             pop, perr = fit.results()
-            m, q = pop
-            Dm, _ = perr
-            angle1 = np.arctan(m)*180/np.pi   # degrees
-            Dangle = 180/np.pi * Dm/(1+m**2)
+            m = pop[0]
+            Dm = perr[0]
+            # compute the angle in the degrees from the angular coefficient
+            angle1 = np.arctan(m)*180/np.pi  
+            Dangle1 = 180/np.pi * Dm/(1+m**2)
+            # correct data
             data = ndimage.rotate(data, angle1, reshape=False).copy()
-
-            fig, ax = plt.subplots(1,1) 
-            y_pos, Dy = np.array([]), np.array([])
+            
+            ## Fit of Gaussians
+            fig, ax = plt.subplots(1,1)
+            # prepare data 
             x_pos = x_pos[::50]
+            y_pos, Dy = np.array([]), np.array([])
+            # fit colums with a gaussian
             for i in x_pos:
                 values = data[:,i]
+                Dvalues = target.sigma[:,i].copy() if target.sigma is not None else None
                 y = np.arange(len(values))
+                # estimate HWHM for the initial value of the sigma
                 hwhm = abs(np.argmax(values) - np.argmin(abs(values - max(values)/2)))
                 initial_values = [max(values),np.argmax(values),hwhm]
+                # take only values greater than the double of the mean
                 pos = np.where(values > np.mean(values)*2)
                 values = values[pos]
                 y = y[pos]
-                fit = FuncFit(xdata=y, ydata=values,xerr=0.5)
+                # compute the fit
+                fit = FuncFit(xdata=y, ydata=values,xerr=0.5,yerr=Dvalues)
                 fit.gaussian_fit(initial_values)
                 pop, perr = fit.results()
+                # store results
                 y_pos = np.append(y_pos,pop[1])
                 Dy = np.append(Dy,pop[2])
                 method = fit.res['func']
                 color = (1-i/max(x_pos),i/max(x_pos),i/(2*max(x_pos))+0.5)
                 ax.plot(data[:,i],color=color,label='fit')
                 ax.plot(y, method(y,*pop), '--',color=color)
-            ax.legend()
-            
+            ax.legend()            
             print(len(x_pos),len(y_pos))
-
+            # compute the fit to get inclination angle
             fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy)
             fit.pipeline(fitlin,init,names=['m','q'])
             pop, perr = fit.results()
             m  = pop[0]
             Dm = perr[0]
-
-            angle2 = np.arctan(m)*180/np.pi   # degrees
-            Dangle = 180/np.pi * Dm/(1+m**2)
+            # compute the angle in the degrees from the angular coefficient
+            angle2 = np.arctan(m)*180/np.pi   
+            Dangle2 = 180/np.pi * Dm/(1+m**2)
+            # compute the total angle
             angle = angle1 + angle2
+            Dangle = np.sqrt(Dangle1**2 + Dangle2**2)
+            print(f'Inclination Angle : {angle:.2} +- {Dangle:.2} -> {Dangle/angle*100:.2f} %')
+        # rotate the image
         target.data = ndimage.rotate(target.data, angle, reshape=False)
-        print('ANGLE',angle)
         if target.sigma is not None:
+            # rotate the sigma, if any
             target.sigma = ndimage.rotate(target.sigma, angle, reshape=False)
         return target, angle
     
@@ -246,14 +299,17 @@ class Spectrum():
         bins : ndarray
             bins edges
         """
-        half_bin = bin / 2
-        spectrum = self.spec
-        lines = self.lines
+        half_bin = bin / 2      #: half bin width
+        # store data
+        spectrum = self.spec.copy()
+        lines = self.lines.copy()
+        # compute the edges of bins
         appr = lambda l : np.rint(l / bin) * bin
         edges = (appr(lines[0]), appr(lines[-1]))
         bin_num = int(np.diff(edges)[0] // bin)
         print(edges,bin_num)
         bins = np.linspace(*edges, bin_num)
+        # average over the values in each bin
         bin_lines = bins[:-1] + half_bin
         err_lines = np.full(bin_lines.shape,bin/2)
         pos = lambda i : np.where((bin_lines[i] - half_bin <= lines) & (lines < bin_lines[i] + half_bin))[0]
@@ -261,7 +317,7 @@ class Spectrum():
         bin_spect, err_spect = spect_data[:,0], spect_data[:,1] 
         return (bin_lines, err_lines), (bin_spect, err_spect), bins
 
-    def copy(self):
+    def copy(self) -> 'Spectrum':
         """To make an identical copy of a Spectrum object
 
         Returns
@@ -269,7 +325,7 @@ class Spectrum():
         target : Spectrum
             the copy
         """
-        target = Spectrum([*self.hdul], self.data.copy(), self.lims.copy(), sigma=self.sigma, hotpx=False, name=self.name)
+        target = Spectrum([*self.hdul], self.data.copy(), np.copy(self.lims), cut=np.copy(self.cut), sigma=self.sigma, hotpx=False, name=self.name,check_edges=False)
         target.spec  = self.spec.copy()  if self.spec  is not None else None
         target.lines = self.lines.copy() if self.lines is not None else None
         target.errs  = self.errs.copy()  if self.errs  is not None else None
@@ -282,7 +338,7 @@ class Spectrum():
         else:
             return self.data + spec
 
-    def __radd__(self, other):
+    def __radd__(self, other) -> ndarray:
             return self.__add__(other)
 
     def __sub__(self, spec: Any) -> ndarray:
@@ -291,7 +347,7 @@ class Spectrum():
         else:
             return self.data - spec
 
-    def __rsub__(self, other):
+    def __rsub__(self, other) -> ndarray:
             return -self.__sub__(other)
 
     def __mul__(self, spec: Any) -> ndarray:
@@ -501,9 +557,9 @@ def make_cut_indicies(file_path: str, lines_num: int) -> ndarray:
     cut : ndarray
         array of the edges of each acquisition 
     """
-    cut = np.array([[0,-1,0,-1]]*lines_num,dtype=int)   #: array of the edges of each acquisition
+    cut = np.array([[0,-1,0,-1]*2]*lines_num,dtype=int)   #: array of the edges of each acquisition
     # compute the string to print in the file
-    content = "#\tThe section of image to display\n#\n#\tThe first row is for the target acquisition\n#\tThe last one is for the lamp\n#\n#yl\tyu\txl\txu"
+    content = "#\tThe section of image to display\n#\n#\tThe first row is for the target acquisition\n#\tThe last one is for the lamp\n#\n#\tThe first four columns are the edges of the\n#\tinclinated image\n#\tThe others are the edges of the corrected image\n#\n#cyl\tcyu\tcxl\tcxu\tyl\tyu\txl\txu"
     for line in cut.astype(str):
         content = content + '\n' + '\t'.join(line)
     f = open(file_path, "w")
