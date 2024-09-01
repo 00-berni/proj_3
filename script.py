@@ -11,7 +11,7 @@ if __name__ == '__main__':
 
     target, lamp = clcr.calibration(night, target_name, selection, ord=2)
 
-    exit()
+
     # night, target_name, selection = TARGETS[:,1]
     # target2, lamp2 = clcr.calibration(night, target_name, selection, other_lamp=lamp)
 
@@ -22,8 +22,8 @@ if __name__ == '__main__':
     bin_width = 50
     alt = np.array([20,35,43,58],dtype=float)
     Dalt = np.full(alt.shape,0.5)
-    x  = np.sin(alt*np.pi/180)
-    Dx = Dalt * np.cos(alt*np.pi/180) * np.pi/180
+    x  = 1/np.sin(alt*np.pi/180)
+    Dx = Dalt * np.cos(alt*np.pi/180) * x**2 * np.pi/180 
     vega : list[dt.Spectrum] = []
     line = []
     for i in range(len(alt)):
@@ -33,7 +33,9 @@ if __name__ == '__main__':
     min_line = np.max(line,axis=0)[0]
     max_line = np.min(line,axis=0)[1]
     l_data = []
+    Dl_data = []
     y_data = []
+    Dy_data = []
     a_bin  = []
     for obs in vega:
         start = np.where(obs.lines == min_line)[0][0]
@@ -43,33 +45,42 @@ if __name__ == '__main__':
         l, y, bins = obs.binning(bin=bin_width)         
         l_data +=  [l[0]]
         y_data +=  [y[0]]
+        Dl_data +=  [l[1]]
+        Dy_data +=  [y[1]]
         a_bin  +=  [bins]
     print(l_data)
     l_data = np.array(l_data)
     y_data = np.array(y_data)
+    Dl_data = np.array(Dl_data)
+    Dy_data = np.array(Dy_data)
     a_bin  = np.array(a_bin)
     a_I0   = np.empty((0,2))
     a_tau  = np.empty((0,2))
+    plt.figure()
+    for i in range(l_data.shape[0]):
+        plt.errorbar(l_data[i],y_data[i],Dy_data[i],Dl_data[i])
+    plt.show()
     fig1, ax1 = plt.subplots(1,1)
     fig2, ax2 = plt.subplots(1,1)
     for i in range(l_data.shape[1]):
         y = y_data[:,i]
+        Dy = Dy_data[:,i]
         print(y)
         initial_values = [-0.5, np.log(y).max()]
-        fit = FuncFit(x, np.log(y), xerr=Dx)
+        fit = FuncFit(x, np.log(y), xerr=Dx, yerr=Dy/y)
         fit.linear_fit(initial_values, names=('tau','ln(I0)'))
         pop, Dpop = fit.results()
         I0  = np.exp(pop[1])
         DI0 = Dpop[1] * I0
-        a_I0  = np.append(a_I0, [ [I0, DI0] ], axis=0)
+        a_I0  = np.append(a_I0,  [ [I0, DI0] ], axis=0)
         a_tau = np.append(a_tau, [ [-pop[0], Dpop[0]] ], axis=0)
 
         func = fit.res['func']
         xx = np.linspace(x.min(),x.max(),200)
         color = (0.5,i/l_data.shape[1],1-i/l_data.shape[1])
-        ax1.errorbar(x, np.log(y), xerr=Dx, fmt='.', color=color)
+        ax1.errorbar(x, np.log(y), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
         ax1.plot(xx, func(xx,*pop), color=color)
-        ax2.errorbar(x, np.log(y) - func(x,*pop), xerr=Dx, fmt='.', color=color)
+        ax2.errorbar(x, np.log(y) - func(x,*pop), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
     ax2.axhline(0, 0, 1, color='black')
     plt.figure()
     plt.errorbar(np.arange(len(a_I0)), a_I0[:,0], a_I0[:,1])
