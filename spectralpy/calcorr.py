@@ -57,7 +57,7 @@ def compute_master_dark(mean_dark: Spectrum | None, master_bias: Spectrum | None
         master_dark.data  = mean_dark - master_bias
         master_dark.sigma = compute_err(mean_dark, master_bias)
     # condition to display the images/plots
-    if display_plots == True:
+    if display_plots:
         # if master_dark.sigma is not None:
         #     plt.figure()
         #     plt.title('Sigma Dark')
@@ -118,11 +118,11 @@ def compute_master_flat(flat: Spectrum, master_dark: Spectrum | None = None, mas
         # plt.colorbar()
     master_flat.name = 'Master Flat'
     # condition to display the images/plots
-    if display_plots == True:
+    if display_plots:
         _ = show_fits(master_flat,show=True)
     return master_flat
 
-def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], cut: bool = True, angle: float | None = 0, display_plots: bool = False,**kwargs) -> tuple[Spectrum, Spectrum]:
+def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], cut: bool = True, angle: float | None = 0, spec_plot: bool = True, display_plots: bool = False,**kwargs) -> tuple[Spectrum, Spectrum]:
     """To get the science frames of target and its calibration lamp
 
     Parameters
@@ -165,7 +165,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     if len(calibration) > 1:
         if len(calibration) == 3:   #: in this case `calibration = [flat, dark, bias]` 
             # compute master dark
-            calibration[1] = compute_master_dark(*calibration[1:],display_plots=True,**kwargs)
+            calibration[1] = compute_master_dark(*calibration[1:],display_plots=display_plots,**kwargs)
             # bias correction
             bias = calibration[2]
             target.data = target - bias
@@ -188,7 +188,6 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
             lamp.sigma = compute_err(lamp, dark)
     # compute master flat
     master_flat = compute_master_flat(*calibration,display_plots=display_plots,**kwargs)
-    _ = show_fits(master_flat,title='Flat',show=True) 
     print('MIN',master_flat.data.min())
     flat_err = lambda data : 0 if master_flat.sigma is None else (data*master_flat.sigma / master_flat.data**2)**2
     # flat correction
@@ -221,20 +220,21 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
         if lamp.name != 'empty':
             lamp, _ = lamp.angle_correction(angle=angle)      
             lamp.cut_image()
-    show_fits(target, title='Science Frame',norm=norm,**kwargs)
-    # if target.sigma is not None: 
-    #     plt.figure()
-    #     plt.title('sigma targ')
-    #     plt.imshow(target.sigma)
-    #     plt.colorbar()
-    if lamp.name != 'empty':
-        show_fits(lamp, title='Science Frame',norm=norm,**kwargs)
-        # if lamp.sigma is not None: 
+    if spec_plot:
+        show_fits(target, title='Science Frame',norm=norm,**kwargs)
+        # if target.sigma is not None: 
         #     plt.figure()
-        #     plt.title('sigma lamp')
-        #     plt.imshow(lamp.sigma)
+        #     plt.title('sigma targ')
+        #     plt.imshow(target.sigma)
         #     plt.colorbar()
-    plt.show()
+        if lamp.name != 'empty':
+            show_fits(lamp, title='Science Frame',norm=norm,**kwargs)
+            # if lamp.sigma is not None: 
+            #     plt.figure()
+            #     plt.title('sigma lamp')
+            #     plt.imshow(lamp.sigma)
+            #     plt.colorbar()
+        plt.show()
     if exit_cond: exit()
     return target, lamp
 
@@ -340,13 +340,13 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum) -> float:
     from scipy.signal import correlate
     corr = correlate(lamp1,lamp2)
     print('MAX POS: ',np.argmax(corr)/len(corr)*100, len(corr) // np.argmax(corr))
-    quickplot(corr,title=f'Cross corr -> {np.argmax(corr)/len(corr)*100} : {len(corr) // np.argmax(corr)}')
-    plt.show()
+    # quickplot(corr,title=f'Cross corr -> {np.argmax(corr)/len(corr)*100} : {len(corr) // np.argmax(corr)}')
+    # plt.show()
     # compute the lag
     shift = np.argmax(corr) - (len(corr)/2)  
     return shift
 
-def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: int | None = None, other_lamp: Spectrum | None = None, ord: int = 2, initial_values: Sequence[float] | None = None, display_plots: bool = False, **kwargs) -> tuple[Spectrum, Spectrum]:
+def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: int | None = None, other_lamp: Spectrum | None = None, ord: int = 2, initial_values: Sequence[float] | None = None, spec_plot: bool = False, display_plots: bool = False, **kwargs) -> tuple[Spectrum, Spectrum]:
     """To open and calibrate data
 
     Parameters
@@ -390,11 +390,11 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     """
     ## Data
     # extract data
-    target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, display_plots=display_plots,**kwargs)
+    target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, spec_plot=spec_plot, display_plots=display_plots,**kwargs)
     # average along the y axis
     data = target.data.mean(axis=1)
     data = np.array([ target.data[i,:] / data[i] for i in range(len(data)) ])
-    plt.figure(); plt.imshow(data); plt.colorbar(); plt.show()
+    # plt.figure(); plt.imshow(data); plt.colorbar(); plt.show()
     target.spec, target.std = mean_n_std(data, axis=0)
     # compute the height for the lamp
     if height is None: height = int(len(lamp.data)/2)
@@ -435,135 +435,18 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         target.compute_lines(shift=shift)
     
     ## Plot
-    quickplot((lamp.lines,lamp.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=3,**kwargs)
-    if lamp.sigma is not None:
-        plt.errorbar(lamp.lines, lamp.spec,yerr=lamp.std,xerr=lamp.errs,fmt='.')
-    else:
-        plt.errorbar(lamp.lines, lamp.spec,xerr=lamp.errs,fmt='.')
-    quickplot((target.lines,target.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=4,**kwargs)
-    plt.errorbar(target.lines,target.spec,target.std,target.errs,fmt='.')
-    plt.yscale('log')
-    plt.show()        
+    if spec_plot:
+        quickplot((lamp.lines,lamp.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=3,**kwargs)
+        if lamp.sigma is not None:
+            plt.errorbar(lamp.lines, lamp.spec,yerr=lamp.std,xerr=lamp.errs,fmt='.')
+        else:
+            plt.errorbar(lamp.lines, lamp.spec,xerr=lamp.errs,fmt='.')
+        quickplot((target.lines,target.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=4,**kwargs)
+        plt.errorbar(target.lines,target.spec,target.std,target.errs,fmt='.')
+        plt.yscale('log')
+        plt.show()        
     return target, lamp
 
-def mean_line(peaks: ndarray, spectrum: ndarray, dist: int = 3, height: int | float = 800) -> tuple[ndarray,ndarray]:
-    """    
-
-    Parameters
-    ----------
-    peaks : ndarray
-        peaks
-    spectrum : ndarray
-        spectrum
-    dist : int, optional
-        maximum distance between peaks, by default `3`
-    height : int | float, optional
-        the maximum value to start interpolation, by default `800`
-
-    Returns
-    -------
-    peaks : ndarray
-        average peaks
-    spectrum[peaks] : ndarray
-        corresponding values of the spectrum
-    """
-    # making a copy of data
-    peaks = np.copy(peaks)
-    spectrum = np.copy(spectrum)
-
-    # method to compute the difference of two different spectrum values
-    spectral_distance = lambda pos : abs(spectrum[pos[0]].astype(float)-spectrum[pos[1]].astype(float))
-
-    # height estimation routine
-    # computing the differences in height around peaks
-    height_diff = np.array([ min(spectral_distance((pk,pk+1)), spectral_distance((pk,pk-1)))  for pk in peaks])
-    # selecting only differences less than `height` value
-    ind_diff = np.where(height_diff <= height)[0]
-    if len(ind_diff) != 0:
-        # taking the maximum
-        height = max(height_diff[ind_diff])
-
-    ## ?
-    print(height_diff)
-    print(f'height -> {height}')
-    ## ?
-
-    # computing the distance between peaks (along x axis)
-    pksdiff = np.diff(peaks)
-    # class to interpolate
-    from scipy.interpolate import CubicSpline
-    # condition for 4 points
-    if dist == 3:
-        # storing the indecies of these peaks
-        pos = np.where(pksdiff == dist)[0]
-        if len(pos) != 0:
-            #: variable to store delectable indecies
-            delpos = []
-            for i in range(len(pos)):
-                x = pos[i]
-                # selected peaks
-                pk0, pk3 = peaks[x], peaks[x+1]
-                # corresponding spectrum values
-                sp0, sp3 = spectrum[pk0], spectrum[pk3]
-                # points between 2 peaks
-                pk1, pk2 = pk0+1, pk0+2
-                # corresponding spectrum values
-                sp1, sp2 = spectrum[pk1], spectrum[pk2]
-                # condition on height
-                if max(sp0-sp1,sp3-sp2) <= height:
-                    # interpolation routine
-                    # defining data
-                    xdata = np.array([pk0-1,pk0,pk3,pk3+1])
-                    ydata = spectrum[xdata]
-                    # computing the interpolation
-                    int_line = CubicSpline(xdata,ydata)
-                    # changing the peaks position
-                    peaks[x] = pk1 if sp0 >= sp3 else pk2
-                    # computing the corresponging interpolated value
-                    spectrum[peaks[x]] = int_line(peaks[x])
-                else:
-                    # storing the index
-                    delpos += [i]
-            # removing unused indecies 
-            pos = np.delete(pos,delpos)
-            # reducing the number of peaKs
-            peaks = np.delete(peaks,pos+1)
-            # freeing memory
-            del pk0,pk1,pk2,pk3,pos, delpos
-        # updating distance to 2
-        dist -= 1
-    # storing the indecies of these peaks
-    pos = np.where(pksdiff == dist)[0]
-    if len(pos) != 0:
-        #: variable to store delectable indecies
-        delpos = []
-        for i in range(len(pos)):
-            x = pos[i]
-            # selected peaks
-            pk0, pk2 = peaks[x], peaks[x+1]
-            # corresponding spectrum values
-            sp0, sp2 = spectrum[pk0], spectrum[pk2]
-            # point between 2 peaks
-            pk1 = pk0+1
-            # corresponding spectrum values
-            sp1 = spectrum[pk1]
-            # condition on height
-            if max(sp0-sp1,sp2-sp1) <= height:
-                # interpolation routine
-                xdata = np.array([pk0-1,pk0,pk2,pk2+1])
-                ydata = spectrum[xdata]
-                int_line = CubicSpline(xdata,ydata)
-                peaks[x] = pk1
-                spectrum[peaks[x]] = int_line(peaks[x])
-            else:
-                # storing the index
-                delpos += [i]
-        # removing unused indecies 
-        pos = np.delete(pos,delpos)
-        # reducing the number of peaKs
-        peaks = np.delete(peaks,pos+1)
-
-    return peaks, spectrum[peaks]
 
 
 
