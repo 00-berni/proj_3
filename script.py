@@ -5,11 +5,12 @@ import spectralpy.calcorr as clcr
 import spectralpy.display as dsp
 
 if __name__ == '__main__':
-    from spectralpy.stuff import FuncFit
+    from spectralpy.stuff import FuncFit, Spectrum
     TARGETS = dt.open_targets_list()
     night, target_name, selection = TARGETS[:,0]
 
-    target, lamp = clcr.calibration(night, target_name, selection, ord=2)
+    ord = 3
+    target, lamp = clcr.calibration(night, target_name, selection, ord=ord, spec_plot=False)
 
 
     # night, target_name, selection = TARGETS[:,1]
@@ -27,7 +28,7 @@ if __name__ == '__main__':
     vega : list[dt.Spectrum] = []
     line = []
     for i in range(len(alt)):
-        tmp, _ = clcr.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp)
+        tmp, _ = clcr.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, spec_plot=False)
         vega += [tmp]
         line += [[tmp.lines[0],tmp.lines[-1]]]
     min_line = np.max(line,axis=0)[0]
@@ -38,16 +39,18 @@ if __name__ == '__main__':
     Dy_data = []
     a_bin  = []
     for obs in vega:
-        start = np.where(obs.lines == min_line)[0][0]
-        end = np.where(obs.lines == max_line)[0][0] + 1
-        obs.lines = obs.lines[start:end]
-        obs.spec = obs.spec[start:end]
-        l, y, bins = obs.binning(bin=bin_width)         
+        obs.lines = obs.lines
+        obs.spec = obs.spec / obs.get_exposure()
+        l, y, bins = obs.binning(bin_width=bin_width,edges=(min_line,max_line))    
+        plt.figure()
+        plt.plot(l[0],y[0],'.-')
+        plt.grid(True,which='both',axis='x')
+        plt.show()     
         l_data +=  [l[0]]
         y_data +=  [y[0]]
         Dl_data +=  [l[1]]
         Dy_data +=  [y[1]]
-        a_bin  +=  [bins]
+        a_bin   +=  [bins]
     print(l_data)
     l_data = np.array(l_data)
     y_data = np.array(y_data)
@@ -59,6 +62,7 @@ if __name__ == '__main__':
     plt.figure()
     for i in range(l_data.shape[0]):
         plt.errorbar(l_data[i],y_data[i],Dy_data[i],Dl_data[i])
+    plt.grid(which='both',axis='x')
     plt.show()
     fig1, ax1 = plt.subplots(1,1)
     fig2, ax2 = plt.subplots(1,1)
@@ -76,15 +80,100 @@ if __name__ == '__main__':
         a_tau = np.append(a_tau, [ [-pop[0], Dpop[0]] ], axis=0)
 
         func = fit.res['func']
-        xx = np.linspace(x.min(),x.max(),200)
+        xx = np.linspace(x.min(),x.max(),50)
         color = (0.5,i/l_data.shape[1],1-i/l_data.shape[1])
         ax1.errorbar(x, np.log(y), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
         ax1.plot(xx, func(xx,*pop), color=color)
         ax2.errorbar(x, np.log(y) - func(x,*pop), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
     ax2.axhline(0, 0, 1, color='black')
+    print('DIFF',np.diff(a_bin,axis=0), np.diff(Dl_data,axis=0))
+    l_data, Dl_data = l_data[0], Dl_data[0] 
+    bins = a_bin[0]
+    I0, DI0 = a_I0[:,0], a_I0[:,1]
+    tau, Dtau = a_tau[:,0], a_tau[:,1]
+
     plt.figure()
-    plt.errorbar(np.arange(len(a_I0)), a_I0[:,0], a_I0[:,1])
+    plt.errorbar(l_data,tau,Dtau,Dl_data,'.',linestyle='dashed')
     plt.show()
+
+    plt.figure()
+    plt.errorbar(l_data, I0, DI0, Dl_data)
+    plt.grid(True,which='both',axis='x')
+    plt.show()
+
+    min_line, max_line = bins[0], bins[-1]
+    std_wlen, std_data = dt.get_standard(sel=0,display_plots=True)
+    std = Spectrum.empty()
+    start, end = std_wlen[0], std_wlen[-1]
+    if start > bins[1]: 
+        pos = np.argmin(np.abs(bins-std_wlen[0]))
+        min_line = bins[pos]
+        bins = bins[pos:]
+        l_data = l_data[pos:]
+        print('Less')
+        print('\t',len(I0))
+        I0 = I0[pos:]
+        print('\t',min_line,len(I0))
+    if end < bins[-2]: 
+        pos = np.argmin(np.abs(bins-std_wlen[-1]))
+        max_line = bins[pos]
+        bins = bins[:pos+1]
+        l_data = l_data[:pos]
+        print('More')
+        print('\t',len(I0))
+        I0 = I0[:pos]
+        print('\t',max_line,len(I0))
+    std.lines = std_wlen
+    std.spec  = std_data
+    plt.figure()
+    plt.plot(std.lines,std.spec,'.-')
+    bstd_wlen, bstd_s, bstd = std.binning(bin_width=bins)
+    print('SEE',len(I0),len(bstd_wlen[0]),len(l_data))
+
+    plt.figure()
+    plt.errorbar(bstd_wlen[0],bstd_s[0],bstd_s[1],bstd_wlen[1],'.',linestyle='dashed')
+    for b in bstd:
+        plt.axvline(b,0,1,color='orange',linestyle='dotted')
+    plt.show()
+
+    plt.figure()
+    plt.plot(l_data,I0/bstd_s[0],'.-')
+    plt.grid(True,which='both',axis='x')
+    
+    plt.show()
+
+
+    # from speclite import filters as flt
+    # filter_b = flt.load_filter('bessell-B')(l_data)
+    # filter_v = flt.load_filter('bessell-V')(l_data)
+    # filter_r = flt.load_filter('bessell-R')(l_data)
+
+    # filter_b /= filter_b.mean()
+    # filter_v /= filter_v.mean()
+    # filter_r /= filter_r.mean()
+
+    # from scipy.signal import convolve
+    # data_b = convolve(I0, filter_b, mode='same')
+    # data_v = convolve(I0, filter_v, mode='same')
+    # data_r = convolve(I0, filter_r, mode='same')
+    # data_b /= data_b.mean()    
+    # data_v /= data_v.mean()
+    # data_r /= data_r.mean()
+    
+    # plt.figure()
+    # plt.plot(l_data,I0,'.-',color='black')
+    # plt.plot(l_data,filter_b,'.-',color='blue')
+    # plt.plot(l_data,filter_v,'.-',color='green')
+    # plt.plot(l_data,filter_r,'.-',color='red')
+    # plt.figure()
+    # plt.plot(l_data,data_b,'.-',color='blue')
+    # plt.plot(l_data,data_v,'.-',color='green')
+    # plt.plot(l_data,data_r,'.-',color='red')
+    # plt.figure()
+    # plt.plot(l_data,data_b-data_v,'.-',color='violet')
+    # plt.plot(l_data,data_v-data_r,'.-',color='orange')
+    # plt.show()
+
 
 
 
