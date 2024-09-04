@@ -83,6 +83,50 @@ def get_cal_lines(ch_obs: str, ch_obj: str) -> ndarray:
     data = np.loadtxt(file_path, unpack=True)
     return data
 
+def get_standard(name: str = 'Vega', sel: int = 0, display_plots: bool = False) -> tuple[ndarray, ndarray]:
+    """To get data of the standard for the absolute calibration
+
+    Parameters
+    ----------
+    name : str, optional
+        name of chosen standard, by default `'Vega'`
+    sel : int, optional
+        to select the wanted data, by default `0`
+    display_plots : bool, optional
+        if it is `True` images/plots are displayed, by default `False`
+
+    Returns
+    -------
+    wlen : ndarray
+        wavelengths in A
+    data : ndarray
+        corresponding absolute surface flux values in erg/s/cm^2/A
+    """
+    dir_path = os.path.join(CAL_DIR,'standards',name)
+    if name == 'Vega':
+        file_name = 'theocomb_'
+        # spec_region = ['b','g','r','i']
+        spec_region = ['b','g','r']
+
+        wlen = np.empty(0)
+        data = np.empty(0)
+
+        for r in spec_region:
+            data_file = os.path.join(dir_path,file_name + r + '.txt')
+            l, d, _, d2, _ = np.loadtxt(data_file, unpack=True)
+            wlen = np.append(wlen,l)
+            data = np.append(data,d) if sel == 0 else np.append(data,d2)
+
+        pos = np.argsort(wlen)
+        wlen = wlen[pos]
+        data = data[pos]
+        
+    if display_plots:
+        plt.figure()
+        plt.plot(wlen,data)
+        plt.show()
+    return wlen, data
+
 def open_targets_list(filename: str = 'targets.csv', delimiter: str = ',') -> ndarray:
     """To collect chosen targets
 
