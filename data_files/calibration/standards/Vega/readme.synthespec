@@ -1,0 +1,65 @@
+*** README ***********************************************************
+Publ. Astron. Soc. Japan vol.59, pp.245-261 (2007) 
+http://pasj.asj.or.jp/v59/n1/590122/590122-frame.html
+----------------------------------------------------------------------
+1. Title of the paper
+   "High-Resolution and High-S/N Spectrum Atlas of Vega"
+2. Name of authors
+    Yoichi Takeda, Satoshi Kawanomoto, and Naoko Ohishi
+3. Brief description 
+   see the abstract below.
+----------------------------------------------------------------------
+(c)2007 Astronomical Society of Japan
+**********************************************************************
+================================================================================
+Keywords: atlases --- line: profiles --- stars: early-type --- 
+stars: individual ($\alpha$ Lyr, $\alpha$ Leo) ---
+techniques: spectroscopic
+
+Abstract:
+
+The files in this "synthespec" directory constitute the electronic 
+data for the paper "High-Resolution and High-S/N Spectrum Atlas 
+of Vega (Y. Takeda, S. Kawanomoto, and N. Ohishi)" submitted to PASJ. 
+These are the theoretically simulated Vega spectra for four wavelength 
+regions, which are intended to help the reader in indentifying the lines 
+on the actual spectra along with the use of theoretically predicted
+line-strength data (given in the "lineprediction" directory). 
+
+
+File Summary:
+--------------------------------------------------------------------------------
+ FileName       Lrecl Records  Explanations
+--------------------------------------------------------------------------------
+readme.synthespec ...    ...   This file
+theocomb_b.txt     50  61771   theoretically synthesized region-b spectrum of Vega
+theocomb_g.txt     50  60163   theoretically synthesized region-g spectrum of Vega
+theocomb_r.txt     50  61857   theoretically synthesized region-r spectrum of Vega 
+theocomb_i.txt     50  60346   theoretically synthesized region-i spectrum of Vega 
+--------------------------------------------------------------------------------
+
+
+Description: "theocomb_?.txt"
+--------------------------------------------------------------------------
+These are the theoretical spectra computed by using the atmospheric
+model of (Teff = 9550K, log g = 3.95, [X/H] = -0.5 and vt = 2 km/s)
+for the four wavelength regions, which are intended to simulate the 
+Vega spectrum. The following four spectra are presented at each wavelength.
+(i)   absolute surface flux with no broadening (H^0_lam)
+(ii)  normalized spectrum with no broadening (H^0_lam / H_cont)
+(iii) absolute surface flux with rotational broadening of 20 km/s (H^20_lam)
+(iv)  normalized spectrum with rotational broadening of 20 km/s (H^20_lam / H_cont)
+--------------------------------------------------------------------------
+
+
+Byte-by-byte Description: "theocomb_?.txt"
+--------------------------------------------------------------------------------
+   Bytes Format Units  Label   Explanations
+--------------------------------------------------------------------------------
+   1-  9  F9.3   A    lambda   wavelength
+  12- 22  E11.3  @    H^0      surface flux (no rotation broadening)
+  25- 30  F6.4  ---   r^0      normalized flux (no rotation broadening)
+  32- 42  E11.3  @    H^20     surface flux (rotation-broadened with 20km/s)
+  45- 50  F6.4  ---   r^20     normalized flux (rotation-broadened with 20km/s)
+--------------------------------------------------------------------------------
+                "@"--> erg/s/cm^2/A
