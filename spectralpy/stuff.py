@@ -155,7 +155,7 @@ class Spectrum():
         if self.sigma is not None:
             self.sigma = self.sigma[lims]
 
-    def angle_correction(self, angle: float | None = None, init: list[float] = [0.9, 0.]) -> tuple['Spectrum',float]:
+    def angle_correction(self, angle: float | None = None, init: list[float] = [0.9, 0.], display_plots: bool = False) -> tuple['Spectrum',float]:
         """To correct the inclination of spectrum, rotating the image.
         
         Parameters
@@ -166,6 +166,8 @@ class Spectrum():
             fitting rountine
         init : list[float], optional
             initial values for the fit, by default `[0.9, 0.]`
+        display_plots : bool, optional
+            to plot figures, by default `False`
 
         Returns
         -------
@@ -215,7 +217,7 @@ class Spectrum():
             data = ndimage.rotate(data, angle1, reshape=False).copy()
             
             ## Fit of Gaussians
-            fig, ax = plt.subplots(1,1)
+            if display_plots: fig, ax = plt.subplots(1,1)
             # prepare data 
             x_pos = x_pos[::50]
             y_pos, Dy = np.array([]), np.array([])
@@ -240,9 +242,10 @@ class Spectrum():
                 Dy = np.append(Dy,pop[2])
                 method = fit.res['func']
                 color = (1-i/max(x_pos),i/max(x_pos),i/(2*max(x_pos))+0.5)
-                ax.plot(data[:,i],color=color,label='fit')
-                ax.plot(y, method(y,*pop), '--',color=color)
-            ax.legend()            
+                if display_plots:
+                    ax.plot(data[:,i],color=color,label='fit')
+                    ax.plot(y, method(y,*pop), '--',color=color)
+            if display_plots: ax.legend()            
             print(len(x_pos),len(y_pos))
             # compute the fit to get inclination angle
             fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy)
@@ -279,13 +282,16 @@ class Spectrum():
         self.lines = cal_func(pxs)
         self.errs  = err_func(pxs)
 
-    def binning(self, bin: float = 50) -> tuple[tuple[ndarray,ndarray], tuple[ndarray,ndarray], ndarray]:
+    def binning(self, bin: float | int | ArrayLike = 50, edges: None | Sequence[float] = None) -> tuple[tuple[ndarray,ndarray], tuple[ndarray,ndarray], ndarray]:
         """To bin spectrum data
 
         Parameters
         ----------
-        bin : float, optional
-            width of the bins, by default `50`
+        bin : float | int | ArrayLike, optional
+            For `float` and `int` it means the width of the bins, by default `50`
+            It is possible to pass an array of values of the bins edges
+        edges : None | Sequence[float], optional
+            starting and ending values             
 
         Returns
         -------
@@ -299,21 +305,32 @@ class Spectrum():
         bins : ndarray
             bins edges
         """
-        half_bin = bin / 2      #: half bin width
         # store data
         spectrum = self.spec.copy()
         lines = self.lines.copy()
-        # compute the edges of bins
-        appr = lambda l : np.rint(l / bin) * bin
-        edges = (appr(lines[0]), appr(lines[-1]))
-        bin_num = int(np.diff(edges)[0] // bin)
-        print(edges,bin_num)
-        bins = np.linspace(*edges, bin_num)
+        if isinstance(bin,(float,int)):
+            bin_width = bin
+            # compute the edges of bins
+            if edges is None: edges = (lines[0], lines[-1])
+            appr = lambda l : np.rint(l / bin_width) * bin_width
+            edges = (appr(edges[0]), appr(edges[1])+1)
+            if isinstance(bin_width,int):
+                bins = np.arange(*edges,bin_width) 
+            else:
+                num = int((edges[1] - edges[0]) // bin_width + 1)
+                bins = np.linspace(*edges,num)
+        else:
+            bins = np.copy(bin)
+            bin_width = np.diff(bin).astype(int)[0]
+        half_bin = bin_width / 2
+        bin_num = len(bins) - 2 
+        print('BINS',bins[0],bins[-1])
         # average over the values in each bin
         bin_lines = bins[:-1] + half_bin
-        err_lines = np.full(bin_lines.shape,bin/2)
+        print('BINS LINES',bin_lines[0],bin_lines[-1])
+        err_lines = np.full(bin_lines.shape, bin_width / 2)
         pos = lambda i : np.where((bin_lines[i] - half_bin <= lines) & (lines < bin_lines[i] + half_bin))[0]
-        spect_data = np.array([ [*mean_n_std(spectrum[pos(i)])] for i in range(bin_num-1)])
+        spect_data = np.array([ [*mean_n_std(spectrum[pos(i)])] for i in range(bin_num+1)])
         bin_spect, err_spect = spect_data[:,0], spect_data[:,1] 
         return (bin_lines, err_lines), (bin_spect, err_spect), bins
 
