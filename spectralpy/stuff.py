@@ -282,16 +282,20 @@ class Spectrum():
         self.lines = cal_func(pxs)
         self.errs  = err_func(pxs)
 
-    def binning(self, bin: float | int | ArrayLike = 50, edges: None | Sequence[float] = None) -> tuple[tuple[ndarray,ndarray], tuple[ndarray,ndarray], ndarray]:
+    def binning(self, bin: ArrayLike = 50, edges: None | Sequence[float] = None) -> tuple[tuple[ndarray,ndarray], tuple[ndarray,ndarray], ndarray]:
         """To bin spectrum data
 
         Parameters
         ----------
-        bin : float | int | ArrayLike, optional
+        bin : ArrayLike, optional
             For `float` and `int` it means the width of the bins, by default `50`
-            It is possible to pass an array of values of the bins edges
+            It is possible to pass an array of values of the bins
         edges : None | Sequence[float], optional
-            starting and ending values             
+            the ends of the wavelengths range to bin, by default `None` 
+            If `edges is None` then the extremes of `self.lines` array are taken
+            Values are approximated to the nearest multiple of the bin width
+            If `bin` is an array then this parameter is ignored
+                          
 
         Returns
         -------
@@ -303,14 +307,14 @@ class Spectrum():
             Each value is the average over the values in the bin
             and the relative uncertainty is the STD
         bins : ndarray
-            bins edges
+            bins values
         """
         # store data
         spectrum = self.spec.copy()
         lines = self.lines.copy()
-        if isinstance(bin,(float,int)):
+        if isinstance(bin,(float,int)):     #: `bin` is the bin width
             bin_width = bin
-            # compute the edges of bins
+            # compute and approximate the ends of wavelengths range
             if edges is None: edges = (lines[0], lines[-1])
             appr = lambda l : np.rint(l / bin_width) * bin_width
             edges = (appr(edges[0]), appr(edges[1])+1)
@@ -322,16 +326,16 @@ class Spectrum():
         else:
             bins = np.copy(bin)
             bin_width = np.diff(bin).astype(int)[0]
+        # define some useful quantities
         half_bin = bin_width / 2
         bin_num = len(bins) - 2 
-        print('BINS',bins[0],bins[-1])
-        # average over the values in each bin
+        # define array of the central value in each bin
         bin_lines = bins[:-1] + half_bin
-        print('BINS LINES',bin_lines[0],bin_lines[-1])
+        # set the every uncertainties to the half width
         err_lines = np.full(bin_lines.shape, bin_width / 2)
+        # average over the values in each bin
         pos = lambda i : np.where((bin_lines[i] - half_bin <= lines) & (lines < bin_lines[i] + half_bin))[0]
-        spect_data = np.array([ [*mean_n_std(spectrum[pos(i)])] for i in range(bin_num+1)])
-        bin_spect, err_spect = spect_data[:,0], spect_data[:,1] 
+        bin_spect, err_spect = np.array([ [*mean_n_std(spectrum[pos(i)])] for i in range(bin_num+1)]).transpose()
         return (bin_lines, err_lines), (bin_spect, err_spect), bins
 
     def copy(self) -> 'Spectrum':
