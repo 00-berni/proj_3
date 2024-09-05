@@ -1853,7 +1853,7 @@ Fit results:
 	q: 2.4e+01 +- 2.9  -->  12.15 %
 	red_chi = 0.87 +- 30.86 %
 Inclination Angle : -0.95 +- 0.25 -> -26.48 %
-LAMP2 <spectralpy.stuff.Spectrum object at 0x796249513970>
+LAMP2 <spectralpy.stuff.Spectrum object at 0x7eb6c33e8340>
 EDGE [366 1383]
 EDGE [366 1389]
 EDGE [0 -6]
@@ -2843,7 +2843,7 @@ Fit results:
 	q: 2.7e+01 +- 2.1  -->  7.89 %
 	red_chi = 1.45 +- 30.86 %
 Inclination Angle : -1.1 +- 0.18 -> -15.49 %
-LAMP2 <spectralpy.stuff.Spectrum object at 0x79623ebd83d0>
+LAMP2 <spectralpy.stuff.Spectrum object at 0x7eb6b6b57ca0>
 EDGE [366 1382]
 EDGE [366 1389]
 EDGE [0 -7]
@@ -3833,7 +3833,7 @@ Fit results:
 	q: 2.1e+01 +- 2.4  -->  11.13 %
 	red_chi = 0.63 +- 30.86 %
 Inclination Angle : -1.1 +- 0.19 -> -17.39 %
-LAMP2 <spectralpy.stuff.Spectrum object at 0x79623eb63370>
+LAMP2 <spectralpy.stuff.Spectrum object at 0x7eb6b6bc8550>
 EDGE [366 1384]
 EDGE [366 1389]
 EDGE [0 -5]
@@ -4822,7 +4822,7 @@ Fit results:
 	q: 2.6e+01 +- 2.5  -->  9.63 %
 	red_chi = 0.82 +- 30.86 %
 Inclination Angle : -1.4 +- 0.2 -> -14.47 %
-LAMP2 <spectralpy.stuff.Spectrum object at 0x796249efbee0>
+LAMP2 <spectralpy.stuff.Spectrum object at 0x7eb6b6b87c70>
 EDGE [366 1383]
 EDGE [366 1389]
 EDGE [0 -6]
@@ -4830,14 +4830,6 @@ EDGEs [0, None] [0, -6]
 LAMP2 [ 561.58202752  770.32589248 1215.06643328 ...   34.58889825   10.2817075
    34.41057283]
 MAX POS:  49.9754058042302 2
-BINS 3750.0 7650.0
-BINS LINES 3775.0 7625.0
-BINS 3750.0 7650.0
-BINS LINES 3775.0 7625.0
-BINS 3750.0 7650.0
-BINS LINES 3775.0 7625.0
-BINS 3750.0 7650.0
-BINS LINES 3775.0 7625.0
 [array([3775., 3825., 3875., 3925., 3975., 4025., 4075., 4125., 4175.,
        4225., 4275., 4325., 4375., 4425., 4475., 4525., 4575., 4625.,
        4675., 4725., 4775., 4825., 4875., 4925., 4975., 5025., 5075.,
@@ -5368,6 +5360,4 @@ Less
 More
 	 75
 	 7150.0 65
-BINS 3900.0 7150.0
-BINS LINES 3925.0 7125.0
 SEE 65 65 65
