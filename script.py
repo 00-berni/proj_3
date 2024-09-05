@@ -23,124 +23,12 @@ if __name__ == '__main__':
     bin_width = 50
     alt = np.array([20,35,43,58],dtype=float)
     Dalt = np.full(alt.shape,0.5)
-    x  = 1/np.sin(alt*np.pi/180)
-    Dx = Dalt * np.cos(alt*np.pi/180) * x**2 * np.pi/180 
     vega : list[dt.Spectrum] = []
     line = []
     for i in range(len(alt)):
         tmp, _ = clcr.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, spec_plot=False)
         vega += [tmp]
         line += [[tmp.lines[0],tmp.lines[-1]]]
-    min_line = np.max(line,axis=0)[0]
-    max_line = np.min(line,axis=0)[1]
-    l_data = []
-    Dl_data = []
-    y_data = []
-    Dy_data = []
-    a_bin  = []
-    for obs in vega:
-        obs.lines = obs.lines
-        obs.spec = obs.spec / obs.get_exposure()
-        l, y, bins = obs.binning(bin_width=bin_width,edges=(min_line,max_line))    
-        plt.figure()
-        plt.plot(l[0],y[0],'.-')
-        plt.grid(True,which='both',axis='x')
-        plt.show()     
-        l_data +=  [l[0]]
-        y_data +=  [y[0]]
-        Dl_data +=  [l[1]]
-        Dy_data +=  [y[1]]
-        a_bin   +=  [bins]
-    print(l_data)
-    l_data = np.array(l_data)
-    y_data = np.array(y_data)
-    Dl_data = np.array(Dl_data)
-    Dy_data = np.array(Dy_data)
-    a_bin  = np.array(a_bin)
-    a_I0   = np.empty((0,2))
-    a_tau  = np.empty((0,2))
-    plt.figure()
-    for i in range(l_data.shape[0]):
-        plt.errorbar(l_data[i],y_data[i],Dy_data[i],Dl_data[i])
-    plt.grid(which='both',axis='x')
-    plt.show()
-    fig1, ax1 = plt.subplots(1,1)
-    fig2, ax2 = plt.subplots(1,1)
-    for i in range(l_data.shape[1]):
-        y = y_data[:,i]
-        Dy = Dy_data[:,i]
-        print(y)
-        initial_values = [-0.5, np.log(y).max()]
-        fit = FuncFit(x, np.log(y), xerr=Dx, yerr=Dy/y)
-        fit.linear_fit(initial_values, names=('tau','ln(I0)'))
-        pop, Dpop = fit.results()
-        I0  = np.exp(pop[1])
-        DI0 = Dpop[1] * I0
-        a_I0  = np.append(a_I0,  [ [I0, DI0] ], axis=0)
-        a_tau = np.append(a_tau, [ [-pop[0], Dpop[0]] ], axis=0)
-
-        func = fit.res['func']
-        xx = np.linspace(x.min(),x.max(),50)
-        color = (0.5,i/l_data.shape[1],1-i/l_data.shape[1])
-        ax1.errorbar(x, np.log(y), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
-        ax1.plot(xx, func(xx,*pop), color=color)
-        ax2.errorbar(x, np.log(y) - func(x,*pop), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
-    ax2.axhline(0, 0, 1, color='black')
-    print('DIFF',np.diff(a_bin,axis=0), np.diff(Dl_data,axis=0))
-    l_data, Dl_data = l_data[0], Dl_data[0] 
-    bins = a_bin[0]
-    I0, DI0 = a_I0[:,0], a_I0[:,1]
-    tau, Dtau = a_tau[:,0], a_tau[:,1]
-
-    plt.figure()
-    plt.errorbar(l_data,tau,Dtau,Dl_data,'.',linestyle='dashed')
-    plt.show()
-
-    plt.figure()
-    plt.errorbar(l_data, I0, DI0, Dl_data)
-    plt.grid(True,which='both',axis='x')
-    plt.show()
-
-    min_line, max_line = bins[0], bins[-1]
-    std_wlen, std_data = dt.get_standard(sel=0,display_plots=True)
-    std = Spectrum.empty()
-    start, end = std_wlen[0], std_wlen[-1]
-    if start > bins[1]: 
-        pos = np.argmin(np.abs(bins-std_wlen[0]))
-        min_line = bins[pos]
-        bins = bins[pos:]
-        l_data = l_data[pos:]
-        print('Less')
-        print('\t',len(I0))
-        I0 = I0[pos:]
-        print('\t',min_line,len(I0))
-    if end < bins[-2]: 
-        pos = np.argmin(np.abs(bins-std_wlen[-1]))
-        max_line = bins[pos]
-        bins = bins[:pos+1]
-        l_data = l_data[:pos]
-        print('More')
-        print('\t',len(I0))
-        I0 = I0[:pos]
-        print('\t',max_line,len(I0))
-    std.lines = std_wlen
-    std.spec  = std_data
-    plt.figure()
-    plt.plot(std.lines,std.spec,'.-')
-    bstd_wlen, bstd_s, bstd = std.binning(bin_width=bins)
-    print('SEE',len(I0),len(bstd_wlen[0]),len(l_data))
-
-    plt.figure()
-    plt.errorbar(bstd_wlen[0],bstd_s[0],bstd_s[1],bstd_wlen[1],'.',linestyle='dashed')
-    for b in bstd:
-        plt.axvline(b,0,1,color='orange',linestyle='dotted')
-    plt.show()
-
-    plt.figure()
-    plt.plot(l_data,I0/bstd_s[0],'.-')
-    plt.grid(True,which='both',axis='x')
-    
-    plt.show()
 
 
     # from speclite import filters as flt
