@@ -27,19 +27,18 @@ from .stuff import Spectrum
 from typing import Sequence, Any
 
 ##*
-def quickplot(data: Sequence[ndarray] | ndarray, numfig: int = None, fmt: str = '-', title: str = '', labels: Sequence[str] = ('',''), dim: list[int] = [10,7], grid: bool = False,**pltargs) -> None:
+def quickplot(data: tuple[ndarray] | ndarray, numfig: int = None, fmt: str = '-', title: str = '', labels: Sequence[str] = ('',''), dim: list[int] = [10,7], grid: bool = False,**pltargs) -> None:
     """Function to display a plot quickly.
 
     Parameters
     ----------
-    x : ndarray
-        Data on x axis
-    y : ndarray
-        Data on y axis
+    data : Sequence[ndarray] | ndarray
+        one can pass a single array of data (on y axis) or 
+        x data and y data or in addition the corresponding uncertainty/ies
     numfig : int, optional
         figure number, by default `None`
     fmt : str, optional
-        _description_, by default `'-'`
+        makers format, by default `'-'`
     title : str, optional
         title of the figure, by default `''`
     labels : list[str], optional
@@ -47,7 +46,9 @@ def quickplot(data: Sequence[ndarray] | ndarray, numfig: int = None, fmt: str = 
     dim : list[int], optional
         figure size, by default `[10,7]`
     grid : bool, optional
-        _description_, by default `False`
+        to plot the grid, by default `False`
+    **pltargs
+        parameters of `matplotlib.pyplot.errorbar()`
     
     Notes
     -----
@@ -60,13 +61,13 @@ def quickplot(data: Sequence[ndarray] | ndarray, numfig: int = None, fmt: str = 
     plt.figure(numfig,figsize=dim)
     plt.title(title)
     if isinstance(data,ndarray): data = [data]
-    plt.plot(*data,fmt,**pltargs)
+    plt.errorbar(*data,fmt=fmt,**pltargs)
     plt.xlabel(xl)
     plt.ylabel(yl)
     if grid: plt.grid(which='both',linestyle='--',alpha=0.2,color='grey')
 
 
-def fits_image(fig: Figure, ax: Axes, data: Spectrum, v: int = -1, subtitle: str = '', **kwargs) -> None:
+def fits_image(fig: Figure, ax: Axes, data: Spectrum, v: int = -1, subtitle: str = '', **figargs) -> None:
     """To plot fits images
 
     Parameters
@@ -81,7 +82,7 @@ def fits_image(fig: Figure, ax: Axes, data: Spectrum, v: int = -1, subtitle: str
         color-code, by default `-1`
     subtitle : str 
         subtitle, by default `''`
-    **kwargs
+    **figargs
         parameters of `matplotlib.pyplot.imshow()`
     """
     subtitle = data.name + f', exposure time: {data.get_exposure()} s ' + subtitle
@@ -91,12 +92,12 @@ def fits_image(fig: Figure, ax: Axes, data: Spectrum, v: int = -1, subtitle: str
     if v == 1 : color = 'viridis'
     elif v == 0 : color = 'gray'
     else : color = 'gray_r'
-    image = ax.imshow(data.data, cmap=color,**kwargs)
+    image = ax.imshow(data.data, cmap=color,**figargs)
     cbar = fig.colorbar(image, ax=ax, cmap=color, orientation='horizontal')
     cbar.set_label('intensity [a.u.]')
 
 ##*
-def show_fits(data: Spectrum, num_plots: Sequence[int] = (1,1), dim: Sequence[int] = (10,7), title: str = '', show: bool = False, **kwargs) -> tuple[Figure, Axes | ndarray]:
+def show_fits(data: Spectrum, num_plots: Sequence[int] = (1,1), dim: Sequence[int] = (10,7), title: str = '', show: bool = False, **figargs) -> tuple[Figure, Axes | ndarray]:
     """To plot quickly one or a set of fits pictures
     
     Parameters
@@ -111,7 +112,7 @@ def show_fits(data: Spectrum, num_plots: Sequence[int] = (1,1), dim: Sequence[in
         title of the image, by default `''`
     show : bool, optional
         if `True` it displays the figure, by default `False`
-    **kwargs
+    **figargs
         parameters of `fits_image()` and `matplotlib.pyplot.imshow()`
     Returns
     -------
@@ -124,9 +125,9 @@ def show_fits(data: Spectrum, num_plots: Sequence[int] = (1,1), dim: Sequence[in
     fig.suptitle(title, fontsize=20)
     try:
         for ax in axs:
-            fits_image(fig,ax,data,**kwargs)
+            fits_image(fig,ax,data,**figargs)
     except TypeError:
-            fits_image(fig,axs,data,**kwargs)
+            fits_image(fig,axs,data,**figargs)
     if show: plt.show()
     return fig, axs
 ##*
