@@ -28,7 +28,7 @@ from .display import *
 from .data import get_data_fit, extract_data, extract_cal_data, get_cal_lines, get_standard
 from .stuff import FuncFit, compute_err, mean_n_std
 
-def compute_master_dark(mean_dark: Spectrum | None, master_bias: Spectrum | None = None, display_plots: bool = False) -> Spectrum:
+def compute_master_dark(mean_dark: Spectrum | None, master_bias: Spectrum | None = None, diagn_plots: bool = False, **figargs) -> Spectrum:
     """To compute master dark
 
     Parameters
@@ -37,7 +37,7 @@ def compute_master_dark(mean_dark: Spectrum | None, master_bias: Spectrum | None
         averaged dark data
     master_bias : Spectrum | None, optional
         averaged bias data, by default `None`
-    display_plots : bool, optional
+    diagn_plots : bool, optional
         to plot figures, by default `False`
 
     Returns
@@ -57,16 +57,16 @@ def compute_master_dark(mean_dark: Spectrum | None, master_bias: Spectrum | None
         master_dark.data  = mean_dark - master_bias
         master_dark.sigma = compute_err(mean_dark, master_bias)
     # condition to display the images/plots
-    if display_plots:
-        # if master_dark.sigma is not None:
-        #     plt.figure()
-        #     plt.title('Sigma Dark')
-        #     plt.imshow(master_dark.sigma)
-        #     plt.colorbar()
-        show_fits(master_dark,show=True)
+    if diagn_plots:
+        if master_dark.sigma is not None:
+            plt.figure()
+            plt.title('Sigma Dark')
+            plt.imshow(master_dark.sigma)
+            plt.colorbar()
+        show_fits(master_dark,show=True,**figargs)
     return master_dark
 
-def compute_master_flat(flat: Spectrum, master_dark: Spectrum | None = None, master_bias: Spectrum | None = None, display_plots: bool = False) -> Spectrum:
+def compute_master_flat(flat: Spectrum, master_dark: Spectrum | None = None, master_bias: Spectrum | None = None, diagn_plots: bool = True, **figargs) -> Spectrum:
     """To estimate the flat gain
 
     Parameters
@@ -77,7 +77,7 @@ def compute_master_flat(flat: Spectrum, master_dark: Spectrum | None = None, mas
         master dark if any, by default `None`
     master_bias : Spectrum | None, optional
         master bias if any, by default `None`
-    display_plots : bool, optional
+    diagn_plots : bool, optional
         to plot figures, by default `False`
 
     Returns
@@ -118,11 +118,11 @@ def compute_master_flat(flat: Spectrum, master_dark: Spectrum | None = None, mas
         # plt.colorbar()
     master_flat.name = 'Master Flat'
     # condition to display the images/plots
-    if display_plots:
-        _ = show_fits(master_flat,show=True)
+    if diagn_plots:
+        _ = show_fits(master_flat,show=True,**figargs)
     return master_flat
 
-def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], cut: bool = True, angle: float | None = 0, spec_plot: bool = True, display_plots: bool = False,**kwargs) -> tuple[Spectrum, Spectrum]:
+def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], cut: bool = True, angle: float | None = 0, display_plots: bool = True, diagn_plots: bool = False,**figargs) -> tuple[Spectrum, Spectrum]:
     """To get the science frames of target and its calibration lamp
 
     Parameters
@@ -141,7 +141,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
         inclination angle of the slit, by default `0`
         If `angle is None` then the value is estimated by a 
         fitting rountine
-    display_plots : bool, optional
+    diagn_plots : bool, optional
         to plot figures, by default `False`
 
     Returns
@@ -153,11 +153,11 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     """
     ## Data extraction
     # get the light frames
-    target, lamp = extract_data(ch_obs,ch_obj,selection,display_plots=display_plots,**kwargs)
-    if display_plots: 
-        show_fits(target, title='Light Frame',**kwargs)
+    target, lamp = extract_data(ch_obs,ch_obj,selection,diagn_plots=diagn_plots,**figargs)
+    if diagn_plots: 
+        show_fits(target, title='Light Frame',**figargs)
         if lamp.name != 'empty':
-            show_fits(lamp, title='Light Frame',**kwargs)
+            show_fits(lamp, title='Light Frame',**figargs)
         plt.show()
     
     ## Calibration correction
@@ -165,7 +165,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     if len(calibration) > 1:
         if len(calibration) == 3:   #: in this case `calibration = [flat, dark, bias]` 
             # compute master dark
-            calibration[1] = compute_master_dark(*calibration[1:],display_plots=display_plots,**kwargs)
+            calibration[1] = compute_master_dark(*calibration[1:], diagn_plots=diagn_plots,**figargs)
             # bias correction
             bias = calibration[2]
             target.data = target - bias
@@ -187,7 +187,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
             lamp.data = lamp - dark
             lamp.sigma = compute_err(lamp, dark)
     # compute master flat
-    master_flat = compute_master_flat(*calibration,display_plots=display_plots,**kwargs)
+    master_flat = compute_master_flat(*calibration,diagn_plots=diagn_plots,**figargs)
     print('MIN',master_flat.data.min())
     flat_err = lambda data : 0 if master_flat.sigma is None else (data*master_flat.sigma / master_flat.data**2)**2
     # flat correction
@@ -212,33 +212,33 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     exit_cond = False
     norm = 'linear'
     if cut:    
-        target, angle = target.angle_correction(angle=angle)      
+        target, angle = target.angle_correction(angle=angle, diagn_plots=diagn_plots)      
         if np.all(target.lims == [0, None, 0, None]): 
             exit_cond = True
             norm = 'log'
         target.cut_image()
         if lamp.name != 'empty':
-            lamp, _ = lamp.angle_correction(angle=angle)      
+            lamp, _ = lamp.angle_correction(angle=angle, diagn_plots=diagn_plots)      
             lamp.cut_image()
-    if spec_plot:
-        show_fits(target, title='Science Frame',norm=norm,**kwargs)
-        # if target.sigma is not None: 
-        #     plt.figure()
-        #     plt.title('sigma targ')
-        #     plt.imshow(target.sigma)
-        #     plt.colorbar()
+    if display_plots:
+        show_fits(target, title='Science Frame',norm=norm,**figargs)
+        if diagn_plots and target.sigma is not None: 
+            plt.figure()
+            plt.title('sigma targ')
+            plt.imshow(target.sigma)
+            plt.colorbar()
         if lamp.name != 'empty':
-            show_fits(lamp, title='Science Frame',norm=norm,**kwargs)
-            # if lamp.sigma is not None: 
-            #     plt.figure()
-            #     plt.title('sigma lamp')
-            #     plt.imshow(lamp.sigma)
-            #     plt.colorbar()
+            show_fits(lamp, title='Science Frame',norm=norm,**figargs)
+            if diagn_plots and lamp.sigma is not None: 
+                plt.figure()
+                plt.title('sigma lamp')
+                plt.imshow(lamp.sigma)
+                plt.colorbar()
         plt.show()
     if exit_cond: exit()
     return target, lamp
 
-def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, ord: int = 2, initial_values: Sequence[float] | None = None) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
+def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, ord: int = 2, initial_values: Sequence[float] | None = None, display_plots: bool = True) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
     """To compute the calibration function
 
     Parameters
@@ -286,17 +286,18 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, ord: int = 2, initial
         return np.sum(err, axis=0)
     
     ## Plot
-    plt.figure()
-    pp = np.linspace(pxs.min(),pxs.max(),200)
-    plt.errorbar(pxs,lines,Dlines,errs,'.',color='orange')
-    plt.plot(pp,px_to_arm(pp))
-    plt.figure()
-    plt.errorbar(pxs,lines-fit.res['func'](pxs,*pop),Dlines,errs,'.',color='orange')
-    plt.axhline(0,0,1)
-    plt.show()
+    if display_plots:
+        plt.figure()
+        pp = np.linspace(pxs.min(),pxs.max(),200)
+        plt.errorbar(pxs,lines,Dlines,errs,'.',color='orange')
+        plt.plot(pp,px_to_arm(pp))
+        plt.figure()
+        plt.errorbar(pxs,lines-fit.res['func'](pxs,*pop),Dlines,errs,'.',color='orange')
+        plt.axhline(0,0,1)
+        plt.show()
     return px_to_arm, err_func
 
-def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum) -> float:
+def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = True, **pltargs) -> float:
     """To compute the lag to pass from a lamp to another
 
     Parameters
@@ -340,13 +341,14 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum) -> float:
     from scipy.signal import correlate
     corr = correlate(lamp1,lamp2)
     print('MAX POS: ',np.argmax(corr)/len(corr)*100, len(corr) // np.argmax(corr))
-    # quickplot(corr,title=f'Cross corr -> {np.argmax(corr)/len(corr)*100} : {len(corr) // np.argmax(corr)}')
-    # plt.show()
+    if display_plots:
+        quickplot(corr,title=f'Cross corr -> {np.argmax(corr)/len(corr)*100} : {len(corr) // np.argmax(corr)}',**pltargs)
+        plt.show()
     # compute the lag
     shift = np.argmax(corr) - (len(corr)/2)  
     return shift
 
-def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: int | None = None, other_lamp: Spectrum | None = None, ord: int = 2, initial_values: Sequence[float] | None = None, spec_plot: bool = False, display_plots: bool = False, **kwargs) -> tuple[Spectrum, Spectrum]:
+def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: int | None = None, other_lamp: Spectrum | None = None, ord: int = 2, initial_values: Sequence[float] | None = None, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
     """To open and calibrate data
 
     Parameters
@@ -378,7 +380,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         fit, by default `2`
     initial_values : Sequence[float] | None, optional
         inital values for the fit, by default `None`
-    display_plots : bool, optional
+    diagn_plots : bool, optional
         if it is `True` images/plots are displayed, by default `False`
 
     Returns
@@ -387,10 +389,10 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         calibrated science frame of the target
     lamp : Spectrum
         calibrated science frame of its lamp
-    """
+    """    
     ## Data
     # extract data
-    target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, spec_plot=spec_plot, display_plots=display_plots,**kwargs)
+    target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, display_plots=display_plots, diagn_plots=diagn_plots,**figargs)
     # average along the y axis
     data = target.data.mean(axis=1)
     data = np.array([ target.data[i,:] / data[i] for i in range(len(data)) ])
@@ -409,15 +411,15 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
             plt.plot(pos,lamp.std[pos],'.')
             plt.show()
             raise
-    if display_plots:
-        quickplot(target.spec,title='Uncalibrated spectrum of '+target.name,labels=('x [a.u.]','I [a.u.]'),numfig=1)
-        quickplot(lamp.spec,title='Uncalibrated spectrum of its lamp',labels=('x [a.u.]','I [a.u.]'),numfig=2)
+    if diagn_plots:
+        quickplot(target.spec,title='Uncalibrated spectrum of '+target.name,labels=('x [a.u.]','I [a.u.]'),numfig=1,**pltargs)
+        quickplot(lamp.spec,title='Uncalibrated spectrum of its lamp',labels=('x [a.u.]','I [a.u.]'),numfig=2,**pltargs)
         plt.show()
     
     ## Calibration
     if other_lamp is None:      
         # compute the calibration function via fit
-        cal_func, err_func = lines_calibration(ch_obs, ch_obj, trsl=lamp.lims[2], ord=ord)
+        cal_func, err_func = lines_calibration(ch_obs, ch_obj, trsl=lamp.lims[2], ord=ord, display_plots=display_plots)
         # store results
         lamp.func = [cal_func, err_func]
         target.func = [*lamp.func]
@@ -426,7 +428,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         target.compute_lines()
     else:
         # compute the lag between the two lamps
-        shift = lamp_correlation(lamp, other_lamp)
+        shift = lamp_correlation(lamp, other_lamp, display_plots=display_plots, **pltargs)
         # store the functions
         lamp.func = [*other_lamp.func]
         target.func = [*other_lamp.func]
@@ -435,23 +437,117 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         target.compute_lines(shift=shift)
     
     ## Plot
-    if spec_plot:
-        quickplot((lamp.lines,lamp.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=3,**kwargs)
+    if display_plots:
+        quickplot((lamp.lines,lamp.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=3,**pltargs)
         if lamp.sigma is not None:
             plt.errorbar(lamp.lines, lamp.spec,yerr=lamp.std,xerr=lamp.errs,fmt='.')
         else:
             plt.errorbar(lamp.lines, lamp.spec,xerr=lamp.errs,fmt='.')
-        quickplot((target.lines,target.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=4,**kwargs)
+        quickplot((target.lines,target.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=4,**pltargs)
         plt.errorbar(target.lines,target.spec,target.std,target.errs,fmt='.')
         plt.yscale('log')
         plt.show()        
     return target, lamp
 
 
-def atm_transfer():
-    return
+def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray], data: tuple[ndarray, ndarray], bins: ndarray, display_plots: bool = True, diagn_plot: bool = False) -> tuple[tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
+    """To compute the optical depth and the 0 airmass spectrum
 
-def ccd_response(altitude: Sequence[ndarray], std_obs: list[Spectrum], ends_wlen: list[float],  bin_width: float | int = 50):
+    Parameters
+    ----------
+    airmass : tuple[ndarray, ndarray]
+        values of airmass and the corresponding uncertainties
+    wlen : tuple[ndarray, ndarray]
+        values of wavelengths and the corresponding uncertainties
+    data : tuple[ndarray, ndarray]
+        spectrum and the corresponding uncertainties
+    bins : ndarray
+        wavelengths bin values
+    display_plots : bool, optional
+        _description_, by default True
+    diagn_plot : bool, optional
+        _description_, by default False
+
+    Returns
+    -------
+    tuple[tuple[ndarray,ndarray], tuple[ndarray, ndarray]]
+        _description_
+    """
+    # load data
+    x, Dx = airmass
+    l_data, Dl_data = wlen
+    y_data, Dy_data = data
+    bins = np.copy(bins)
+    # prepare arrays to collect values of I0 and tau
+    a_I0   = np.empty((0,2))
+    a_tau  = np.empty((0,2))
+    if display_plots:
+        plt.figure()
+        plt.title('Binned data for different airmass')
+        for i in range(l_data.shape[0]):
+            plt.errorbar(l_data[i],y_data[i],Dy_data[i],Dl_data[i], label=f'$X = ${x[i]:.2}')
+            plt.xticks(bins[i],bins[i],rotation=45)
+        plt.xlabel('$\\lambda$ [$\\AA$]')
+        plt.ylabel('Norm. Data [counts/s]')
+        plt.grid(True,which='both',axis='x')
+        plt.legend()
+        plt.show()
+    if diagn_plot:    
+        fig1, ax1 = plt.subplots(1,1)
+        fig2, ax2 = plt.subplots(1,1)
+        ax2.axhline(0, 0, 1, color='black')
+    for i in range(l_data.shape[1]):
+        # select data
+        y = y_data[:,i]
+        Dy = Dy_data[:,i]
+        # fit routine
+        #.. Assuming N/t = exp(-tau*a)*I0 then 
+        #.. log(N/t) = - tau * a + log(I0)
+        initial_values = [-0.5, np.log(y).max()]
+        fit = FuncFit(x, np.log(y), xerr=Dx, yerr=Dy/y)
+        fit.linear_fit(initial_values, names=('tau','ln(I0)'))
+        pop, Dpop = fit.results()
+        I0  = np.exp(pop[1])
+        DI0 = Dpop[1] * I0
+        # store the results
+        a_I0  = np.append(a_I0,  [ [I0, DI0] ], axis=0)
+        a_tau = np.append(a_tau, [ [-pop[0], Dpop[0]] ], axis=0)
+        # plot them
+        if diagn_plot:
+            func = fit.res['func']
+            xx = np.linspace(x.min(),x.max(),50)
+            color = (0.5,i/l_data.shape[1],1-i/l_data.shape[1])
+            ax1.errorbar(x, np.log(y), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
+            ax1.plot(xx, func(xx,*pop), color=color)
+            ax2.errorbar(x, np.log(y) - func(x,*pop), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
+    print('DIFF',np.diff(bins,axis=0), np.diff(Dl_data,axis=0))
+    # select a row
+    l_data, Dl_data = l_data[0], Dl_data[0] 
+    bins = bins[0]
+    # collect data
+    I0, DI0 = a_I0[:,0], a_I0[:,1]
+    tau, Dtau = a_tau[:,0], a_tau[:,1]
+    # plot
+    if display_plots:
+        plt.figure()
+        plt.title('Estimated Optical Depth')
+        plt.errorbar(l_data,tau,Dtau,Dl_data,'.',linestyle='dashed')
+        plt.xlabel('$\\lambda$ [$\\AA$]')
+        plt.ylabel('$\\tau$')
+        plt.show()
+
+        plt.figure()
+        plt.title('Estimated Data at 0 airmass')
+        plt.errorbar(l_data, I0, DI0, Dl_data)
+        plt.grid(True,which='both',axis='x')
+        plt.xticks(bins,bins,rotation=45)
+        plt.xlabel('$\\lambda$ [$\\AA$]')
+        plt.ylabel('$I_0$ [counts/s]')
+        plt.show()
+    return (I0, DI0), (tau, Dtau)
+
+def ccd_response(altitude: tuple[ndarray, ndarray], std_obs: list[Spectrum], ends_wlen: list[float],  bin_width: float | int = 50, std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
+    ## Data Collection
     alt, Dalt = altitude
     # airmass
     x  = 1/np.sin(alt*np.pi/180)
@@ -460,81 +556,48 @@ def ccd_response(altitude: Sequence[ndarray], std_obs: list[Spectrum], ends_wlen
     min_line = np.max(ends_wlen,axis=0)[0]
     max_line = np.min(ends_wlen,axis=0)[1]
     # define variables to collect values
-    l_data = []
-    Dl_data = []
-    y_data = []
-    Dy_data = []
-    a_bin  = []
+    l_data = []     #: central values of binned wavelengths
+    y_data = []     #: binned spectrum data
+    a_bin  = []     #: bins values
     for obs in std_obs:
-        obs.lines = obs.lines
+        # normalize spectrum data by exposure time
         obs.spec = obs.spec / obs.get_exposure()
+        # bin the data
         l, y, bins = obs.binning(bin=bin_width,edges=(min_line,max_line))    
-        plt.figure()
-        plt.plot(l[0],y[0],'.-')
-        plt.grid(True,which='both',axis='x')
-        plt.xticks(bins,bins,rotation=45)
-        plt.show()     
-        l_data +=  [l[0]]
-        y_data +=  [y[0]]
-        Dl_data +=  [l[1]]
-        Dy_data +=  [y[1]]
-        a_bin   +=  [bins]
-    print(l_data)
-    l_data = np.array(l_data)
-    y_data = np.array(y_data)
-    Dl_data = np.array(Dl_data)
-    Dy_data = np.array(Dy_data)
-    a_bin  = np.array(a_bin)
-    a_I0   = np.empty((0,2))
-    a_tau  = np.empty((0,2))
-    plt.figure()
-    for i in range(l_data.shape[0]):
-        plt.errorbar(l_data[i],y_data[i],Dy_data[i],Dl_data[i])
-        plt.xticks(a_bin[i],a_bin[i],rotation=45)
-    plt.grid(True,which='both',axis='x')
-    plt.show()
-    fig1, ax1 = plt.subplots(1,1)
-    fig2, ax2 = plt.subplots(1,1)
-    for i in range(l_data.shape[1]):
-        y = y_data[:,i]
-        Dy = Dy_data[:,i]
-        print(y)
-        initial_values = [-0.5, np.log(y).max()]
-        fit = FuncFit(x, np.log(y), xerr=Dx, yerr=Dy/y)
-        fit.linear_fit(initial_values, names=('tau','ln(I0)'))
-        pop, Dpop = fit.results()
-        I0  = np.exp(pop[1])
-        DI0 = Dpop[1] * I0
-        a_I0  = np.append(a_I0,  [ [I0, DI0] ], axis=0)
-        a_tau = np.append(a_tau, [ [-pop[0], Dpop[0]] ], axis=0)
+        if diagn_plots:
+            plt.figure()
+            plt.title('Normalized Binned Data')
+            plt.plot(l[0],y[0],'.-')
+            plt.grid(True,which='both',axis='x')
+            plt.xticks(bins,bins,rotation=45)
+            plt.xlabel('$\\lambda$ [$\\AA$]')
+            plt.ylabel('$N/t_{exp}$ [counts/s]')
+            plt.show()
+        # store the results     
+        l_data +=  [[*l]]
+        y_data +=  [[*y]]
+        a_bin  +=  [bins]
+    # from list to array
+    l_data, Dl_data = np.array(l_data).transpose((1,0,2))
+    y_data, Dy_data = np.array(y_data).transpose((1,0,2))
+    a_bin = np.array(a_bin)
+    
+    ## Atmospheric Transfer Function
+    # estimate 0 airmass spectrum
+    (I0, DI0), (op_dep, Dop_dep) = atm_transfer((x,Dx), (l_data,Dl_data), (y_data,Dy_data), a_bin, display_plots=display_plots, diagn_plot=diagn_plots)
 
-        func = fit.res['func']
-        xx = np.linspace(x.min(),x.max(),50)
-        color = (0.5,i/l_data.shape[1],1-i/l_data.shape[1])
-        ax1.errorbar(x, np.log(y), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
-        ax1.plot(xx, func(xx,*pop), color=color)
-        ax2.errorbar(x, np.log(y) - func(x,*pop), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
-    ax2.axhline(0, 0, 1, color='black')
-    print('DIFF',np.diff(a_bin,axis=0), np.diff(Dl_data,axis=0))
+    ## Response Function
+    # select a row
     l_data, Dl_data = l_data[0], Dl_data[0] 
     bins = a_bin[0]
-    I0, DI0 = a_I0[:,0], a_I0[:,1]
-    tau, Dtau = a_tau[:,0], a_tau[:,1]
-
-    plt.figure()
-    plt.errorbar(l_data,tau,Dtau,Dl_data,'.',linestyle='dashed')
-    plt.show()
-
-    plt.figure()
-    plt.errorbar(l_data, I0, DI0, Dl_data)
-    plt.grid(True,which='both',axis='x')
-    plt.xticks(bins,bins,rotation=45)
-    plt.show()
-
+    # set ends of wavelengths range
     min_line, max_line = bins[0], bins[-1]
-    std_wlen, std_data = get_standard(sel=0,display_plots=True)
-    std = Spectrum.empty()
+    # get the data of the standard
+    std_wlen, std_data = get_standard(name=std_name, sel=selection, diagn_plots=diagn_plots)
+    std = Spectrum.empty()      #: variable to collect standard spectrum data
+    # store the ends of wavelengths range of the standard 
     start, end = std_wlen[0], std_wlen[-1]
+    # check the length
     if start > bins[1]: 
         pos = np.argmin(np.abs(bins-std_wlen[0]))
         min_line = bins[pos]
@@ -543,6 +606,7 @@ def ccd_response(altitude: Sequence[ndarray], std_obs: list[Spectrum], ends_wlen
         print('Less')
         print('\t',len(I0))
         I0 = I0[pos:]
+        DI0 = DI0[pos:]
         print('\t',min_line,len(I0))
     if end < bins[-2]: 
         pos = np.argmin(np.abs(bins-std_wlen[-1]))
@@ -552,26 +616,51 @@ def ccd_response(altitude: Sequence[ndarray], std_obs: list[Spectrum], ends_wlen
         print('More')
         print('\t',len(I0))
         I0 = I0[:pos]
+        DI0 = DI0[:pos]
         print('\t',max_line,len(I0))
+    # store data
     std.lines = std_wlen
     std.spec  = std_data
-    plt.figure()
-    plt.plot(std.lines,std.spec,'.-')
-    bstd_wlen, bstd_s, bstd = std.binning(bin=bins)
+    if display_plots:
+        plt.figure()
+        plt.suptitle('Spectra of Standard and Target after resizing')
+        plt.subplot(2,1,1)
+        plt.title('Standard')
+        plt.plot(std.lines,std.spec,'.-')
+        plt.ylabel('$S_{std}$ [erg/(s cm$^2$ $\\AA$)]')
+        plt.subplot(2,1,1)
+        plt.title('Target')
+        plt.plot(l_data,I0,'.-')
+        plt.xlabel('$\\lambda$ [$\\AA$]')
+        plt.ylabel('$I_0$ [counts/s]')
+    # bin data
+    bstd_wlen, bstd_s, _ = std.binning(bin=bins)
     print('SEE',len(I0),len(bstd_wlen[0]),len(l_data))
 
-    plt.figure()
-    plt.errorbar(bstd_wlen[0],bstd_s[0],bstd_s[1],bstd_wlen[1],'.',linestyle='dashed')
-    plt.grid(True,which='both',axis='x')
-    plt.xticks(bins,bins,rotation=45)
+    if diagn_plots:
+        plt.figure()
+        plt.title('Binned Standard Data')
+        plt.errorbar(bstd_wlen[0],bstd_s[0],bstd_s[1],bstd_wlen[1],'.',linestyle='dashed')
+        plt.grid(True,which='both',axis='x')
+        plt.xticks(bins,bins,rotation=45)
+        plt.ylabel('$S_{std}$ [erg/(s cm$^2$ $\\AA$)]')
+        plt.xlabel('$\\lambda$ [$\\AA$]')
 
-    plt.figure()
-    plt.plot(l_data,I0/bstd_s[0],'.-')
-    plt.grid(True,which='both',axis='x')
-    plt.xticks(bins,bins,rotation=45)
+    if display_plots:
+        plt.figure()
+        plt.title('Response Function')
+        plt.plot(l_data,I0/bstd_s[0],'.-')
+        plt.grid(True,which='both',axis='x')
+        plt.xticks(bins,bins,rotation=45)
+        plt.xlabel('$\\lambda$ [$\\AA$]')
+        plt.ylabel('$R$ [counts cm$^2$ $\\AA$ / ergs]')
     
     plt.show()
 
+    stand, Dstand = bstd_s
+    R = I0/stand
+    DR = R * np.sqrt((DI0/I0)**2 + (Dstand/stand)**2)
+    return (l_data, Dl_data), (R, DR), (op_dep, Dop_dep)
 
 
     
