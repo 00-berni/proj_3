@@ -219,8 +219,8 @@ def get_data_fit(path: str, lims: Sequence[int | None | list[int]] = [0,None,0,N
         parameter to check edges values, by default `True`
     diagn_plots : bool, optional
         parameter to plot data, by default `True`
-    **kwargs:
-        Parameters for the plot, see `display.showfits()`
+    **figargs
+        parameters for the images, see `display.showfits()`
 
     Returns
     -------
@@ -258,7 +258,7 @@ def get_data_fit(path: str, lims: Sequence[int | None | list[int]] = [0,None,0,N
 ##*
 
 
-def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07-27_ohp','23-03-28'], sel_cal: Literal['dark','flat','bias','all'] = 'all', display_plot: bool = False, **kwargs) -> list[Spectrum]:
+def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07-27_ohp','23-03-28'], sel_cal: Literal['dark','flat','bias','all'] = 'all', display_plot: bool = False, **figargs) -> list[Spectrum]:
     """To get data of dark, flat or bias, if any
 
     Parameters
@@ -270,8 +270,8 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
         If `sel_cal == 'all'` function returns all possible files
     diagn_plots : bool, optional
         parameter to plot data, by default `True`
-    **kwargs:
-        Parameters for the plot, see `display.showfits()`
+    **figargs
+        parameters for the images, see `display.showfits()`
 
     Returns
     -------
@@ -300,7 +300,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             flat = calibration['flat'] 
             for (f, lim) in zip(flat,lims):
                 f = data_file_path(ch_obs,'calibrazione',f)
-                tmp = get_data_fit(f, lims=lim, obj_name='flat',diagn_plots=False) 
+                tmp = get_data_fit(f, lims=lim, obj_name='flat',diagn_plots=False,**figargs) 
                 mean_flat.hdul += [tmp.hdul]
                 mean_flat.data += [tmp.data]
                 mean_flat.lims = lim
@@ -315,12 +315,12 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             dark = calibration['dark']
             for d in dark:
                 d = data_file_path(ch_obs,'calibrazione',d)
-                tmp = get_data_fit(d, obj_name='dark',check_edges=False,diagn_plots=False, **kwargs) 
+                tmp = get_data_fit(d, obj_name='dark',check_edges=False,diagn_plots=False, **figargs) 
                 mean_dark.hdul += [tmp.hdul]
                 mean_dark.data += [tmp.data]
             mean_dark.data, mean_dark.sigma = mean_n_std(mean_dark.data,axis=0)
             mean_dark.name = 'Mean Dark'
-            if display_plot: _ = show_fits(mean_dark, **kwargs)
+            if display_plot: _ = show_fits(mean_dark, **figargs)
             # store the result
             results += [mean_dark]
         if sel_cal in ['bias', 'all']:
@@ -329,21 +329,21 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             bias = calibration['bias'] 
             for b in bias:
                 b = data_file_path(ch_obs,'calibrazione',b)
-                tmp = get_data_fit (b, obj_name='bias',check_edges=False,diagn_plots=False, **kwargs) 
+                tmp = get_data_fit (b, obj_name='bias',check_edges=False,diagn_plots=False, **figargs) 
                 master_bias.hdul += [tmp.hdul]
                 master_bias.data += [tmp.data]
             master_bias.data, master_bias.sigma = mean_n_std(master_bias.data,axis=0)
             master_bias.name = 'Master Bias'
-            if display_plot: _ = show_fits(master_bias, **kwargs)
+            if display_plot: _ = show_fits(master_bias, **figargs)
             # store the result
             results += [master_bias]
     elif ch_obs in ['18-11-27','22-07-26_ohp','22-07-27_ohp']:
         calibration, lims = collect_fits(ch_obs,'Calibration')
         if sel_cal in ['flat', 'all']:
             flat = data_file_path(ch_obs,'Calibration',calibration)
-            flat = get_data_fit(flat, lims, obj_name='flat',diagn_plots=False, **kwargs) 
+            flat = get_data_fit(flat, lims, obj_name='flat',diagn_plots=False, **figargs) 
             flat.name = 'flat'
-            if display_plot: _ = show_fits(flat, **kwargs)
+            if display_plot: _ = show_fits(flat, **figargs)
             results += [flat]
         else: raise Exception(f'No {sel_cal} for this observation')
     elif ch_obs == '23-03-28':
@@ -355,13 +355,13 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             flat = calibration['flat'] 
             for (f, lim) in zip(flat,lims):
                 f = data_file_path(ch_obs,'Calibration',f)
-                tmp = get_data_fit(f, lims=lim, obj_name='flat',diagn_plots=False, **kwargs) 
+                tmp = get_data_fit(f, lims=lim, obj_name='flat',diagn_plots=False, **figargs) 
                 mean_flat.hdul += [tmp.hdul]
                 mean_flat.data += [tmp.data]
                 mean_flat.lims = lim
             mean_flat.data, mean_flat.sigma = mean_n_std(mean_flat.data,axis=0)
             mean_flat.name = 'Mean Flat'
-            if display_plot: _ = show_fits(mean_flat,title='Mean Flat', **kwargs)
+            if display_plot: _ = show_fits(mean_flat,title='Mean Flat', **figargs)
             # store the result
             results += [mean_flat]
         if sel_cal in ['dark', 'all']:
@@ -370,12 +370,12 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             dark = calibration['dark'] 
             for d in dark:
                 d = data_file_path(ch_obs,'Calibration',d)
-                tmp = get_data_fit(d, obj_name='dark',check_edges=False,diagn_plots=False, **kwargs) 
+                tmp = get_data_fit(d, obj_name='dark',check_edges=False,diagn_plots=False, **figargs) 
                 mean_dark.hdul += [tmp.hdul]
                 mean_dark.data += [tmp.data]
             mean_dark.data, mean_dark.sigma = mean_n_std(mean_dark.data,axis=0)
             mean_dark.name = 'Mean Dark'
-            if display_plot: _ = show_fits(mean_dark,title='Mean Dark', **kwargs)
+            if display_plot: _ = show_fits(mean_dark,title='Mean Dark', **figargs)
             # store the result
             results += [mean_dark]
     # check the chosen night
@@ -399,8 +399,8 @@ def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], dia
         or to average on them (`selection == 'mean'`) 
     diagn_plots : bool, optional
         parameter to plot data, by default `True`
-    **kwargs:
-        Parameters for the plot, see `display.showfits()`
+    **figargs
+        parameters for the images, see `display.showfits()`
 
     Returns
     -------
