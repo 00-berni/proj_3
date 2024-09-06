@@ -9,28 +9,32 @@ if __name__ == '__main__':
     TARGETS = dt.open_targets_list()
     night, target_name, selection = TARGETS[:,0]
 
-    ord = 3
-    target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=False)
+    ord = 2
+    display_plots = True
+    target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=True)
 
+    tg, lp = dt.open_results(['polluce_mean','lamp-polluce'],night,target_name)
+    dsp.quickplot((lp[0],*tg,lp[1]))
+    plt.show()
 
     # night, target_name, selection = TARGETS[:,1]
     # target2, lamp2 = clcr.calibration(night, target_name, selection, other_lamp=lamp)
 
     ## Vega
-    night = '17-03-27'
-    target_name = 'Vega'
-    selection = 'mean'
-    bin_width = 50
-    alt = np.array([20,35,43,58],dtype=float)
-    Dalt = np.full(alt.shape,0.5)
-    vega : list[dt.Spectrum] = []
-    line = []
-    for i in range(len(alt)):
-        tmp, _ = clcr.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, display_plots=False)
-        vega += [tmp]
-        line += [[tmp.lines[0],tmp.lines[-1]]]
+    # night = '17-03-27'
+    # target_name = 'Vega'
+    # selection = 'mean'
+    # bin_width = 50
+    # alt = np.array([20,35,43,58],dtype=float)
+    # Dalt = np.full(alt.shape,0.5)
+    # vega : list[dt.Spectrum] = []
+    # line = []
+    # for i in range(len(alt)):
+    #     tmp, _ = clcr.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, display_plots=False)
+    #     vega += [tmp]
+    #     line += [[tmp.lines[0],tmp.lines[-1]]]
 
-    results = clcr.ccd_response((alt, Dalt), vega, line, bin_width=bin_width)
+    # results = clcr.ccd_response((alt, Dalt), vega, line, bin_width=bin_width)
 
     # from speclite import filters as flt
     # filter_b = flt.load_filter('bessell-B')(l_data)
