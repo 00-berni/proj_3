@@ -83,7 +83,7 @@ def get_cal_lines(ch_obs: str, ch_obj: str) -> ndarray:
     data = np.loadtxt(file_path, unpack=True)
     return data
 
-def get_standard(name: str = 'Vega', sel: int = 0, display_plots: bool = False) -> tuple[ndarray, ndarray]:
+def get_standard(name: str = 'Vega', sel: int = 0, diagn_plots: bool = False) -> tuple[ndarray, ndarray]:
     """To get data of the standard for the absolute calibration
 
     Parameters
@@ -92,7 +92,7 @@ def get_standard(name: str = 'Vega', sel: int = 0, display_plots: bool = False) 
         name of chosen standard, by default `'Vega'`
     sel : int, optional
         to select the wanted data, by default `0`
-    display_plots : bool, optional
+    diagn_plots : bool, optional
         if it is `True` images/plots are displayed, by default `False`
 
     Returns
@@ -121,9 +121,10 @@ def get_standard(name: str = 'Vega', sel: int = 0, display_plots: bool = False) 
         wlen = wlen[pos]
         data = data[pos]
         
-    if display_plots:
+    if diagn_plots:
         plt.figure()
-        plt.plot(wlen,data)
+        plt.title('Absolute Spectrum of ' + name)
+        plt.plot(wlen,data,'.-')
         plt.show()
     return wlen, data
 
@@ -199,7 +200,7 @@ def data_file_path(night: str, obj: str, data_file: str) -> str:
     return os.path.join(DATA_DIR, night, obj, data_file + '.fit')
 
 ##* 
-def get_data_fit(path: str, lims: Sequence[int | None | list[int]] = [0,None,0,None], hotpx: bool = True, obj_name: str = '', check_edges: bool = True, display_plots: bool = True, **kwargs) -> Spectrum:
+def get_data_fit(path: str, lims: Sequence[int | None | list[int]] = [0,None,0,None], hotpx: bool = True, obj_name: str = '', check_edges: bool = True, diagn_plots: bool = True, **figargs) -> Spectrum:
     """To open fits file and extract data.
 
     Parameters
@@ -216,7 +217,7 @@ def get_data_fit(path: str, lims: Sequence[int | None | list[int]] = [0,None,0,N
         name of the target, by default `''`
     check_edges: bool, optional
         parameter to check edges values, by default `True`
-    display_plots : bool, optional
+    diagn_plots : bool, optional
         parameter to plot data, by default `True`
     **kwargs:
         Parameters for the plot, see `display.showfits()`
@@ -251,8 +252,8 @@ def get_data_fit(path: str, lims: Sequence[int | None | list[int]] = [0,None,0,N
     # print the header
     target.print_header()
     # display target image
-    if display_plots: 
-        _ = show_fits(target, **kwargs) 
+    if diagn_plots: 
+        _ = show_fits(target, **figargs) 
     return target
 ##*
 
@@ -267,7 +268,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
     sel_cal : Literal['dark','flat','bias','all'], optional
         selected kind of calibration file, by default 'all'
         If `sel_cal == 'all'` function returns all possible files
-    display_plots : bool, optional
+    diagn_plots : bool, optional
         parameter to plot data, by default `True`
     **kwargs:
         Parameters for the plot, see `display.showfits()`
@@ -299,7 +300,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             flat = calibration['flat'] 
             for (f, lim) in zip(flat,lims):
                 f = data_file_path(ch_obs,'calibrazione',f)
-                tmp = get_data_fit(f, lims=lim, obj_name='flat',display_plots=False) 
+                tmp = get_data_fit(f, lims=lim, obj_name='flat',diagn_plots=False) 
                 mean_flat.hdul += [tmp.hdul]
                 mean_flat.data += [tmp.data]
                 mean_flat.lims = lim
@@ -314,7 +315,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             dark = calibration['dark']
             for d in dark:
                 d = data_file_path(ch_obs,'calibrazione',d)
-                tmp = get_data_fit(d, obj_name='dark',check_edges=False,display_plots=False, **kwargs) 
+                tmp = get_data_fit(d, obj_name='dark',check_edges=False,diagn_plots=False, **kwargs) 
                 mean_dark.hdul += [tmp.hdul]
                 mean_dark.data += [tmp.data]
             mean_dark.data, mean_dark.sigma = mean_n_std(mean_dark.data,axis=0)
@@ -328,7 +329,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             bias = calibration['bias'] 
             for b in bias:
                 b = data_file_path(ch_obs,'calibrazione',b)
-                tmp = get_data_fit (b, obj_name='bias',check_edges=False,display_plots=False, **kwargs) 
+                tmp = get_data_fit (b, obj_name='bias',check_edges=False,diagn_plots=False, **kwargs) 
                 master_bias.hdul += [tmp.hdul]
                 master_bias.data += [tmp.data]
             master_bias.data, master_bias.sigma = mean_n_std(master_bias.data,axis=0)
@@ -340,7 +341,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
         calibration, lims = collect_fits(ch_obs,'Calibration')
         if sel_cal in ['flat', 'all']:
             flat = data_file_path(ch_obs,'Calibration',calibration)
-            flat = get_data_fit(flat, lims, obj_name='flat',display_plots=False, **kwargs) 
+            flat = get_data_fit(flat, lims, obj_name='flat',diagn_plots=False, **kwargs) 
             flat.name = 'flat'
             if display_plot: _ = show_fits(flat, **kwargs)
             results += [flat]
@@ -354,7 +355,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             flat = calibration['flat'] 
             for (f, lim) in zip(flat,lims):
                 f = data_file_path(ch_obs,'Calibration',f)
-                tmp = get_data_fit(f, lims=lim, obj_name='flat',display_plots=False, **kwargs) 
+                tmp = get_data_fit(f, lims=lim, obj_name='flat',diagn_plots=False, **kwargs) 
                 mean_flat.hdul += [tmp.hdul]
                 mean_flat.data += [tmp.data]
                 mean_flat.lims = lim
@@ -369,7 +370,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             dark = calibration['dark'] 
             for d in dark:
                 d = data_file_path(ch_obs,'Calibration',d)
-                tmp = get_data_fit(d, obj_name='dark',check_edges=False,display_plots=False, **kwargs) 
+                tmp = get_data_fit(d, obj_name='dark',check_edges=False,diagn_plots=False, **kwargs) 
                 mean_dark.hdul += [tmp.hdul]
                 mean_dark.data += [tmp.data]
             mean_dark.data, mean_dark.sigma = mean_n_std(mean_dark.data,axis=0)
@@ -383,7 +384,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
     return results
 
 
-def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], display_plots: bool = True, **kwargs) -> tuple[Spectrum, Spectrum]:
+def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], diagn_plots: bool = True, **figargs) -> tuple[Spectrum, Spectrum]:
     """To get data of target and calibration lamp spectrum.
     
     Parameters
@@ -396,7 +397,7 @@ def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], dis
         if there are more than one acquisition it is possible to select 
         one of them (`selection` is the number of the chosen acquisition)
         or to average on them (`selection == 'mean'`) 
-    display_plots : bool, optional
+    diagn_plots : bool, optional
         parameter to plot data, by default `True`
     **kwargs:
         Parameters for the plot, see `display.showfits()`
@@ -435,12 +436,12 @@ def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], dis
         if isinstance(selection, int):
             obj_fit, lims_fit = obj_fit[selection], lims_fit[selection]
             obj_fit = data_file_path(ch_obs, ch_obj, obj_fit)
-            target = get_data_fit(obj_fit,lims_fit,obj_name=ch_obj,display_plots=display_plots,**kwargs)
+            target = get_data_fit(obj_fit,lims_fit,obj_name=ch_obj,diagn_plots=diagn_plots,**figargs)
         elif selection == 'mean':
             target = Spectrum.empty()
             for (fits, lim) in zip(obj_fit, lims_fit):
                 fits = data_file_path(ch_obs, ch_obj, fits)
-                tmp = get_data_fit(fits,lim,obj_name=ch_obj,display_plots=display_plots,**kwargs)
+                tmp = get_data_fit(fits,lim,obj_name=ch_obj,diagn_plots=diagn_plots,**figargs)
                 target.hdul += [tmp.hdul]
                 target.data += [tmp.data]
                 # check edges
@@ -451,13 +452,13 @@ def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], dis
             target.name = tmp.name
     else:
         obj_fit = data_file_path(ch_obs, ch_obj, obj_fit)
-        target = get_data_fit(obj_fit,lims_fit,obj_name=ch_obj,display_plots=display_plots,**kwargs)
-    if display_plots: _ = show_fits(target, title='Target spectrum extracted', show=True)
+        target = get_data_fit(obj_fit,lims_fit,obj_name=ch_obj,diagn_plots=diagn_plots,**figargs)
+    if diagn_plots: _ = show_fits(target, title='Target spectrum extracted', show=True,**figargs)
     # collect the lamp data, if any
     if obj_lamp is not None:
         obj_lamp = data_file_path(ch_obs, ch_obj, obj_lamp)
-        lamp = get_data_fit(obj_lamp,lims_lamp,obj_name='Lamp of ' + ch_obj, display_plots=display_plots,**kwargs)
-        if display_plots:  _ = show_fits(lamp, show='True')
+        lamp = get_data_fit(obj_lamp,lims_lamp,obj_name='Lamp of ' + ch_obj, diagn_plots=diagn_plots,**figargs)
+        if diagn_plots:  _ = show_fits(lamp, show='True',**figargs)
     else: 
         lamp = Spectrum.empty()
     return target, lamp       

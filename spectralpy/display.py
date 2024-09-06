@@ -27,7 +27,7 @@ from .stuff import Spectrum
 from typing import Sequence, Any
 
 ##*
-def quickplot(data: Sequence[ndarray] | ndarray, numfig: int = None, fmt: str = '-', title: str = '', labels: Sequence[str] = ('',''), dim: list[int] = [10,7], grid: bool = False,**kwargs) -> None:
+def quickplot(data: Sequence[ndarray] | ndarray, numfig: int = None, fmt: str = '-', title: str = '', labels: Sequence[str] = ('',''), dim: list[int] = [10,7], grid: bool = False,**pltargs) -> None:
     """Function to display a plot quickly.
 
     Parameters
@@ -60,7 +60,7 @@ def quickplot(data: Sequence[ndarray] | ndarray, numfig: int = None, fmt: str = 
     plt.figure(numfig,figsize=dim)
     plt.title(title)
     if isinstance(data,ndarray): data = [data]
-    plt.plot(*data,fmt,**kwargs)
+    plt.plot(*data,fmt,**pltargs)
     plt.xlabel(xl)
     plt.ylabel(yl)
     if grid: plt.grid(which='both',linestyle='--',alpha=0.2,color='grey')

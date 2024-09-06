@@ -155,7 +155,7 @@ class Spectrum():
         if self.sigma is not None:
             self.sigma = self.sigma[lims]
 
-    def angle_correction(self, angle: float | None = None, init: list[float] = [0.9, 0.], display_plots: bool = False) -> tuple['Spectrum',float]:
+    def angle_correction(self, angle: float | None = None, init: list[float] = [0.9, 0.], diagn_plots: bool = False, **pltargs) -> tuple['Spectrum',float]:
         """To correct the inclination of spectrum, rotating the image.
         
         Parameters
@@ -166,7 +166,7 @@ class Spectrum():
             fitting rountine
         init : list[float], optional
             initial values for the fit, by default `[0.9, 0.]`
-        display_plots : bool, optional
+        diagn_plots : bool, optional
             to plot figures, by default `False`
 
         Returns
@@ -217,7 +217,7 @@ class Spectrum():
             data = ndimage.rotate(data, angle1, reshape=False).copy()
             
             ## Fit of Gaussians
-            if display_plots: fig, ax = plt.subplots(1,1)
+            if diagn_plots: fig, ax = plt.subplots(1,1)
             # prepare data 
             x_pos = x_pos[::50]
             y_pos, Dy = np.array([]), np.array([])
@@ -242,10 +242,10 @@ class Spectrum():
                 Dy = np.append(Dy,pop[2])
                 method = fit.res['func']
                 color = (1-i/max(x_pos),i/max(x_pos),i/(2*max(x_pos))+0.5)
-                if display_plots:
+                if diagn_plots:
                     ax.plot(data[:,i],color=color,label='fit')
                     ax.plot(y, method(y,*pop), '--',color=color)
-            if display_plots: ax.legend()            
+            if diagn_plots: ax.legend()            
             print(len(x_pos),len(y_pos))
             # compute the fit to get inclination angle
             fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy)
