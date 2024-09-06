@@ -39,6 +39,8 @@ def compute_master_dark(mean_dark: Spectrum | None, master_bias: Spectrum | None
         averaged bias data, by default `None`
     diagn_plots : bool, optional
         to plot figures, by default `False`
+    **figargs
+        parameters for the images, see `display.showfits()`
 
     Returns
     -------
@@ -79,6 +81,8 @@ def compute_master_flat(flat: Spectrum, master_dark: Spectrum | None = None, mas
         master bias if any, by default `None`
     diagn_plots : bool, optional
         to plot figures, by default `False`
+    **figargs
+        parameters for the images, see `display.showfits()`
 
     Returns
     -------
@@ -141,8 +145,12 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
         inclination angle of the slit, by default `0`
         If `angle is None` then the value is estimated by a 
         fitting rountine
+    display_plots : bool, optional
+        to display images and plots, by default `True`
     diagn_plots : bool, optional
         to plot figures, by default `False`
+    **figargs
+        parameters for the images, see `display.showfits()`
 
     Returns
     -------
@@ -255,6 +263,8 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, ord: int = 2, initial
         fit, by default `2`
     initial_values : Sequence[float] | None, optional
         inital values for the fit, by default `None`
+    display_plots : bool, optional
+        to display images and plots, by default `True`
 
     Returns
     -------
@@ -306,6 +316,10 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
         first lamp
     lamp2 : Spectrum
         second lamp
+    display_plots : bool, optional
+        to display images and plots, by default `True`
+    **pltargs
+        parameters for the plots, see `display.quickplot()`
 
     Returns
     -------
@@ -380,8 +394,10 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         fit, by default `2`
     initial_values : Sequence[float] | None, optional
         inital values for the fit, by default `None`
+    display_plots : bool, optional
+        to display images and plots, by default `True`
     diagn_plots : bool, optional
-        if it is `True` images/plots are displayed, by default `False`
+        if it is `True` diagnostic images/plots are displayed, by default `False`
 
     Returns
     -------
@@ -464,14 +480,16 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
     bins : ndarray
         wavelengths bin values
     display_plots : bool, optional
-        _description_, by default True
+        to display images and plots, by default `True`
     diagn_plot : bool, optional
-        _description_, by default False
+        to display diagnostic images and plots, by default `False`
 
     Returns
     -------
-    tuple[tuple[ndarray,ndarray], tuple[ndarray, ndarray]]
-        _description_
+    (I0, DI0) : tuple[ndarray, ndarray]
+        0 airmass spectrum and uncertainty
+    (tau, Dtau) : tuple[ndarray,ndarray]
+        optical depth and uncertainty
     """
     # load data
     x, Dx = airmass
@@ -546,7 +564,37 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
         plt.show()
     return (I0, DI0), (tau, Dtau)
 
-def ccd_response(altitude: tuple[ndarray, ndarray], std_obs: list[Spectrum], ends_wlen: list[float],  bin_width: float | int = 50, std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
+def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], ends_wlen: list[list[float]],  bin_width: float | int = 50, std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
+    """To estimate instrument response function
+
+    Parameters
+    ----------
+    altitude : tuple[ndarray, ndarray]
+        different altitudes values and the corresponding uncertainties
+    tg_obs : list[Spectrum]
+        spectrum data of target for different altitudes
+    ends_wlen : list[list[float]]
+        list of extremes of each wavelengths range acquired at different altitudes
+    bin_width : float | int, optional
+        the width of each bin, by default `50`
+    std_name : str, optional
+        the name of the standard used to calibrate, by default `'Vega'`
+    selection : int, optional
+        the kind of chosen standard data, by default `0`
+    display_plots : bool, optional
+        to display images and plots, by default `True`
+    diagn_plot : bool, optional
+        to display diagnostic images and plots, by default `False`
+
+    Returns
+    -------
+    (l_data, Dl_data) : tuple[ndarray, ndarray]
+        _description_
+    (R, DR) : tuple[ndarray,ndarray]
+        _description_
+    (op_dep, Dop_dep) : tuple[ndarray,ndarray]
+        _description_
+    """
     ## Data Collection
     alt, Dalt = altitude
     # airmass
@@ -559,7 +607,7 @@ def ccd_response(altitude: tuple[ndarray, ndarray], std_obs: list[Spectrum], end
     l_data = []     #: central values of binned wavelengths
     y_data = []     #: binned spectrum data
     a_bin  = []     #: bins values
-    for obs in std_obs:
+    for obs in tg_obs:
         # normalize spectrum data by exposure time
         obs.spec = obs.spec / obs.get_exposure()
         # bin the data
