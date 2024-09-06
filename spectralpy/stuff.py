@@ -288,8 +288,8 @@ class Spectrum():
         Parameters
         ----------
         bin : ArrayLike, optional
-            For `float` and `int` it means the width of the bins, by default `50`
-            It is possible to pass an array of values of the bins
+            The width of each bin if a `float` or a `int` is passed, by default `50`
+            It is possible to pass instead the array of specific values of the bins
         edges : None | Sequence[float], optional
             the ends of the wavelengths range to bin, by default `None` 
             If `edges is None` then the extremes of `self.lines` array are taken
