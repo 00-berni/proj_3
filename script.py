@@ -10,7 +10,7 @@ if __name__ == '__main__':
     night, target_name, selection = TARGETS[:,0]
 
     ord = 3
-    target, lamp = clcr.calibration(night, target_name, selection, ord=ord, spec_plot=False)
+    target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=False)
 
 
     # night, target_name, selection = TARGETS[:,1]
@@ -26,10 +26,11 @@ if __name__ == '__main__':
     vega : list[dt.Spectrum] = []
     line = []
     for i in range(len(alt)):
-        tmp, _ = clcr.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, spec_plot=False)
+        tmp, _ = clcr.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, display_plots=False)
         vega += [tmp]
         line += [[tmp.lines[0],tmp.lines[-1]]]
 
+    results = clcr.ccd_response((alt, Dalt), vega, line, bin_width=bin_width)
 
     # from speclite import filters as flt
     # filter_b = flt.load_filter('bessell-B')(l_data)
@@ -140,12 +141,12 @@ if __name__ == '__main__':
     # plt.show()
 
     # ### DATA
-    # display_plots = False
+    # diagn_plots = False
     # night = 0
     # obj_name1 = 'betaLyr'
 
     # ### ANALYSIS
-    # spectrum, lengths, cal_res =  calibrated_spectrum(night,obj_name1,display_plots=display_plots, ret_values='calibration')
+    # spectrum, lengths, cal_res =  calibrated_spectrum(night,obj_name1,diagn_plots=diagn_plots, ret_values='calibration')
 
     # fastplot(lengths, spectrum,title='Corrected and calibrated spectrum of ' + obj_name1,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9],grid=True)
     # plt.axvline(6563,0,1,color='r',alpha=0.5,label='H$_\\alpha$')
@@ -171,7 +172,7 @@ if __name__ == '__main__':
     # print(err_func(x,Dx,True))
 
     # obj_name2 = 'vega'
-    # spectrum, lengths, angle2 = calibrated_spectrum(night,obj_name2,flat=flat_value,cal_func=cal_func,err_func=err_func,display_plots=display_plots,ret_values='calibration')
+    # spectrum, lengths, angle2 = calibrated_spectrum(night,obj_name2,flat=flat_value,cal_func=cal_func,err_func=err_func,diagn_plots=diagn_plots,ret_values='calibration')
 
     # fastplot(lengths, spectrum,title='Corrected and calibrated spectrum of ' + obj_name2,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9],grid=True)
     # plt.axvline(6563,0,1,color='r',alpha=0.5,label='H$_\\alpha$')
@@ -185,10 +186,10 @@ if __name__ == '__main__':
     # plt.show()
 
 
-    # lag = lamp_corr(night,(obj_name1,obj_name2),(angle1,angle2),display_plots=True)
+    # lag = lamp_corr(night,(obj_name1,obj_name2),(angle1,angle2),diagn_plots=True)
 
     # obj_name2 = 'gammaCygni'
-    # spectrum, lengths, angle2 = calibrated_spectrum(night,obj_name2,flat=flat_value,cal_func=cal_func,err_func=err_func,display_plots=display_plots,ret_values='calibration')
+    # spectrum, lengths, angle2 = calibrated_spectrum(night,obj_name2,flat=flat_value,cal_func=cal_func,err_func=err_func,diagn_plots=diagn_plots,ret_values='calibration')
 
     # fastplot(lengths, spectrum,title='Corrected and calibrated spectrum of ' + obj_name2,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9],grid=True)
     # plt.axvline(6563,0,1,color='r',alpha=0.5,label='H$_\\alpha$')
@@ -201,4 +202,4 @@ if __name__ == '__main__':
     # plt.legend(numpoints=1)
     # plt.show()
  
-    # lag = lamp_corr(night,(obj_name1,obj_name2),(angle1,angle2),display_plots=True)
+    # lag = lamp_corr(night,(obj_name1,obj_name2),(angle1,angle2),diagn_plots=True)
