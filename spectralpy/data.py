@@ -128,6 +128,34 @@ def get_standard(name: str = 'Vega', sel: int = 0, diagn_plots: bool = False) ->
         plt.show()
     return wlen, data
 
+def store_results(file_name: str, data: ArrayLike, ch_obs: str, ch_obj: str, **txtkw) -> None:
+    """To store results in a `.txt` file
+
+    Parameters
+    ----------
+    file_name : str
+        name of the file
+    data : ArrayLike
+        data to store
+    ch_obs : str
+        chosen observation
+    ch_obj : str
+        chosen target name
+    **txtkw
+        parameters of `numpy.savetxt()`
+        the parameter `'delimiter'` is set to `'\t'` by default
+    """
+    if 'delimiter' not in txtkw.keys():
+        txtkw['delimiter'] = '\t'
+    p_dir = RESULT_DIR
+    for directory in [ch_obs,ch_obj]:
+        n_dir = os.path.join(p_dir,directory)
+        if not os.path.isdir(n_dir): os.mkdir(n_dir)
+        p_dir = n_dir
+    file_path = os.path.join(n_dir, file_name + '.txt')
+    np.savetxt(file_path, np.column_stack(data), **txtkw)
+
+
 def open_targets_list(filename: str = 'targets.csv', delimiter: str = ',') -> ndarray:
     """To collect chosen targets
 
@@ -462,3 +490,32 @@ def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], dia
     else: 
         lamp = Spectrum.empty()
     return target, lamp       
+
+
+def open_results(file_name: str | Sequence[str], ch_obs: str, ch_obj: str) -> ndarray | list[ndarray]:
+    """To get data of results
+
+    Parameters
+    ----------
+    file_name : str | Sequence[str]
+        name(s) of the file(s) to open 
+    ch_obs : str
+        chosen observation night
+    ch_obj : str
+        chosen target name
+
+    Returns
+    -------
+    results : ndarray | list[ndarray]
+        selected data or in case of multiple files list of data
+    """
+    results = []    #: list to store load data
+    # if only one file has to be opened
+    if isinstance(file_name, str): file_name = [file_name]
+    # load and collect data
+    for name in file_name:
+        file_path = os.path.join(RESULT_DIR, ch_obs, ch_obj, name + '.txt')
+        data = np.loadtxt(file_path,unpack=True)
+        results += [data]
+    if len(results) == 1: results = results[0]
+    return results
