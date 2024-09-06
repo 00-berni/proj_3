@@ -25,7 +25,7 @@ from numpy import ndarray
 from typing import Callable, Literal
 from scipy import odr
 from .display import *
-from .data import get_data_fit, extract_data, extract_cal_data, get_cal_lines, get_standard
+from .data import extract_data, extract_cal_data, get_cal_lines, get_standard, store_results
 from .stuff import FuncFit, compute_err, mean_n_std
 
 def compute_master_dark(mean_dark: Spectrum | None, master_bias: Spectrum | None = None, diagn_plots: bool = False, **figargs) -> Spectrum:
@@ -362,7 +362,7 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
     shift = np.argmax(corr) - (len(corr)/2)  
     return shift
 
-def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: int | None = None, other_lamp: Spectrum | None = None, ord: int = 2, initial_values: Sequence[float] | None = None, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
+def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: int | None = None, other_lamp: Spectrum | None = None, ord: int = 2, initial_values: Sequence[float] | None = None, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
     """To open and calibrate data
 
     Parameters
@@ -463,6 +463,18 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         plt.errorbar(target.lines,target.spec,target.std,target.errs,fmt='.')
         plt.yscale('log')
         plt.show()        
+    
+    ## Store
+    if save_data:
+        header = 'lambda [A]\tDlambda [A]\tspecval [counts]\tDspecval [counts]'
+        # target
+        file_name = ch_obj.lower() + '_' + str(selection)
+        data = [target.lines, target.errs, target.spec, target.std]
+        store_results(file_name, data, ch_obs, ch_obj, header=header, **txtkw)
+        # lamp
+        file_name = 'lamp-' + ch_obj.lower()
+        data = [lamp.lines, lamp.errs, lamp.spec, lamp.std]
+        store_results(file_name, data, ch_obs, ch_obj, header=header, **txtkw)
     return target, lamp
 
 
