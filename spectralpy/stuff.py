@@ -338,6 +338,30 @@ class Spectrum():
         bin_spect, err_spect = np.array([ [*mean_n_std(spectrum[pos(i)])] for i in range(bin_num+1)]).transpose()
         return (bin_lines, err_lines), (bin_spect, err_spect), bins
 
+    def spectral_data(self, plot_format: bool = False) -> ndarray[float,ndarray]:
+        """To get spectral data
+
+        Parameters
+        ----------
+        plot_format : bool, optional
+            if `True` data are returned to be passed directly to 
+            `matplotlib.pyplot.errorbar()` function as
+            `[xdata, ydata, yerr, xerr]`, by default `False`
+        
+        Returns
+        -------
+        ndarray
+            an array that collects wavelengths with uncentanties and
+            the corresponding counts with their uncentanties
+            If `plot_format == True` data are returned like
+            `[xdata, ydata, yerr, xerr]`
+        """
+        if plot_format:
+            spectral_data = np.array([self.lines, self.spec, self.std, self.errs])
+        else:
+            spectral_data = np.array([self.lines, self.errs, self.spec, self.std])
+        return spectral_data
+
     def copy(self) -> 'Spectrum':
         """To make an identical copy of a Spectrum object
 
