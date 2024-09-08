@@ -4,6 +4,31 @@ import spectralpy.data as dt
 import spectralpy.calcorr as clcr
 import spectralpy.display as dsp
 
+label = lambda i,arr,name : name if i==arr[0] else ''
+
+def plot_line(lines: list[float], name: str, color: str, minpos: float) -> None:
+    for line in lines:
+        plt.axvline(line,0,1,color=color,label=label(line,lines,name))
+        plt.annotate(name,(line,minpos),(line+10,minpos))
+
+
+b_name = ['H$\\alpha$', 'H$\\beta$', 'H$\\gamma$', 'H$\\delta$', 'H$\\epsilon$', 'H$\\xi$', 'H$\\eta$','break']
+balmer = [6562.79, 4861.297761, 4340.471, 4101.7415, 3970.0788, 3889.0557, 3835.3909, 3645.0]
+feI  = [7610.2676,  7635.8482,  5896.7357, 5274.9807, 4300.2036, 4384.6718, 4401.4425,  4459.3521, 4351.5437]
+feII = [7636.2373, 7611.2601, 6871.6994, 6496.9415, 6497.2764, 6497.4985,  5175.3973, 5274.5277, 4384.31313, 4459.67779, 4351.76199, 4336.30962]
+tiI  = [6497.683, 4300.4848, 4300.5538, 4301.0787, 4322.1141, 4321.7709 ]
+tiII = [4300.0424,  4301.29545, 4350.83776  ]
+neI  = [ 5274.0406, 4402.380, 4460.1758, 4336.2251 ]
+neII = [4384.1063, 4384.2194, 4322.372]
+oI  = [5274.967,5275.123]
+oII = [4384.446, 4351.260, 4336.859, 4322.4477]
+mgI  = [4351.9057]
+mgII = [4384.637]
+arI  = []
+arII = [4401.75478] 
+
+
+
 if __name__ == '__main__':
     from spectralpy.stuff import FuncFit, Spectrum
     TARGETS = dt.open_targets_list()
@@ -13,9 +38,28 @@ if __name__ == '__main__':
     display_plots = True
     target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=True)
 
-    tg, lp = dt.open_results(['polluce_mean','lamp-polluce'],night,target_name)
-    dsp.quickplot((lp[0],*tg,lp[1]))
-    plt.show()
+    # tg, lp = dt.open_results(['polluce_mean','lamp-polluce'],night,target_name)
+    # minpos = tg[2].min()
+    # dsp.quickplot((tg[0],tg[2],tg[3],tg[1]),fmt='.--',color='black')
+    # for (b, name) in zip(balmer,b_name):
+    #     if tg[0].min() <= b <= tg[0].max():
+    #         plt.axvline(b,0,1, color='blue',label=label(b,balmer,'H I'))
+    #         plt.annotate(name,(b,minpos),(b+10,minpos))
+    # plot_line(feI, 'Fe I','orange',minpos)
+    # plot_line(feII,'Fe II','yellow',minpos)
+    # plot_line(tiI, 'Ti I','violet',minpos)
+    # plot_line(tiII,'Ti II','plum',minpos)
+    # plot_line(neI, 'Ne I','green',minpos)
+    # plot_line(neII,'Ne II','lime',minpos)
+    # plot_line(oI, 'O I','deeppink',minpos)
+    # plot_line(oII,'O II','hotpink',minpos)
+    # plot_line(mgI, 'Mg I','red',minpos)
+    # plot_line(mgII,'Mg II','tomato',minpos)
+    # plot_line(arI, 'Ar I','aqua',minpos)
+    # plot_line(arII,'Ar II','cyan',minpos)
+    # plt.legend()
+    # plt.yscale('log')
+    # plt.show()
 
     # night, target_name, selection = TARGETS[:,1]
     # target2, lamp2 = clcr.calibration(night, target_name, selection, other_lamp=lamp)
