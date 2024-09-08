@@ -173,7 +173,7 @@ def open_targets_list(filename: str = 'targets.csv', delimiter: str = ',') -> nd
     """
     from pandas import read_csv
     TARGET_FILE = os.path.join(DATA_DIR,filename)
-    data = read_csv(TARGET_FILE, delimiter=delimiter).to_numpy().transpose()
+    data = read_csv(TARGET_FILE, delimiter=delimiter).to_numpy()
     return data
     
 
