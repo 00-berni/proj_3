@@ -60,7 +60,7 @@ def quickplot(data: Sequence[ndarray] | ndarray, numfig: int = None, fmt: str = 
     xl,yl = labels
     plt.figure(numfig,figsize=dim)
     plt.title(title)
-    if isinstance(data,ndarray): data = [data]
+    if isinstance(data,ndarray): data = [np.arange(len(data)),data]
     plt.errorbar(*data,fmt=fmt,**pltargs)
     plt.xlabel(xl)
     plt.ylabel(yl)
