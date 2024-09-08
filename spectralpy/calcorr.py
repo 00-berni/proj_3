@@ -435,7 +435,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     ## Calibration
     if other_lamp is None:      
         # compute the calibration function via fit
-        cal_func, err_func = lines_calibration(ch_obs, ch_obj, trsl=lamp.lims[2], ord=ord, display_plots=display_plots)
+        cal_func, err_func = lines_calibration(ch_obs, ch_obj, trsl=lamp.lims[2], ord=ord, initial_values=initial_values, display_plots=display_plots)
         # store results
         lamp.func = [cal_func, err_func]
         target.func = [*lamp.func]
