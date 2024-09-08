@@ -27,36 +27,51 @@ mgII = [4384.637]
 arI  = []
 arII = [4401.75478] 
 
+def display_lines(minpos: float, edges: tuple[float, float]) -> None:
+    for (b, name) in zip(balmer,b_name):
+        if edges[0] <= b <= edges[1]:
+            plt.axvline(b,0,1, color='blue',label=label(b,balmer,'H I'))
+            plt.annotate(name,(b,minpos),(b+10,minpos))
+    plot_line(feI, 'Fe I','orange',minpos)
+    plot_line(feII,'Fe II','yellow',minpos)
+    plot_line(tiI, 'Ti I','violet',minpos)
+    plot_line(tiII,'Ti II','plum',minpos)
+    plot_line(neI, 'Ne I','green',minpos)
+    plot_line(neII,'Ne II','lime',minpos)
+    plot_line(oI, 'O I','deeppink',minpos)
+    plot_line(oII,'O II','hotpink',minpos)
+    plot_line(mgI, 'Mg I','red',minpos)
+    plot_line(mgII,'Mg II','tomato',minpos)
+    plot_line(arI, 'Ar I','aqua',minpos)
+    plot_line(arII,'Ar II','cyan',minpos)
+
 
 
 if __name__ == '__main__':
-    from spectralpy.stuff import FuncFit, Spectrum
     TARGETS = dt.open_targets_list()
-    night, target_name, selection = TARGETS[:,0]
+    print(TARGETS)
+    night, target_name, selection = TARGETS[0]
 
     ord = 2
-    display_plots = True
-    target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=True)
+    display_plots = False
+    target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=False)
+
+    night, target_name, selection = TARGETS[1]
+
+    target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots)
+
+    data = target.spectral_data(plot_format=True)
+    plt.figure()
+    plt.errorbar(*data,'.-')
+    l = data[0]
+    minpos = data[1].min()
+    display_lines(minpos,(l.min(),l.max()))
+    plt.yscale('log')
+    plt.show()
 
     # tg, lp = dt.open_results(['polluce_mean','lamp-polluce'],night,target_name)
     # minpos = tg[2].min()
     # dsp.quickplot((tg[0],tg[2],tg[3],tg[1]),fmt='.--',color='black')
-    # for (b, name) in zip(balmer,b_name):
-    #     if tg[0].min() <= b <= tg[0].max():
-    #         plt.axvline(b,0,1, color='blue',label=label(b,balmer,'H I'))
-    #         plt.annotate(name,(b,minpos),(b+10,minpos))
-    # plot_line(feI, 'Fe I','orange',minpos)
-    # plot_line(feII,'Fe II','yellow',minpos)
-    # plot_line(tiI, 'Ti I','violet',minpos)
-    # plot_line(tiII,'Ti II','plum',minpos)
-    # plot_line(neI, 'Ne I','green',minpos)
-    # plot_line(neII,'Ne II','lime',minpos)
-    # plot_line(oI, 'O I','deeppink',minpos)
-    # plot_line(oII,'O II','hotpink',minpos)
-    # plot_line(mgI, 'Mg I','red',minpos)
-    # plot_line(mgII,'Mg II','tomato',minpos)
-    # plot_line(arI, 'Ar I','aqua',minpos)
-    # plot_line(arII,'Ar II','cyan',minpos)
     # plt.legend()
     # plt.yscale('log')
     # plt.show()
