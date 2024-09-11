@@ -3,6 +3,6 @@
 #   The first row is for the target acquisition
 #   The second one is for the lamp
 #
-#yl     yu      xl   xu
-1000    1136    750 -1
-640 1373    750 -1
+#yl	 yu	  xl   xu
+1000	1136	750	-1	1058	1096	740	-1
+640	1373	750	-1	639	1340	905	2726

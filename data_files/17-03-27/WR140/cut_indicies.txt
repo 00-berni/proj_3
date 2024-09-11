@@ -1,0 +1,14 @@
+#	The section of image to display
+#
+#	The first row is for the target acquisition
+#	The last one is for the lamp
+#
+#	The first four columns are the edges of the
+#	inclinated image
+#	The others are the edges of the corrected image
+#
+#cyl	cyu	cxl	cxu	yl	yu	xl	xu
+0	-1	0	-1	0	-1	0	-1
+570	621	255	1390	581	618	257	1387
+0	-1	0	-1	0	-1	0	-1
+256	747	267	-1	271	753	367	1381
