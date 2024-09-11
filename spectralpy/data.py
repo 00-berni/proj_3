@@ -412,7 +412,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
     return results
 
 
-def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], diagn_plots: bool = True, **figargs) -> tuple[Spectrum, Spectrum]:
+def extract_data(ch_obs: str, ch_obj: str, selection: str | Literal['mean'], diagn_plots: bool = True, **figargs) -> tuple[Spectrum, Spectrum]:
     """To get data of target and calibration lamp spectrum.
     
     Parameters
@@ -461,11 +461,7 @@ def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], dia
     # collect the target data
     if isinstance(obj_fit, list):
         # for more acquisitions it is possible to select one or average on all
-        if isinstance(selection, int):
-            obj_fit, lims_fit = obj_fit[selection], lims_fit[selection]
-            obj_fit = data_file_path(ch_obs, ch_obj, obj_fit)
-            target = get_data_fit(obj_fit,lims_fit,obj_name=ch_obj,diagn_plots=diagn_plots,**figargs)
-        elif selection == 'mean':
+        if selection == 'mean':
             target = Spectrum.empty()
             for (fits, lim) in zip(obj_fit, lims_fit):
                 fits = data_file_path(ch_obs, ch_obj, fits)
@@ -478,6 +474,12 @@ def extract_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], dia
             target.data, target.sigma = mean_n_std(target.data,axis=0)
             print('LIMS',target.lims)
             target.name = tmp.name
+        elif int(selection) in range(len(obj_fit)):
+            selection = int(selection)
+            obj_fit, lims_fit = obj_fit[selection], lims_fit[selection]
+            obj_fit = data_file_path(ch_obs, ch_obj, obj_fit)
+            target = get_data_fit(obj_fit,lims_fit,obj_name=ch_obj,diagn_plots=diagn_plots,**figargs)
+        else: raise Exception('Invalid value for `selection`: '+ selection +' is not allowed')
     else:
         obj_fit = data_file_path(ch_obs, ch_obj, obj_fit)
         target = get_data_fit(obj_fit,lims_fit,obj_name=ch_obj,diagn_plots=diagn_plots,**figargs)
