@@ -44,25 +44,48 @@ def display_lines(minpos: float, edges: tuple[float, float]) -> None:
     plot_line(mgII,'Mg II','tomato',minpos)
     plot_line(arI, 'Ar I','aqua',minpos)
     plot_line(arII,'Ar II','cyan',minpos)
+    plt.legend()
 
 
 
 if __name__ == '__main__':
+    ## Get data
     TARGETS = dt.open_targets_list()
     print(TARGETS)
-    night, target_name, selection = TARGETS[0]
+
+    ## 17-03-27 night
+    # night, target_name, selection = TARGETS[0]
+
+    # ord = 2
+    # display_plots = True
+    # target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=True)
+
+    # night, target_name, selection = TARGETS[2]
+
+    # target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots, diagn_plots=True)
+
+    ## 22-07-26_ohp night
+    # night, target_name, selection = TARGETS[3]
+
+    # ord = 2
+    # display_plots = True
+    # target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=False)
+    
+    
+    # night, target_name, selection = '22-07-26_ohp', 'gammaCygni', '0'
+
+    # target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=True)
+
+    ## 23-03-28 night
+    night, target_name, selection = TARGETS[-2]
 
     ord = 2
-    display_plots = False
-    target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=False)
-
-    night, target_name, selection = TARGETS[1]
-
-    target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots)
+    display_plots = True
+    target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=True, diagn_plots=True)
 
     data = target.spectral_data(plot_format=True)
     plt.figure()
-    plt.errorbar(*data,'.-')
+    plt.errorbar(*data,'.-', color='black',alpha=0.5)
     l = data[0]
     minpos = data[1].min()
     display_lines(minpos,(l.min(),l.max()))
