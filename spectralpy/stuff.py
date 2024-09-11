@@ -280,7 +280,7 @@ class Spectrum():
         pxs = np.arange(len(self.spec)) + self.lims[2] + shift
         cal_func, err_func = self.func
         self.lines = cal_func(pxs)
-        self.errs  = err_func(pxs)
+        self.errs  = np.sqrt(err_func(pxs))
 
     def binning(self, bin: ArrayLike = 50, edges: None | Sequence[float] = None) -> tuple[tuple[ndarray,ndarray], tuple[ndarray,ndarray], ndarray]:
         """To bin spectrum data
