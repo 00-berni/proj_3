@@ -209,26 +209,38 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
         lamp.data = lamp.data / master_flat.data  
         lamp.sigma = None if isinstance(lamp_err, int) else np.sqrt(lamp_err)
         #? CHECK
-        pos = np.where(lamp.sigma < 0)
-        if len(pos[0]) != 0:
-            plt.figure()
-            plt.title('HELP')
-            plt.imshow(lamp.sigma,cmap='gray')
-            plt.plot(pos[1],pos[0],'.',color='red')
-            plt.show()
-            raise
-    exit_cond = False
-    norm = 'linear'
-    if cut:    
-        target, angle = target.angle_correction(angle=angle, diagn_plots=diagn_plots)      
-        if np.all(target.lims == [0, None, 0, None]): 
-            exit_cond = True
-            norm = 'log'
-        target.cut_image()
-        if lamp.name != 'empty':
-            lamp, _ = lamp.angle_correction(angle=angle, diagn_plots=diagn_plots)      
-            lamp.cut_image()
-    if display_plots:
+        if lamp.sigma is not None:
+            pos = np.where(lamp.sigma < 0)
+            if len(pos[0]) != 0:
+                plt.figure()
+                plt.title('HELP')
+                plt.imshow(lamp.sigma,cmap='gray')
+                plt.plot(pos[1],pos[0],'.',color='red')
+                plt.show()
+                raise
+    
+    ## Inclination Correction
+    ylen, xlen = target.data.shape      # sizes of the image
+    IMAGE_ENDS = [0, ylen, 0, xlen]     # ends of the image
+    # check the condition to rotate image
+    if np.any(target.cut != IMAGE_ENDS):
+        exit_cond = False  
+        norm = 'linear'
+        if cut:    
+            target, angle = target.angle_correction(angle=angle, diagn_plots=diagn_plots)      
+            if np.all(target.lims == IMAGE_ENDS): 
+                exit_cond = True
+                norm = 'log'
+            target.cut_image()
+            if lamp.name != 'empty':
+                lamp, _ = lamp.angle_correction(angle=angle, diagn_plots=diagn_plots)      
+                lamp.cut_image()
+    else:
+        exit_cond = True  
+        norm = 'log'
+    
+    ## Plots
+    if display_plots or exit_cond:
         show_fits(target, title='Science Frame',norm=norm,**figargs)
         if diagn_plots and target.sigma is not None: 
             plt.figure()
@@ -409,11 +421,11 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     ## Data
     # extract data
     target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, display_plots=display_plots, diagn_plots=diagn_plots,**figargs)
-    # average along the y axis
+    # normalize along the x axis
     data = target.data.mean(axis=1)
     data = np.array([ target.data[i,:] / data[i] for i in range(len(data)) ])
-    # plt.figure(); plt.imshow(data); plt.colorbar(); plt.show()
-    target.spec, target.std = mean_n_std(data, axis=0)
+    # average along the y axis
+    target.spec, target.std = mean_n_std(data, axis=0,weights=target.spec)
     # compute the height for the lamp
     if height is None: height = int(len(lamp.data)/2)
     # take lamp spectrum at `height` 
@@ -433,16 +445,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         plt.show()
     
     ## Calibration
-    if other_lamp is None:      
-        # compute the calibration function via fit
-        cal_func, err_func = lines_calibration(ch_obs, ch_obj, trsl=lamp.lims[2], ord=ord, initial_values=initial_values, display_plots=display_plots)
-        # store results
-        lamp.func = [cal_func, err_func]
-        target.func = [*lamp.func]
-        # compute the values in armstrong
-        lamp.compute_lines()
-        target.compute_lines()
-    else:
+    if other_lamp is not None :      
         # compute the lag between the two lamps
         shift = lamp_correlation(lamp, other_lamp, display_plots=display_plots, **pltargs)
         # store the functions
@@ -451,6 +454,15 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         # compute the values in armstrong
         lamp.compute_lines(shift=shift)
         target.compute_lines(shift=shift)
+    elif lamp.name != 'empty':
+        # compute the calibration function via fit
+        cal_func, err_func = lines_calibration(ch_obs, ch_obj, trsl=lamp.lims[2], ord=ord, initial_values=initial_values, display_plots=display_plots)
+        # store results
+        lamp.func = [cal_func, err_func]
+        target.func = [*lamp.func]
+        # compute the values in armstrong
+        lamp.compute_lines()
+        target.compute_lines()
     
     ## Plot
     if display_plots:
@@ -467,13 +479,20 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     ## Store
     if save_data:
         header = 'lambda [A]\tDlambda [A]\tspecval [counts]\tDspecval [counts]'
+        print('ERRs')
+        print('target',target.errs, target.std)
+        print('lamp',lamp.errs, lamp.std)
         # target
         file_name = ch_obj.lower() + '_' + str(selection)
         data = [target.lines, target.errs, target.spec, target.std]
         store_results(file_name, data, ch_obs, ch_obj, header=header, **txtkw)
         # lamp
+        header = 'lambda [A]\tDlambda [A]\tspecval [counts]'
         file_name = 'lamp-' + ch_obj.lower()
-        data = [lamp.lines, lamp.errs, lamp.spec, lamp.std]
+        data = [lamp.lines, lamp.errs, lamp.spec]
+        if lamp.std is not None: 
+            data += [lamp.std]
+            header = header + '\tDspecval [counts]'
         store_results(file_name, data, ch_obs, ch_obj, header=header, **txtkw)
     return target, lamp
 
