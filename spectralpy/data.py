@@ -145,14 +145,17 @@ def store_results(file_name: str, data: ArrayLike, ch_obs: str, ch_obj: str, **t
         parameters of `numpy.savetxt()`
         the parameter `'delimiter'` is set to `'\t'` by default
     """
+    # check delimiter
     if 'delimiter' not in txtkw.keys():
         txtkw['delimiter'] = '\t'
+    # build the path
     p_dir = RESULT_DIR
     for directory in [ch_obs,ch_obj]:
         n_dir = os.path.join(p_dir,directory)
         if not os.path.isdir(n_dir): os.mkdir(n_dir)
         p_dir = n_dir
     file_path = os.path.join(n_dir, file_name + '.txt')
+    # save data
     np.savetxt(file_path, np.column_stack(data), **txtkw)
 
 
