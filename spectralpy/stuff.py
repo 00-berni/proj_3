@@ -217,6 +217,7 @@ class Spectrum():
             data = ndimage.rotate(data, angle1, reshape=False).copy()
             
             ## Fit of Gaussians
+            print('\nGAUSSIAN CORRECTION')
             if diagn_plots: fig, ax = plt.subplots(1,1)
             # prepare data 
             x_pos = x_pos[::50]
@@ -231,6 +232,7 @@ class Spectrum():
                 initial_values = [max(values),np.argmax(values),hwhm]
                 # take only values greater than the double of the mean
                 pos = np.where(values > np.mean(values)*2)
+                if len(pos[0]) <= 3: pos = np.where(values > np.mean(values))
                 values = values[pos]
                 y = y[pos]
                 # compute the fit
@@ -259,7 +261,7 @@ class Spectrum():
             # compute the total angle
             angle = angle1 + angle2
             Dangle = np.sqrt(Dangle1**2 + Dangle2**2)
-            print(f'Inclination Angle : {angle:.2} +- {Dangle:.2} -> {Dangle/angle*100:.2f} %')
+            print(f'Inclination Angle : {angle:.2} +- {Dangle:.2} deg -> {Dangle/angle*100:.2f} %')
         # rotate the image
         target.data = ndimage.rotate(target.data, angle, reshape=False)
         if target.sigma is not None:
@@ -509,6 +511,10 @@ class FuncFit():
             print(f'\t{name}: {par:.2} +- {Dpar:.2}  -->  {abs(Dpar/par)*100:.2f} %')
         if 'chisq' in self.res:
             chisq, chi0 = self.res['chisq']
+            if chi0 == 0:
+                print('! ERROR !')
+                print('\t',chisq,chi0)
+                raise Exception('Null degrees of freedom. Few points for the fit!')
             print(f'\tred_chi = {chisq/chi0*100:.2f} +- {np.sqrt(2/chi0)*100:.2f} %')
 
     def results(self) -> tuple[ndarray, ndarray] | tuple[None, None]:
@@ -639,3 +645,15 @@ def hotpx_remove(data: ndarray) -> ndarray:
         # remove the `NaNs`
         data = interpolate_replace_nans(data, kernel)
     return data
+
+def magnitude_order(number: ArrayLike) -> ArrayLike:
+    order = np.floor(np.log10(number)).astype(int)
+    return order
+
+def unc_format(value: ArrayLike, err: ArrayLike) -> list[str]:
+    err_ord = magnitude_order(err).min()
+    val_ord = magnitude_order(value).max()
+    order = val_ord - err_ord + 1
+    fmt = [f'%.{order:d}e',r'%.1e']
+    return fmt
+
