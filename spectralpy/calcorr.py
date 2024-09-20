@@ -26,7 +26,7 @@ from typing import Callable, Literal
 from scipy import odr
 from .display import *
 from .data import extract_data, extract_cal_data, get_cal_lines, get_standard, store_results
-from .stuff import FuncFit, compute_err, mean_n_std
+from .stuff import FuncFit, compute_err, mean_n_std, unc_format
 
 def compute_master_dark(mean_dark: Spectrum | None, master_bias: Spectrum | None = None, diagn_plots: bool = False, **figargs) -> Spectrum:
     """To compute master dark
@@ -258,7 +258,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     if exit_cond: exit()
     return target, lamp
 
-def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, ord: int = 2, initial_values: Sequence[float] | None = None, display_plots: bool = True) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
+def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, ord: int = 2, lamp: Spectrum | None = None, initial_values: Sequence[float] | None = None, display_plots: bool = True) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
     """To compute the calibration function
 
     Parameters
@@ -286,8 +286,19 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, ord: int = 2, initial
         uncertainties related to the estimated function values
     """
     ## Data
-    # extract the data for the fit
-    lines, pxs, errs = get_cal_lines(ch_obs,ch_obj)
+    try:
+        # extract the data for the fit
+        lines, pxs, errs = get_cal_lines(ch_obs,ch_obj)
+    except FileNotFoundError:
+        from shutil import copyfile
+        from .data import os, DATA_DIR, CAL_DIR
+        COPY_DIR = os.path.join(DATA_DIR,ch_obs,ch_obj,'calibration_lines.txt')
+        CAL_FILE = os.path.join(CAL_DIR,'calibration_lines_empty.txt') 
+        copyfile(CAL_FILE,COPY_DIR)
+        plt.figure()
+        plt.plot(lamp.spec,'.-')
+        plt.show()
+        exit()
     # traslate the pixels
     pxs += trsl
     Dlines = np.full(lines.shape,3.63)      #: uncertainties of the lines in armstrong
@@ -456,7 +467,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         target.compute_lines(shift=shift)
     elif lamp.name != 'empty':
         # compute the calibration function via fit
-        cal_func, err_func = lines_calibration(ch_obs, ch_obj, trsl=lamp.lims[2], ord=ord, initial_values=initial_values, display_plots=display_plots)
+        cal_func, err_func = lines_calibration(ch_obs, ch_obj, trsl=lamp.lims[2], ord=ord, lamp=lamp, initial_values=initial_values, display_plots=display_plots)
         # store results
         lamp.func = [cal_func, err_func]
         target.func = [*lamp.func]
@@ -479,19 +490,19 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     ## Store
     if save_data:
         header = 'lambda [A]\tDlambda [A]\tspecval [counts]\tDspecval [counts]'
-        print('ERRs')
-        print('target',target.errs, target.std)
-        print('lamp',lamp.errs, lamp.std)
         # target
         file_name = ch_obj.lower() + '_' + str(selection)
         data = [target.lines, target.errs, target.spec, target.std]
+        txtkw['fmt'] = unc_format(*data[:2]) + unc_format(*data[2:])
         store_results(file_name, data, ch_obs, ch_obj, header=header, **txtkw)
         # lamp
         header = 'lambda [A]\tDlambda [A]\tspecval [counts]'
         file_name = 'lamp-' + ch_obj.lower()
         data = [lamp.lines, lamp.errs, lamp.spec]
+        txtkw['fmt'] = unc_format(*data[:2]) + [r'%e']
         if lamp.std is not None: 
             data += [lamp.std]
+            txtkw['fmt'] = txtkw['fmt'][:2] + unc_format(*data[2:])
             header = header + '\tDspecval [counts]'
         store_results(file_name, data, ch_obs, ch_obj, header=header, **txtkw)
     return target, lamp
