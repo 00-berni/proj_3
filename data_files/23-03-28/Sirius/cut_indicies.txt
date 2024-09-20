@@ -8,5 +8,5 @@
 #	The others are the edges of the corrected image
 #
 #cyl	cyu	cxl	cxu	yl	yu	xl	xu
-1018	1121	781	-1	0	-1	0	-1
-0	-1	0	-1	0	-1	0	-1
+1018	1121	781	-1	1016	1117	794	-1
+0	-1	0	-1	606	1381	490	-1
