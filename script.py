@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import spectralpy.data as dt
 import spectralpy.calcorr as clcr
 import spectralpy.display as dsp
+import spectralpy.stuff as stf
 
 label = lambda i,arr,name : name if i==arr[0] else ''
 
@@ -12,8 +13,9 @@ def plot_line(lines: list[float], name: str, color: str, minpos: float) -> None:
         plt.annotate(name,(line,minpos),(line+10,minpos))
 
 
-b_name = ['H$\\alpha$', 'H$\\beta$', 'H$\\gamma$', 'H$\\delta$', 'H$\\epsilon$', 'H$\\xi$', 'H$\\eta$','break']
-balmer = [6562.79, 4861.297761, 4340.471, 4101.7415, 3970.0788, 3889.0557, 3835.3909, 3645.0]
+b_name = ['H$\\alpha$', 'H$\\beta$', 'H$\\gamma$', 'H$\\delta$', 'H$\\epsilon$', 'H$\\xi$', 'H$\\eta$','H$\\theta$']
+balmer = [6562.79, 4861.350, 4340.472, 4101.734, 3970.075, 3889.064, 3835.397, 3797.909]
+bal_err = [0.03,0.05]+[0.006]*6
 feI  = [7610.2676,  7635.8482,  5896.7357, 5274.9807, 4300.2036, 4384.6718, 4401.4425,  4459.3521, 4351.5437]
 feII = [7636.2373, 7611.2601, 6871.6994, 6496.9415, 6497.2764, 6497.4985,  5175.3973, 5274.5277, 4384.31313, 4459.67779, 4351.76199, 4336.30962]
 tiI  = [6497.683, 4300.4848, 4300.5538, 4301.0787, 4322.1141, 4321.7709 ]
@@ -28,22 +30,23 @@ arI  = []
 arII = [4401.75478] 
 
 def display_lines(minpos: float, edges: tuple[float, float]) -> None:
-    for (b, name) in zip(balmer,b_name):
+    for (b,err,name) in zip(balmer,bal_err,b_name):
         if edges[0] <= b <= edges[1]:
             plt.axvline(b,0,1, color='blue',label=label(b,balmer,'H I'))
             plt.annotate(name,(b,minpos),(b+10,minpos))
-    plot_line(feI, 'Fe I','orange',minpos)
-    plot_line(feII,'Fe II','yellow',minpos)
-    plot_line(tiI, 'Ti I','violet',minpos)
-    plot_line(tiII,'Ti II','plum',minpos)
-    plot_line(neI, 'Ne I','green',minpos)
-    plot_line(neII,'Ne II','lime',minpos)
-    plot_line(oI, 'O I','deeppink',minpos)
-    plot_line(oII,'O II','hotpink',minpos)
-    plot_line(mgI, 'Mg I','red',minpos)
-    plot_line(mgII,'Mg II','tomato',minpos)
-    plot_line(arI, 'Ar I','aqua',minpos)
-    plot_line(arII,'Ar II','cyan',minpos)
+            plt.axvspan(b-err,b+err,0,1,color='blue',alpha=0.3)
+    # plot_line(feI, 'Fe I','orange',minpos)
+    # plot_line(feII,'Fe II','yellow',minpos)
+    # plot_line(tiI, 'Ti I','violet',minpos)
+    # plot_line(tiII,'Ti II','plum',minpos)
+    # plot_line(neI, 'Ne I','green',minpos)
+    # plot_line(neII,'Ne II','lime',minpos)
+    # plot_line(oI, 'O I','deeppink',minpos)
+    # plot_line(oII,'O II','hotpink',minpos)
+    # plot_line(mgI, 'Mg I','red',minpos)
+    # plot_line(mgII,'Mg II','tomato',minpos)
+    # plot_line(arI, 'Ar I','aqua',minpos)
+    # plot_line(arII,'Ar II','cyan',minpos)
     plt.legend()
 
 
@@ -54,11 +57,23 @@ if __name__ == '__main__':
     print(TARGETS)
 
     ## 17-03-27 night
-    # night, target_name, selection = TARGETS[0]
+    night, target_name, selection = TARGETS[0]
 
-    # ord = 2
-    # display_plots = True
-    # target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=True)
+    ord = 2
+    display_plots = True
+    target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=True)
+
+    # plt.figure()
+    # plt.plot(lamp.spec,'.-')
+    # plt.show()
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.plot(target.spec,'.-')
+    plt.subplot(2,1,2)
+    plt.plot(target.lines,target.spec,'.-')
+    plt.show()
+
+
 
     # night, target_name, selection = TARGETS[2]
 
@@ -77,11 +92,43 @@ if __name__ == '__main__':
     # target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=True)
 
     ## 23-03-28 night
-    night, target_name, selection = TARGETS[-2]
+    # night, target_name, selection = TARGETS[-2]
 
-    ord = 2
-    display_plots = True
-    target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=True, diagn_plots=True)
+    # ord = 2
+    # display_plots = True
+    # target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=True)
+
+    # ## Data
+    # # extract data
+    # target, lamp = clcr.get_target_data(night, target_name, selection, angle=None, display_plots=display_plots)
+    # # normalize along the x axis
+    # data = target.data.mean(axis=1)
+    # data = np.array([ target.data[i,:] / data[i] for i in range(len(data)) ])
+    # # average along the y axis
+    # target.spec, target.std = stf.mean_n_std(data, axis=0,weights=target.spec)
+    # _ = dsp.show_fits(lamp,show=True)
+    # exit()
+    # xdata = [2121,1844,1142]
+    # ydata = [20,33,59]
+    # fit = stf.FuncFit(xdata,ydata,np.ones(3),np.ones(3))
+    # fit.linear_fit([0.9,1])
+    # m = fit.fit_par[0]
+    # angle = np.arctan(m)*180/np.pi  
+    # lamp.angle_correction(angle=angle,diagn_plots=True) 
+
+    # # compute the height for the lamp
+    # height = int(len(lamp.data)/2)
+    # # take lamp spectrum at `height` 
+    # lamp.spec = lamp.data[height]
+    # if lamp.sigma is not None: 
+    #     lamp.std = lamp.sigma[height]
+    #     pos = np.where(lamp.std < 0)[0]
+    #     if len(pos) != 0:
+    #         plt.figure()
+    #         plt.plot(lamp.std)
+    #         plt.plot(pos,lamp.std[pos],'.')
+    #         plt.show()
+    #         raise
 
     data = target.spectral_data(plot_format=True)
     plt.figure()
