@@ -23,9 +23,10 @@ import os
 import numpy as np
 from numpy import ndarray
 from typing import Callable, Literal
+from numpy.typing import ArrayLike
 from scipy import odr
 from .display import *
-from .data import extract_data, extract_cal_data, get_cal_lines, get_standard, store_results
+from .data import extract_data, extract_cal_data, get_cal_lines, get_standard, store_results, get_balm_lines
 from .stuff import FuncFit, compute_err, mean_n_std, unc_format
 
 def compute_master_dark(mean_dark: Spectrum | None, master_bias: Spectrum | None = None, diagn_plots: bool = False, **figargs) -> Spectrum:
@@ -258,7 +259,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     if exit_cond: exit()
     return target, lamp
 
-def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, ord: int = 2, lamp: Spectrum | None = None, initial_values: Sequence[float] | None = None, display_plots: bool = True) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
+def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: int = 2, initial_values: Sequence[float] | None = None, display_plots: bool = True) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
     """To compute the calibration function
 
     Parameters
@@ -299,25 +300,28 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, ord: int = 2, lamp: S
         plt.plot(lamp.spec,'.-')
         plt.show()
         exit()
-    # traslate the pixels
+    # shift the pixels
     pxs += trsl
     Dlines = np.full(lines.shape,3.63)      #: uncertainties of the lines in armstrong
     if initial_values is None:
-       initial_values = [0] + [1]*(ord-1) + [np.mean(pxs)]
+        initial_values = [0] + [1]*(ord-1) + [np.mean(pxs)]
     
     ## Fit
     fit = FuncFit(xdata=pxs,ydata=lines,xerr=errs,yerr=Dlines)
     fit.pol_fit(ord=ord,initial_values=initial_values)
-    pop, _ = fit.results()
+    pop = fit.fit_par.copy()
     cov = fit.res['cov']
-    
+
     ## Functions 
-    px_to_arm = lambda x : fit.res['func'](x, *pop)     #: function to pass from px to A
+    def px_to_arm(x: ArrayLike) -> ArrayLike:     #: function to pass from px to A
+        cal_func = fit.res['func']
+        return cal_func(x,*pop)     
     # compute the function to evaluate the uncertainty associated with `px_to_arm`
-    def err_func(x):
-        err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
-        return np.sum(err, axis=0)
-    
+    def err_func(x: ArrayLike, Dx: ArrayLike = 1/np.sqrt(12)) -> ArrayLike:
+        # err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
+        err = [ pop[i]*(ord-i)*x**(ord-i-1) for i in range(ord) ]
+        return np.sum(err, axis=0)*Dx
+
     ## Plot
     if display_plots:
         plt.figure()
@@ -325,10 +329,76 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, ord: int = 2, lamp: S
         plt.errorbar(pxs,lines,Dlines,errs,'.',color='orange')
         plt.plot(pp,px_to_arm(pp))
         plt.figure()
-        plt.errorbar(pxs,lines-fit.res['func'](pxs,*pop),Dlines,errs,'.',color='orange')
+        sigma = np.sqrt(Dlines**2 + err_func(pxs,errs)**2)
+        plt.errorbar(pxs,(lines-px_to_arm(pxs)),sigma,fmt='.',color='orange')
         plt.axhline(0,0,1)
         plt.show()
     return px_to_arm, err_func
+
+def balmer_calibration(ch_obs: str, ch_obj: str, target: Spectrum, lamp_cal: tuple[Callable, Callable], ord: int = 3, initial_values: Sequence[float] | None = None, display_plots: bool = True) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
+    
+    tmp_target = target.copy()
+    
+    tmp_target.func = [*lamp_cal]
+    tmp_target.compute_lines()
+
+    try:
+        # extract the data for the fit
+        balm, balmerr, lines, errs = get_balm_lines(ch_obs,ch_obj)
+    except FileNotFoundError:
+        from shutil import copyfile
+        from .data import os, DATA_DIR, CAL_DIR
+        COPY_DIR = os.path.join(DATA_DIR,ch_obs,ch_obj,'H_calibration.txt')
+        CAL_FILE = os.path.join(CAL_DIR,'H_calibration_empty.txt') 
+        copyfile(CAL_FILE,COPY_DIR)
+        balm, balmerr = get_balm_lines(ch_obs,ch_obj)
+        b_name = ['H$\\alpha$', 'H$\\beta$', 'H$\\gamma$', 'H$\\delta$', 'H$\\epsilon$', 'H$\\xi$', 'H$\\eta$','H$\\theta$','H$\\iota$','H$\\kappa$']
+        print('\n--------\nWAVELENGTHS DATA\nLine\tErr')
+        for i in range(len(tmp_target.spec)):
+            print(f'{tmp_target.lines[i]:e}\t{tmp_target.errs[i]:e}')
+        plt.figure()
+        plt.errorbar(tmp_target.lines,tmp_target.spec, tmp_target.std, tmp_target.errs,'.-',color='violet')
+        display_line(balm,b_name, balmerr, tmp_target.spec.min(), (tmp_target.lines.min(),tmp_target.lines.max()),color='blue')
+        plt.show()
+        exit()
+
+    fit = FuncFit(xdata=lines, xerr=errs, ydata=balm, yerr=balmerr)
+    if initial_values is None:
+        initial_values = [0] + [1]*(ord-1) + [np.mean(lines)]
+    fit.pol_fit(ord, initial_values=initial_values)
+    pop = fit.fit_par.copy()
+    cov = fit.res['cov']
+
+    def balm_calfunc(x: ArrayLike) -> ArrayLike:
+        return fit.res['func'](x, *pop)
+
+    # def balm_errfunc(x: ArrayLike) -> ArrayLike:
+    #     err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
+    #     return np.sqrt(np.sum(err, axis=0))
+    def balm_errfunc(x: ArrayLike, Dx: ArrayLike) -> ArrayLike:
+        err = [ pop[i]*(ord-i)*x**(ord-i-1) for i in range(ord) ]
+        return np.sum(err, axis=0)*Dx
+
+    lamp_calfunc, lamp_errfunc = lamp_cal
+
+    def px_to_arm(x: ArrayLike) -> ArrayLike: 
+        return balm_calfunc(lamp_calfunc(x))
+    # err_func  = lambda x : np.sqrt(balm_errfunc(lamp_calfunc(x))**2 + lamp_errfunc(x)**2)
+    def err_func(x: ArrayLike, Dx: ArrayLike = 1/np.sqrt(12)): 
+        return balm_errfunc(lamp_calfunc(x),lamp_errfunc(x,Dx))
+
+    ## Plot
+    if display_plots:
+        plt.figure()
+        ll = np.linspace(lines.min(),lines.max(),200)
+        plt.errorbar(lines,balm,balmerr,errs,'.',color='orange')
+        plt.plot(ll,balm_calfunc(ll))
+        plt.figure()
+        sigma = np.sqrt(balm_errfunc(lines,errs)**2 + balmerr**2 )
+        plt.errorbar(lines,balm-balm_calfunc(lines),sigma,fmt='.',color='orange')
+        plt.axhline(0,0,1)
+    return px_to_arm, err_func
+
 
 def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = True, **pltargs) -> float:
     """To compute the lag to pass from a lamp to another
@@ -385,7 +455,7 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
     shift = np.argmax(corr) - (len(corr)/2)  
     return shift
 
-def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: int | None = None, other_lamp: Spectrum | None = None, ord: int = 2, initial_values: Sequence[float] | None = None, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
+def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: ArrayLike | None = None, row_num: int = 3, lag: int = 10, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
     """To open and calibrate data
 
     Parameters
@@ -436,20 +506,32 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     data = target.data.mean(axis=1)
     data = np.array([ target.data[i,:] / data[i] for i in range(len(data)) ])
     # average along the y axis
-    target.spec, target.std = mean_n_std(data, axis=0,weights=target.spec)
+    target.spec, target.std = mean_n_std(data, axis=0, weights=target.spec)
     # compute the height for the lamp
-    if height is None: height = int(len(lamp.data)/2)
+    if height is None: 
+        mid_h = int(len(lamp.data)/2)
+        height = np.sort([ mid_h + i*lag for i in range(-row_num,row_num+1) ])
+        print('LAMP HEIGHT: ', height)
     # take lamp spectrum at `height` 
-    lamp.spec = lamp.data[height]
-    if lamp.sigma is not None: 
-        lamp.std = lamp.sigma[height]
-        pos = np.where(lamp.std < 0)[0]
-        if len(pos) != 0:
-            plt.figure()
-            plt.plot(lamp.std)
-            plt.plot(pos,lamp.std[pos],'.')
-            plt.show()
-            raise
+    lamp.spec, lamp.std = mean_n_std(lamp.data[height], axis=0)
+    if diagn_plots:
+        fn = 10
+        fig, ax = plt.subplots(1,1)
+        fits_image(fig,ax,lamp)
+        for h in height:
+            color = (h/height.max()/2+h%3/10, 1-h/height.max()/2+h%2/10, h/height.max())
+            ax.axhline(h,0,1,color=color)
+            quickplot(lamp.data[h],numfig=fn,color=color)
+        plt.show()
+    # if lamp.sigma is not None: 
+    #     lamp.std = lamp.sigma[height]
+    pos = np.where(lamp.std < 0)[0]
+    if len(pos) != 0:
+        plt.figure()
+        plt.plot(lamp.std)
+        plt.plot(pos,lamp.std[pos],'.')
+        plt.show()
+        raise
     if diagn_plots:
         quickplot(target.spec,title='Uncalibrated spectrum of '+target.name,labels=('x [a.u.]','I [a.u.]'),numfig=1,**pltargs)
         quickplot(lamp.spec,title='Uncalibrated spectrum of its lamp',labels=('x [a.u.]','I [a.u.]'),numfig=2,**pltargs)
@@ -467,7 +549,9 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         target.compute_lines(shift=shift)
     elif lamp.name != 'empty':
         # compute the calibration function via fit
-        cal_func, err_func = lines_calibration(ch_obs, ch_obj, trsl=lamp.lims[2], ord=ord, lamp=lamp, initial_values=initial_values, display_plots=display_plots)
+        cal_func, err_func = lines_calibration(ch_obs, ch_obj, trsl=lamp.lims[2], lamp=lamp, ord=ord_lamp, initial_values=initial_values_lamp, display_plots=display_plots)
+        if balmer_cal:
+            cal_func, err_func = balmer_calibration(ch_obs, ch_obj, target=target, lamp_cal=(cal_func,err_func), ord=ord_balm, initial_values=initial_values_balm, display_plots=display_plots)
         # store results
         lamp.func = [cal_func, err_func]
         target.func = [*lamp.func]
