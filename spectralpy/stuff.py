@@ -110,11 +110,11 @@ class Spectrum():
         self.sigma = np.copy(sigma) if sigma is not None else None
         self.lims = lims
         self.cut  = cut 
-        self.spec  = None
-        self.std   = None
-        self.lines = None
-        self.errs  = None
-        self.func  = None
+        self.spec  : None | ndarray = None
+        self.std   : None | ndarray = None
+        self.lines : None | ndarray = None
+        self.errs  : None | ndarray = None
+        self.func : None | tuple[Callable, Callable]  = None
 
     def print_header(self) -> None:
         """To print the header of fits file"""
@@ -282,7 +282,7 @@ class Spectrum():
         pxs = np.arange(len(self.spec)) + self.lims[2] + shift
         cal_func, err_func = self.func
         self.lines = cal_func(pxs)
-        self.errs  = np.sqrt(err_func(pxs))
+        self.errs  = err_func(pxs)
 
     def binning(self, bin: ArrayLike = 50, edges: None | Sequence[float] = None) -> tuple[tuple[ndarray,ndarray], tuple[ndarray,ndarray], ndarray]:
         """To bin spectrum data
@@ -518,7 +518,7 @@ class FuncFit():
             print(f'\tred_chi = {chisq/chi0*100:.2f} +- {np.sqrt(2/chi0)*100:.2f} %')
 
     def results(self) -> tuple[ndarray, ndarray] | tuple[None, None]:
-        return self.fit_par, self.fit_err
+        return np.copy(self.fit_par), np.copy(self.fit_err)
 
     def pipeline(self,method: Callable[[Any,Any],Any], initial_values: Sequence[Any], names: Sequence[str] | None = None,**kwargs) -> None:
         self.fit(method=method,initial_values=initial_values,**kwargs)
@@ -548,9 +548,6 @@ class FuncFit():
         self.pipeline(pol_func,initial_values=initial_values,names=names)
 
     def linear_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('m','q')) -> None:
-        # def lin_func(x, m, q):
-        #     return m*x + q
-        # self.pipeline(lin_func,initial_values=initial_values,names=names)
         self.pol_fit(ord=1, initial_values=initial_values, names=names)
 
 def mean_n_std(data: ArrayLike, axis: int | None = None, weights: Sequence[Any] | None = None) -> tuple[float, float]:
