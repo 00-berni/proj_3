@@ -20,6 +20,7 @@ DISPLAY PACKAGE
 """
 import numpy as np
 from numpy import ndarray
+from numpy.typing import ArrayLike
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
@@ -131,3 +132,21 @@ def show_fits(data: Spectrum, num_plots: Sequence[int] = (1,1), dim: Sequence[in
     if show: plt.show()
     return fig, axs
 ##*
+
+
+def display_line(line: ArrayLike, name: str | Sequence[str], err: ArrayLike | None = None, minpos: float = 0, edges: tuple[float,float] = (0,np.inf), label : str | Sequence[str] = '', **pltargs) -> None:
+    try:
+        for i in range(len(line)):
+            if edges[0] <= line[i] <= edges[1]:
+                l = line[i]
+                n = name[i]
+                plt.axvline(l,0,1, label=label, **pltargs)
+                plt.annotate(n,(l,minpos),(l+10,minpos))
+                if err is not None:
+                    plt.axvspan(l-err[i],l+err[i],0,1,alpha=0.3,**pltargs)
+    except TypeError:
+        if edges[0] <= line <= edges[1]:
+            plt.axvline(line,0,1, label=label, **pltargs)
+            plt.annotate(name,(line,minpos),(line+10,minpos))
+            if err is not None:
+                plt.axvspan(line-err,line+err,0,1,alpha=0.3,**pltargs)
