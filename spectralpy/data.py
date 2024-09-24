@@ -83,6 +83,25 @@ def get_cal_lines(ch_obs: str, ch_obj: str) -> ndarray:
     data = np.loadtxt(file_path, unpack=True)
     return data
 
+def get_balm_lines(ch_obs: str, ch_obj: str) -> ndarray:
+    """To get data for the calibration of balmer serie
+
+    Parameters
+    ----------
+    ch_obs : str
+        chosen obeservation night
+    ch_obj : str
+        chosen target name
+
+    Returns
+    -------
+    data : ndarray
+        balmer lines to calibrate
+    """
+    file_path = os.path.join(DATA_DIR,ch_obs,ch_obj,'H_calibration.txt')
+    data = np.loadtxt(file_path, unpack=True)
+    return data
+
 def get_standard(name: str = 'Vega', sel: int = 0, diagn_plots: bool = False) -> tuple[ndarray, ndarray]:
     """To get data of the standard for the absolute calibration
 
