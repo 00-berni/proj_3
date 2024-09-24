@@ -13,9 +13,9 @@ def plot_line(lines: list[float], name: str, color: str, minpos: float) -> None:
         plt.annotate(name,(line,minpos),(line+10,minpos))
 
 
-b_name = ['H$\\alpha$', 'H$\\beta$', 'H$\\gamma$', 'H$\\delta$', 'H$\\epsilon$', 'H$\\xi$', 'H$\\eta$','H$\\theta$']
-balmer = [6562.79, 4861.350, 4340.472, 4101.734, 3970.075, 3889.064, 3835.397, 3797.909]
-bal_err = [0.03,0.05]+[0.006]*6
+b_name = ['H$\\alpha$', 'H$\\beta$', 'H$\\gamma$', 'H$\\delta$', 'H$\\epsilon$', 'H$\\xi$', 'H$\\eta$','H$\\theta$','H$\\iota$','H$\\kappa$']
+balmer = [6562.79, 4861.350, 4340.472, 4101.734, 3970.075, 3889.064, 3835.397, 3797.909, 3770.633, 3750.151]
+bal_err = [0.03,0.05]+[0.006]*7
 feI  = [7610.2676,  7635.8482,  5896.7357, 5274.9807, 4300.2036, 4384.6718, 4401.4425,  4459.3521, 4351.5437]
 feII = [7636.2373, 7611.2601, 6871.6994, 6496.9415, 6497.2764, 6497.4985,  5175.3973, 5274.5277, 4384.31313, 4459.67779, 4351.76199, 4336.30962]
 tiI  = [6497.683, 4300.4848, 4300.5538, 4301.0787, 4322.1141, 4321.7709 ]
@@ -31,6 +31,7 @@ arII = [4401.75478]
 
 def display_lines(minpos: float, edges: tuple[float, float]) -> None:
     for (b,err,name) in zip(balmer,bal_err,b_name):
+        # b += 100
         if edges[0] <= b <= edges[1]:
             plt.axvline(b,0,1, color='blue',label=label(b,balmer,'H I'))
             plt.annotate(name,(b,minpos),(b+10,minpos))
@@ -59,25 +60,59 @@ if __name__ == '__main__':
     ## 17-03-27 night
     night, target_name, selection = TARGETS[0]
 
-    ord = 2
+    ord1 = 2
+    ord2 = 3
     display_plots = True
-    target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=True)
+    target, lamp = clcr.calibration(night, target_name, selection, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots, diagn_plots=False)
 
     # plt.figure()
-    # plt.plot(lamp.spec,'.-')
-    # plt.show()
-    plt.figure()
-    plt.subplot(2,1,1)
-    plt.plot(target.spec,'.-')
-    plt.subplot(2,1,2)
-    plt.plot(target.lines,target.spec,'.-')
-    plt.show()
+    # plt.plot(target.spec,'.-')
+    # plt.yscale('log')
+
+    # ord = 3
+    # data_file = dt.os.path.join(dt.DATA_DIR,night,target_name,'H_calibration.txt')
+    # ln, Dln, l, Dl = np.loadtxt(data_file,unpack=True)
+
+    # fit = stf.FuncFit(xdata=l, ydata=ln, yerr=Dln, xerr=Dl)
+    # initial_values = [0] + (ord-1)*[1] + [10]
+    # fit.pol_fit(ord,initial_values)
+    # cal_func = fit.res['func']
+    # pop = fit.fit_par.copy()
+    # cov = fit.res['cov']
+    
+    # ## Functions 
+    # shift = lambda x : cal_func(x, *pop)     #: function to pass from px to A
+    # # compute the function to evaluate the uncertainty associated with `px_to_arm`
+    # def err_func(x):
+    #     err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
+    #     return np.sqrt(np.sum(err, axis=0))
+
+    # nl = shift(target.lines)
+    # Dnl = np.sqrt(err_func(target.lines)**2+target.errs**2)
+
+    # ord = 2
+    # fit = stf.FuncFit(xdata=px, ydata=ln, yerr=Dln, xerr=Dpx)
+    # initial_values = [0] + (ord-1)*[1] + [10]
+    # fit.pol_fit(ord,initial_values)
+    # cal_func = fit.res['func']
+    # pop = fit.fit_par.copy()
+    # cov = fit.res['cov']
+    
+    # ## Functions 
+    # shift = lambda x : cal_func(x, *pop)     #: function to pass from px to A
+    # # compute the function to evaluate the uncertainty associated with `px_to_arm`
+    # def err_func(x):
+    #     err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
+    #     return np.sqrt(np.sum(err, axis=0))
+
+    # spec_len = np.arange(len(target.spec))
+    # lpx = shift(spec_len)
+    # Dlpx = err_func(spec_len)
 
 
+    night, target_name, selection = TARGETS[2]
 
-    # night, target_name, selection = TARGETS[2]
-
-    # target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots, diagn_plots=True)
+    target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots, diagn_plots=True)
 
     ## 22-07-26_ohp night
     # night, target_name, selection = TARGETS[3]
@@ -131,13 +166,38 @@ if __name__ == '__main__':
     #         raise
 
     data = target.spectral_data(plot_format=True)
-    plt.figure()
-    plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    l = data[0]
     minpos = data[1].min()
+    l = data[0]
+    plt.figure()
+    # plt.subplot(2,1,1)
+    plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    # plt.yscale('log')
+    plt.xlim(3600,7800)
     display_lines(minpos,(l.min(),l.max()))
-    plt.yscale('log')
+    # plt.subplot(2,1,2)
+    # plt.errorbar(nl,data[1],data[2],Dnl,'.-', color='green',alpha=0.5)
+    # # plt.yscale('log')
+    # plt.xlim(3600,7800)
+    # display_lines(minpos,(l.min(),l.max()))
+    # plt.subplot(3,1,3)
+    # plt.errorbar(lpx,data[1],data[2],Dlpx,'.-', color='red',alpha=0.5)
+    # display_lines(minpos,(l.min(),l.max()))
+    # plt.xlim(3600,7800)
+    # plt.yscale('log')
     plt.show()
+
+    # night, target_name, selection = TARGETS[2]
+
+    # target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots)
+
+    # data = target.spectral_data(plot_format=True)
+    # minpos = data[1].min()
+    # l = data[0]
+    # plt.figure()
+    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    # plt.xlim(3600,7800)
+    # display_lines(minpos,(l.min(),l.max()))
+    # plt.show()
 
     # tg, lp = dt.open_results(['polluce_mean','lamp-polluce'],night,target_name)
     # minpos = tg[2].min()
