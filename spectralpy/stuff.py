@@ -269,7 +269,7 @@ class Spectrum():
             target.sigma = ndimage.rotate(target.sigma, angle, reshape=False)
         return target, angle
     
-    def compute_lines(self, shift: float = 0 ) -> None:
+    def compute_lines(self, shift: float = 0, Dx: ArrayLike = 1/np.sqrt(12)) -> None:
         """To compute and store calibrated values in Armstrong 
         and their uncertainties 
 
@@ -282,7 +282,7 @@ class Spectrum():
         pxs = np.arange(len(self.spec)) + self.lims[2] + shift
         cal_func, err_func = self.func
         self.lines = cal_func(pxs)
-        self.errs  = err_func(pxs)
+        self.errs  = err_func(pxs,Dx)
 
     def binning(self, bin: ArrayLike = 50, edges: None | Sequence[float] = None) -> tuple[tuple[ndarray,ndarray], tuple[ndarray,ndarray], ndarray]:
         """To bin spectrum data
