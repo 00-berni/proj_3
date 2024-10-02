@@ -57,64 +57,22 @@ if __name__ == '__main__':
     TARGETS = dt.open_targets_list()
     print(TARGETS)
 
-    ## 17-03-27 night
+
+#    ## 17-03-27 night
     night, target_name, selection = TARGETS[0]
 
     ord1 = 2
     ord2 = 3
-    display_plots = True
-    target, lamp = clcr.calibration(night, target_name, selection, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots, diagn_plots=False)
+    display_plots = False
+    target, lamp = clcr.calibration(night, target_name, selection, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots)
 
-    # plt.figure()
-    # plt.plot(target.spec,'.-')
-    # plt.yscale('log')
-
-    # ord = 3
-    # data_file = dt.os.path.join(dt.DATA_DIR,night,target_name,'H_calibration.txt')
-    # ln, Dln, l, Dl = np.loadtxt(data_file,unpack=True)
-
-    # fit = stf.FuncFit(xdata=l, ydata=ln, yerr=Dln, xerr=Dl)
-    # initial_values = [0] + (ord-1)*[1] + [10]
-    # fit.pol_fit(ord,initial_values)
-    # cal_func = fit.res['func']
-    # pop = fit.fit_par.copy()
-    # cov = fit.res['cov']
-    
-    # ## Functions 
-    # shift = lambda x : cal_func(x, *pop)     #: function to pass from px to A
-    # # compute the function to evaluate the uncertainty associated with `px_to_arm`
-    # def err_func(x):
-    #     err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
-    #     return np.sqrt(np.sum(err, axis=0))
-
-    # nl = shift(target.lines)
-    # Dnl = np.sqrt(err_func(target.lines)**2+target.errs**2)
-
-    # ord = 2
-    # fit = stf.FuncFit(xdata=px, ydata=ln, yerr=Dln, xerr=Dpx)
-    # initial_values = [0] + (ord-1)*[1] + [10]
-    # fit.pol_fit(ord,initial_values)
-    # cal_func = fit.res['func']
-    # pop = fit.fit_par.copy()
-    # cov = fit.res['cov']
-    
-    # ## Functions 
-    # shift = lambda x : cal_func(x, *pop)     #: function to pass from px to A
-    # # compute the function to evaluate the uncertainty associated with `px_to_arm`
-    # def err_func(x):
-    #     err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
-    #     return np.sqrt(np.sum(err, axis=0))
-
-    # spec_len = np.arange(len(target.spec))
-    # lpx = shift(spec_len)
-    # Dlpx = err_func(spec_len)
-
+    # - - #
 
     night, target_name, selection = TARGETS[2]
 
-    target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots, diagn_plots=True)
+    target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots)
 
-    ## 22-07-26_ohp night
+#    ## 22-07-26_ohp night
     # night, target_name, selection = TARGETS[3]
 
     # ord = 2
@@ -126,65 +84,22 @@ if __name__ == '__main__':
 
     # target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=True)
 
-    ## 23-03-28 night
+#    ## 23-03-28 night
     # night, target_name, selection = TARGETS[-2]
 
     # ord = 2
     # display_plots = True
     # target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=True)
 
-    # ## Data
-    # # extract data
-    # target, lamp = clcr.get_target_data(night, target_name, selection, angle=None, display_plots=display_plots)
-    # # normalize along the x axis
-    # data = target.data.mean(axis=1)
-    # data = np.array([ target.data[i,:] / data[i] for i in range(len(data)) ])
-    # # average along the y axis
-    # target.spec, target.std = stf.mean_n_std(data, axis=0,weights=target.spec)
-    # _ = dsp.show_fits(lamp,show=True)
-    # exit()
-    # xdata = [2121,1844,1142]
-    # ydata = [20,33,59]
-    # fit = stf.FuncFit(xdata,ydata,np.ones(3),np.ones(3))
-    # fit.linear_fit([0.9,1])
-    # m = fit.fit_par[0]
-    # angle = np.arctan(m)*180/np.pi  
-    # lamp.angle_correction(angle=angle,diagn_plots=True) 
-
-    # # compute the height for the lamp
-    # height = int(len(lamp.data)/2)
-    # # take lamp spectrum at `height` 
-    # lamp.spec = lamp.data[height]
-    # if lamp.sigma is not None: 
-    #     lamp.std = lamp.sigma[height]
-    #     pos = np.where(lamp.std < 0)[0]
-    #     if len(pos) != 0:
-    #         plt.figure()
-    #         plt.plot(lamp.std)
-    #         plt.plot(pos,lamp.std[pos],'.')
-    #         plt.show()
-    #         raise
-
-    data = target.spectral_data(plot_format=True)
-    minpos = data[1].min()
-    l = data[0]
-    plt.figure()
-    # plt.subplot(2,1,1)
-    plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    # plt.yscale('log')
-    plt.xlim(3600,7800)
-    display_lines(minpos,(l.min(),l.max()))
-    # plt.subplot(2,1,2)
-    # plt.errorbar(nl,data[1],data[2],Dnl,'.-', color='green',alpha=0.5)
-    # # plt.yscale('log')
+#    ## Lines
+    # data = target.spectral_data(plot_format=True)
+    # minpos = data[1].min()
+    # l = data[0]
+    # plt.figure()
+    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
     # plt.xlim(3600,7800)
     # display_lines(minpos,(l.min(),l.max()))
-    # plt.subplot(3,1,3)
-    # plt.errorbar(lpx,data[1],data[2],Dlpx,'.-', color='red',alpha=0.5)
-    # display_lines(minpos,(l.min(),l.max()))
-    # plt.xlim(3600,7800)
-    # plt.yscale('log')
-    plt.show()
+    # plt.show()
 
     # night, target_name, selection = TARGETS[2]
 
@@ -209,22 +124,126 @@ if __name__ == '__main__':
     # night, target_name, selection = TARGETS[:,1]
     # target2, lamp2 = clcr.calibration(night, target_name, selection, other_lamp=lamp)
 
-    ## Vega
-    # night = '17-03-27'
-    # target_name = 'Vega'
-    # selection = 'mean'
-    # bin_width = 50
-    # alt = np.array([20,35,43,58],dtype=float)
-    # Dalt = np.full(alt.shape,0.5)
-    # vega : list[dt.Spectrum] = []
-    # line = []
-    # for i in range(len(alt)):
-    #     tmp, _ = clcr.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, display_plots=False)
-    #     vega += [tmp]
-    #     line += [[tmp.lines[0],tmp.lines[-1]]]
+#    ## Vega
+    night = '17-03-27'
+    target_name = 'Vega'
+    selection = 'mean'
+    bin_width = 50
+    alt = np.array([20,35,43,58],dtype=float)
+    Dalt = np.full(alt.shape,0.5)
+    vega : list[dt.Spectrum] = []
+    line = []
+    for i in range(len(alt)):
+        tmp, _ = clcr.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, display_plots=False)
+        vega += [tmp]
+        line += [[tmp.lines[0],tmp.lines[-1]]]
 
-    # results = clcr.ccd_response((alt, Dalt), vega, line, bin_width=bin_width)
+    wlen, rfunc, tau = clcr.ccd_response((alt, Dalt), vega, line, bin_width=bin_width,display_plots=False)
 
+    # alt_reg = 58 + 9*60 + 33.6*3600
+    # airmass = 1/np.sin(alt_reg*np.pi/180)
+    
+    # (reg_wlen,_), (reg_spec,_), _  = target.binning(bin=wlen[-1])
+
+    # reg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() * rfunc[0]
+
+    target = vega[0]
+    airmass = 1/np.sin(alt[0]*np.pi/180)
+    (veg_wlen,_), (veg_spec,_), _  = target.binning(bin=wlen[-1])
+    veg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() / rfunc[0]
+
+    std = clcr.vega_std()
+
+    (std_wlen,_), (std_spec,_), _ = std.binning(bin=wlen[-1])
+
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.title('Comparison')
+    (tar_wlen,_), (tar_spec,_), _ = target.binning(bin=wlen[-1])
+    plt.plot(tar_wlen,tar_spec,'.-')
+    plt.subplot(2,1,2)
+    plt.plot(veg_wlen,veg_spec,'.-')
+    # plt.plot(reg_wlen,reg_spec,'.-')
+    plt.plot(std_wlen,std_spec,'.-')
+
+
+
+    from scipy.interpolate import CubicSpline
+    rfunc = CubicSpline(wlen[0],rfunc[0])
+    tau = CubicSpline(wlen[0],tau[0])
+
+    veg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
+    # reg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
+
+
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.title('Comparison Interpolating')
+    plt.plot(target.lines,target.spec,'.-')
+    plt.subplot(2,1,2)
+    plt.plot(target.lines,veg_spec,'.-')
+    # plt.plot(target.lines,reg_spec,'.-')
+    plt.plot(std.lines,std.spec,'.-')
+    plt.show()
+
+    # file_name = dt.os.path.join(dt.CAL_DIR,'standards','Vega','vega_std.fit')
+    # # lims = [592,618,251,-1,600,612,243,-1]
+    # lims = [592,618,251,-1,605,610,243,-1]
+    # std = dt.get_data_fit(file_name,lims,obj_name='Standard Vega')
+    # std, angle = std.angle_correction(diagn_plots=False)
+    # std.cut_image()
+    # dsp.show_fits(std,show=True)
+    # meandata = std.data.mean(axis=1)
+    # data = np.array([ std.data[i,:] / meandata[i] for i in range(len(meandata)) ])
+    # std.spec, std.std = clcr.mean_n_std(data, axis=0)
+
+    # from numpy.typing import ArrayLike
+    # print(' - - STARDARD - - ')
+    # file_path = dt.os.path.join(dt.CAL_DIR,'standards','Vega','H_calibration.txt')
+    # balm, balmerr, lines, errs = np.loadtxt(file_path, unpack=True)
+    # lines += std.lims[2]
+    # ord = 3
+    # fit = clcr.FuncFit(xdata=lines, xerr=errs, ydata=balm, yerr=balmerr)
+    # initial_values = [0] + [1]*(ord-1) + [np.mean(lines)]
+    # fit.pol_fit(ord, initial_values=initial_values)
+    # pop = fit.fit_par.copy()
+    # cov = fit.res['cov']
+
+    # def balm_calfunc(x: ArrayLike) -> ArrayLike:
+    #     return fit.res['func'](x, *pop)
+
+    # def balm_errfunc(x: ArrayLike, Dx: ArrayLike) -> ArrayLike:
+    #     par_err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
+    #     err = np.sum([ pop[i]*(ord-i)*x**(ord-i-1) for i in range(ord) ],axis=0)
+    #     return np.sqrt((err * Dx)**2 + np.sum(par_err, axis=0))
+
+    # target.spec = target.spec / target.get_exposure()
+    # target.std = target.std / target.get_exposure()
+    # std.spec = std.spec / std.get_exposure()
+    # std.std = std.std / std.get_exposure()
+
+    # std.func = [balm_calfunc, balm_errfunc]
+    # std.compute_lines()
+    # data = std.spectral_data(True)
+
+    # l = data[0]
+    # minpos = data[1].min()
+    # plt.figure()
+    # plt.subplot(2,1,1)
+    # plt.errorbar(*data,fmt='.-')
+    # display_lines(minpos,(l.min(),l.max()))
+    # plt.subplot(2,1,2)
+    # data = target.spectral_data(True)
+    # l = data[0]
+    # minpos = data[1].min()    
+    # plt.errorbar(*data,fmt='.-')
+    # display_lines(minpos,(l.min(),l.max()))
+
+
+    # plt.show()
+
+
+#   ## Filters
     # from speclite import filters as flt
     # filter_b = flt.load_filter('bessell-B')(l_data)
     # filter_v = flt.load_filter('bessell-V')(l_data)
