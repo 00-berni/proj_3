@@ -318,9 +318,9 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: 
         return cal_func(x,*pop)     
     # compute the function to evaluate the uncertainty associated with `px_to_arm`
     def err_func(x: ArrayLike, Dx: ArrayLike = 1/np.sqrt(12)) -> ArrayLike:
-        # err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
-        err = [ pop[i]*(ord-i)*x**(ord-i-1) for i in range(ord) ]
-        return np.sum(err, axis=0)*Dx
+        par_err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
+        err = np.sum([ pop[i]*(ord-i)*x**(ord-i-1)  for i in range(ord) ], axis=0)
+        return np.sqrt((err * Dx)**2 + np.sum(par_err, axis=0))
 
     ## Plot
     if display_plots:
@@ -372,18 +372,15 @@ def balmer_calibration(ch_obs: str, ch_obj: str, target: Spectrum, lamp_cal: tup
     def balm_calfunc(x: ArrayLike) -> ArrayLike:
         return fit.res['func'](x, *pop)
 
-    # def balm_errfunc(x: ArrayLike) -> ArrayLike:
-    #     err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
-    #     return np.sqrt(np.sum(err, axis=0))
     def balm_errfunc(x: ArrayLike, Dx: ArrayLike) -> ArrayLike:
-        err = [ pop[i]*(ord-i)*x**(ord-i-1) for i in range(ord) ]
-        return np.sum(err, axis=0)*Dx
+        par_err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
+        err = np.sum([ pop[i]*(ord-i)*x**(ord-i-1) for i in range(ord) ],axis=0)
+        return np.sqrt((err * Dx)**2 + np.sum(par_err, axis=0))
 
     lamp_calfunc, lamp_errfunc = lamp_cal
 
     def px_to_arm(x: ArrayLike) -> ArrayLike: 
         return balm_calfunc(lamp_calfunc(x))
-    # err_func  = lambda x : np.sqrt(balm_errfunc(lamp_calfunc(x))**2 + lamp_errfunc(x)**2)
     def err_func(x: ArrayLike, Dx: ArrayLike = 1/np.sqrt(12)): 
         return balm_errfunc(lamp_calfunc(x),lamp_errfunc(x,Dx))
 
@@ -433,8 +430,9 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
     print('EDGE',edge1)
     print('EDGE',edge2)
     print('EDGE',edge)
-    edge1 = [0 if edge[0] > 0 else -edge[0], -edge[1] if edge[1] > 0 else None]
-    edge2 = [edge[0] if edge[0] > 0 else 0 , None if edge[1] > 0 else edge[1]]
+    if all(edge != [0,0]):
+        edge1 = [0 if edge[0] > 0 else -edge[0], -edge[1] if edge[1] > 0 else None]
+        edge2 = [edge[0] if edge[0] > 0 else 0 , None if edge[1] > 0 else edge[1]]
     print('EDGEs',edge1, edge2)
     lamp1 = lamp1.spec[slice(*edge1)].copy()
     lamp2 = lamp2.spec[slice(*edge2)].copy()
@@ -506,7 +504,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     data = target.data.mean(axis=1)
     data = np.array([ target.data[i,:] / data[i] for i in range(len(data)) ])
     # average along the y axis
-    target.spec, target.std = mean_n_std(data, axis=0, weights=target.spec)
+    target.spec, target.std = mean_n_std(data, axis=0)
     # compute the height for the lamp
     if height is None: 
         mid_h = int(len(lamp.data)/2)
@@ -623,8 +621,8 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
     y_data, Dy_data = data
     bins = np.copy(bins)
     # prepare arrays to collect values of I0 and tau
-    a_I0   = np.empty((0,2))
-    a_tau  = np.empty((0,2))
+    a_I0  = np.empty((0,2))
+    a_tau = np.empty((0,2))
     if display_plots:
         plt.figure()
         plt.title('Binned data for different airmass')
@@ -689,6 +687,46 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
         plt.ylabel('$I_0$ [counts/s]')
         plt.show()
     return (I0, DI0), (tau, Dtau)
+
+def vega_std():
+    import spectralpy.data as dt
+    file_name = dt.os.path.join(dt.CAL_DIR,'standards','Vega','vega_std.fit')
+    # lims = [592,618,251,-1,600,612,243,-1]
+    lims = [592,618,251,-1,605,610,243,-1]
+    std = dt.get_data_fit(file_name,lims,obj_name='Standard Vega')
+    std, _ = std.angle_correction(diagn_plots=False)
+    std.cut_image()
+    show_fits(std,show=True)
+    meandata = std.data.mean(axis=1)
+    data = np.array([ std.data[i,:] / meandata[i] for i in range(len(meandata)) ])
+    std.spec, std.std = mean_n_std(data, axis=0)
+    print(' - - STARDARD - - ')
+    file_path = dt.os.path.join(dt.CAL_DIR,'standards','Vega','H_calibration.txt')
+    balm, balmerr, lines, errs = np.loadtxt(file_path, unpack=True)
+    lines += std.lims[2]
+    ord = 3
+    fit = FuncFit(xdata=lines, xerr=errs, ydata=balm, yerr=balmerr)
+    initial_values = [0] + [1]*(ord-1) + [np.mean(lines)]
+    fit.pol_fit(ord, initial_values=initial_values)
+    pop = fit.fit_par.copy()
+    cov = fit.res['cov']
+
+    def balm_calfunc(x: ArrayLike) -> ArrayLike:
+        return fit.res['func'](x, *pop)
+
+    def balm_errfunc(x: ArrayLike, Dx: ArrayLike) -> ArrayLike:
+        par_err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
+        err = np.sum([ pop[i]*(ord-i)*x**(ord-i-1) for i in range(ord) ],axis=0)
+        return np.sqrt((err * Dx)**2 + np.sum(par_err, axis=0))
+
+    std.spec = std.spec / std.get_exposure()
+    std.std = std.std / std.get_exposure()
+
+    std.func = [balm_calfunc, balm_errfunc]
+    std.compute_lines()
+    return std
+
+
 
 def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], ends_wlen: list[list[float]],  bin_width: float | int = 50, std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
     """To estimate instrument response function
@@ -767,13 +805,14 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], ends
     # set ends of wavelengths range
     min_line, max_line = bins[0], bins[-1]
     # get the data of the standard
-    std_wlen, std_data = get_standard(name=std_name, sel=selection, diagn_plots=diagn_plots)
-    std = Spectrum.empty()      #: variable to collect standard spectrum data
+    # std_wlen, std_data = get_standard(name=std_name, sel=selection, diagn_plots=diagn_plots)
+    # std = Spectrum.empty()      #: variable to collect standard spectrum data
+    std = vega_std()
     # store the ends of wavelengths range of the standard 
-    start, end = std_wlen[0], std_wlen[-1]
+    start, end = std.lines[0], std.lines[-1]
     # check the length
     if start > bins[1]: 
-        pos = np.argmin(np.abs(bins-std_wlen[0]))
+        pos = np.argmin(np.abs(bins-start))
         min_line = bins[pos]
         bins = bins[pos:]
         l_data = l_data[pos:]
@@ -783,7 +822,7 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], ends
         DI0 = DI0[pos:]
         print('\t',min_line,len(I0))
     if end < bins[-2]: 
-        pos = np.argmin(np.abs(bins-std_wlen[-1]))
+        pos = np.argmin(np.abs(bins-end))
         max_line = bins[pos]
         bins = bins[:pos+1]
         l_data = l_data[:pos]
@@ -792,24 +831,25 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], ends
         I0 = I0[:pos]
         DI0 = DI0[:pos]
         print('\t',max_line,len(I0))
-    # store data
-    std.lines = std_wlen
-    std.spec  = std_data
+    # # store data
+    # std.lines = std_wlen
+    # std.spec  = std_data
+    # bin data
+    bstd_wlen, bstd_s, _ = std.binning(bin=bins)
+    print('SEE',len(I0),len(bstd_wlen[0]),len(l_data))
+
     if display_plots:
         plt.figure()
         plt.suptitle('Spectra of Standard and Target after resizing')
         plt.subplot(2,1,1)
         plt.title('Standard')
-        plt.plot(std.lines,std.spec,'.-')
+        plt.plot(bstd_wlen[0],bstd_s[0],'.-')
         plt.ylabel('$S_{std}$ [erg/(s cm$^2$ $\\AA$)]')
-        plt.subplot(2,1,1)
+        plt.subplot(2,1,2)
         plt.title('Target')
         plt.plot(l_data,I0,'.-')
         plt.xlabel('$\\lambda$ [$\\AA$]')
         plt.ylabel('$I_0$ [counts/s]')
-    # bin data
-    bstd_wlen, bstd_s, _ = std.binning(bin=bins)
-    print('SEE',len(I0),len(bstd_wlen[0]),len(l_data))
 
     if diagn_plots:
         plt.figure()
@@ -834,7 +874,7 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], ends
     stand, Dstand = bstd_s
     R = I0/stand
     DR = R * np.sqrt((DI0/I0)**2 + (Dstand/stand)**2)
-    return (l_data, Dl_data), (R, DR), (op_dep, Dop_dep)
+    return (l_data, Dl_data, bins), (R, DR), (op_dep, Dop_dep)
 
 
     
