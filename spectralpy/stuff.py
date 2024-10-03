@@ -110,6 +110,7 @@ class Spectrum():
         self.sigma = np.copy(sigma) if sigma is not None else None
         self.lims = lims
         self.cut  = cut 
+        self.angle = None
         self.spec  : None | ndarray = None
         self.std   : None | ndarray = None
         self.lines : None | ndarray = None
@@ -263,6 +264,7 @@ class Spectrum():
             Dangle = np.sqrt(Dangle1**2 + Dangle2**2)
             print(f'Inclination Angle : {angle:.2} +- {Dangle:.2} deg -> {Dangle/angle*100:.2f} %')
         # rotate the image
+        target.angle = angle
         target.data = ndimage.rotate(target.data, angle, reshape=False)
         if target.sigma is not None:
             # rotate the sigma, if any
