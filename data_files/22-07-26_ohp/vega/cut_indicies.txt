@@ -1,8 +1,8 @@
-#   The section of image to display
+#	The section of image to display
 #
-#   The first row is for the target acquisition
-#   The second one is for the lamp
+#	The first row is for the target acquisition
+#	The last one is for the lamp
 #
-#yl     yu      xl   xu
-900 1019    750 -1
-640 1373    750 -1
+#cyl	cyu	cxl	cxu	yl	yu	xl	xu
+900	1019	750	-1	943	998	743	2730
+640	1373	750	-1	652	1334	871	2677

@@ -1,15 +1,3 @@
-[['17-03-27' 'Vega01' 'mean']
- ['17-03-27' 'Polluce' 'mean']
- ['17-03-27' 'Regolo' 'mean']
- ['17-03-27' 'WR140' '1']
- ['22-07-26_ohp' 'vega' '0']
- ['22-07-26_ohp' 'giove' '0']
- ['22-07-26_ohp' 'luna' '0']
- ['22-07-26_ohp' 'luna' '1']
- ['22-07-26_ohp' 'pCygni' '0']
- ['22-07-26_ohp' 'm57' '0']
- ['23-03-28' 'Aldebaran' '0']
- ['23-03-28' 'Sirius2' '0']]
 [[900 1019 750 None 943 998 743 2730]] [640 1373 750 None 652 1334 871 2677]
 Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/22-07-26_ohp/vega/vega_alby_26072022_0327.fit
 No.    Name      Ver    Type      Cards   Dimensions   Format
@@ -391,7 +379,7 @@ Fit results:
 	q: 7.6e+01 +- 1.7  -->  2.27 %
 	red_chi = 13.02 +- 22.94 %
 Inclination Angle : 0.38 +- 0.088 deg -> 23.06 %
-LAMP HEIGHT:  [313 320 327 334 341 348 355 362 369]
+LAMP HEIGHT:  [311 321 331 341 351 361 371]
 
 Fit results:
 	par0: -0.0001 +- 4.8e-06  -->  4.80 %
@@ -530,11 +518,11 @@ SWOWNER =	MaxIm \ Licensed owner of software
 
 MIN 0.09981220856749065
 LAMP HEIGHT:  [307 317 327 337 347 357 367]
-LAMP2 <spectralpy.stuff.Spectrum object at 0x7aadc8ecfca0>
+LAMP2 <spectralpy.stuff.Spectrum object at 0x7c4ef3a6c310>
 EDGE [870 2694]
 EDGE [871 2677]
 EDGE [-1 17]
 EDGEs [1, -17] [0, None]
-LAMP2 [622.5457259  591.98335069 620.46427174 ... 273.63118803 265.65649145
- 273.1968758 ]
+LAMP2 [596.45602895 590.68845434 594.12742489 ... 268.53747259 279.73494954
+ 279.59554029]
 MAX POS:  49.98615342010523 2

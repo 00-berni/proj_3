@@ -1,9 +1,8 @@
-#   The section of image to display
+#	The section of image to display
 #
-#   The first row is for the target acquisition
-#   The second is for the lamp
-#   The third is fot the flat (unique flat for night 01)
+#	The first row is for the target acquisition
+#	The last one is for the lamp
 #
-#yl     yu      xl   xu
-916 1137    750 2570
-650 1390    750 -1
+#cyl	cyu	cxl	cxu	yl	yu	xl	xu
+916	1137	750	2570	946	1094	770	2733
+650	1390	750	-1	658	1333	870	2694
