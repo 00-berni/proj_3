@@ -1,9 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import spectralpy.data as dt
-import spectralpy.calcorr as clcr
-import spectralpy.display as dsp
-import spectralpy.stuff as stf
+import spectralpy as spc
+from spectralpy import TARGETS
 
 label = lambda i,arr,name : name if i==arr[0] else ''
 
@@ -54,56 +52,85 @@ def display_lines(minpos: float, edges: tuple[float, float]) -> None:
 
 if __name__ == '__main__':
     ## Get data
-    TARGETS = dt.open_targets_list()
-    print(TARGETS)
+    """
+    0  - 17-03-27      : Vega01
+    1  - 17-03-27      : Polluce
+    2  - 17-03-27      : Regolo
+    3  - 17-03-27      : WR140
+    4  - 22-07-26_ohp  : vega
+    5  - 22-07-26_ohp  : giove
+    6  - 22-07-26_ohp  : luna0
+    7  - 22-07-26_ohp  : luna1
+    8  - 22-07-26_ohp  : pCygni
+    9  - 22-07-26_ohp  : m57
+    10 - 23-03-28      : Aldebaran
+    11 - 23-03-28      : Sirius2
+    """    
 
 
 #    ## 17-03-27 night
-    night, target_name, selection = TARGETS[0]
+    """
+    0  - Vega01
+    1  - Polluce
+    2  - Regolo
+    3  - WR140
+    """    
+    # night, target_name, selection = TARGETS[0]
 
-    ord1 = 2
-    ord2 = 3
-    display_plots = False
-    target, lamp = clcr.calibration(night, target_name, selection, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots)
+    # ord1 = 2
+    # ord2 = 3
+    # display_plots = True
+    # target, lamp = spc.calibration(night, target_name, selection, ord_lamp=ord1, ord_balm=ord2, display_plots=False)
 
-    # - - #
+    # # - - #
 
-    night, target_name, selection = TARGETS[2]
-
-    target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots)
-
-#    ## 22-07-26_ohp night
     # night, target_name, selection = TARGETS[3]
 
-    # ord = 2
-    # display_plots = True
-    # target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=False)
-    
-    
-    # night, target_name, selection = '22-07-26_ohp', 'gammaCygni', '0'
+    # target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=True)
 
-    # target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=True)
+#    ## 22-07-26_ohp night
+    """
+    4  - vega
+    5  - giove
+    6  - luna0
+    7  - luna1
+    8  - pCygni
+    9  - m57
+    """    
+    night, target_name, selection = TARGETS[4]
+
+    ord_lamp = 2
+    ord_balm = 2
+    display_plots = False
+    target, lamp = spc.calibration(night, target_name, selection,lag=7,row_num=4, ord_lamp=ord_lamp, ord_balm=ord_balm, display_plots=display_plots)
+    
+    
+    night, target_name, selection = TARGETS[5]
+
+    target, lamp = spc.calibration(night, target_name, selection, angle=target.angle, other_lamp=lamp, display_plots=True,diagn_plots=True)
+
+    
 
 #    ## 23-03-28 night
     # night, target_name, selection = TARGETS[-2]
 
     # ord = 2
     # display_plots = True
-    # target, lamp = clcr.calibration(night, target_name, selection, ord=ord, display_plots=True)
+    # target, lamp = spc.calibration(night, target_name, selection, ord=ord, display_plots=True)
 
 #    ## Lines
-    # data = target.spectral_data(plot_format=True)
-    # minpos = data[1].min()
-    # l = data[0]
-    # plt.figure()
-    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    # plt.xlim(3600,7800)
-    # display_lines(minpos,(l.min(),l.max()))
-    # plt.show()
+    data = target.spectral_data(plot_format=True)
+    minpos = data[1].min()
+    l = data[0]
+    plt.figure()
+    plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    plt.xlim(3600,7800)
+    display_lines(minpos,(l.min(),l.max()))
+    plt.show()
 
     # night, target_name, selection = TARGETS[2]
 
-    # target, lamp = clcr.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots)
+    # target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots)
 
     # data = target.spectral_data(plot_format=True)
     # minpos = data[1].min()
@@ -122,69 +149,71 @@ if __name__ == '__main__':
     # plt.show()
 
     # night, target_name, selection = TARGETS[:,1]
-    # target2, lamp2 = clcr.calibration(night, target_name, selection, other_lamp=lamp)
+    # target2, lamp2 = spc.calibration(night, target_name, selection, other_lamp=lamp)
 
 #    ## Vega
-    night = '17-03-27'
-    target_name = 'Vega'
-    selection = 'mean'
-    bin_width = 50
-    alt = np.array([20,35,43,58],dtype=float)
-    Dalt = np.full(alt.shape,0.5)
-    vega : list[dt.Spectrum] = []
-    line = []
-    for i in range(len(alt)):
-        tmp, _ = clcr.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, display_plots=False)
-        vega += [tmp]
-        line += [[tmp.lines[0],tmp.lines[-1]]]
+    # night = '17-03-27'
+    # target_name = 'Vega'
+    # selection = 'mean'
+    # bin_width = 50
+    # alt = np.array([20,35,43,58],dtype=float)
+    # Dalt = np.full(alt.shape,0.5)
+    # vega : list[dt.Spectrum] = []
+    # line = []
+    # for i in range(len(alt)):
+    #     tmp, _ = spc.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, display_plots=False)
+    #     vega += [tmp]
+    #     line += [[tmp.lines[0],tmp.lines[-1]]]
 
-    wlen, rfunc, tau = clcr.ccd_response((alt, Dalt), vega, line, bin_width=bin_width,display_plots=False)
+    # wlen, rfunc, tau = spc.ccd_response((alt, Dalt), vega, line, bin_width=bin_width,display_plots=False)
 
-    # alt_reg = 58 + 9*60 + 33.6*3600
-    # airmass = 1/np.sin(alt_reg*np.pi/180)
+    # # alt_reg = 58 + 9*60 + 33.6*3600
+    # # airmass = 1/np.sin(alt_reg*np.pi/180)
     
-    # (reg_wlen,_), (reg_spec,_), _  = target.binning(bin=wlen[-1])
+    # # (reg_wlen,_), (reg_spec,_), _  = target.binning(bin=wlen[-1])
 
-    # reg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() * rfunc[0]
+    # # reg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() * rfunc[0]
 
-    target = vega[0]
-    airmass = 1/np.sin(alt[0]*np.pi/180)
-    (veg_wlen,_), (veg_spec,_), _  = target.binning(bin=wlen[-1])
-    veg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() / rfunc[0]
+    # target = vega[0]
+    # airmass = 1/np.sin(alt[0]*np.pi/180)
+    # (veg_wlen,_), (veg_spec,_), _  = target.binning(bin=wlen[-1])
+    # veg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() / rfunc[0]
 
-    std = clcr.vega_std()
+    # std = spc.vega_std()
 
-    (std_wlen,_), (std_spec,_), _ = std.binning(bin=wlen[-1])
+    # (std_wlen,_), (std_spec,_), _ = std.binning(bin=wlen[-1])
 
-    plt.figure()
-    plt.subplot(2,1,1)
-    plt.title('Comparison')
-    (tar_wlen,_), (tar_spec,_), _ = target.binning(bin=wlen[-1])
-    plt.plot(tar_wlen,tar_spec,'.-')
-    plt.subplot(2,1,2)
-    plt.plot(veg_wlen,veg_spec,'.-')
-    # plt.plot(reg_wlen,reg_spec,'.-')
-    plt.plot(std_wlen,std_spec,'.-')
-
-
-
-    from scipy.interpolate import CubicSpline
-    rfunc = CubicSpline(wlen[0],rfunc[0])
-    tau = CubicSpline(wlen[0],tau[0])
-
-    veg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
-    # reg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
+    # plt.figure()
+    # plt.subplot(2,1,1)
+    # plt.title('Comparison')
+    # (tar_wlen,_), (tar_spec,_), _ = target.binning(bin=wlen[-1])
+    # plt.plot(tar_wlen,tar_spec,'.-')
+    # plt.subplot(2,1,2)
+    # plt.plot(veg_wlen,veg_spec,'.-')
+    # # plt.plot(reg_wlen,reg_spec,'.-')
+    # plt.plot(std_wlen,std_spec,'.-')
 
 
-    plt.figure()
-    plt.subplot(2,1,1)
-    plt.title('Comparison Interpolating')
-    plt.plot(target.lines,target.spec,'.-')
-    plt.subplot(2,1,2)
-    plt.plot(target.lines,veg_spec,'.-')
-    # plt.plot(target.lines,reg_spec,'.-')
-    plt.plot(std.lines,std.spec,'.-')
-    plt.show()
+
+    # from scipy.interpolate import CubicSpline
+    # rfunc = CubicSpline(wlen[0],rfunc[0])
+    # tau = CubicSpline(wlen[0],tau[0])
+
+    # veg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
+    # # reg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
+
+
+    # plt.figure()
+    # plt.subplot(2,1,1)
+    # plt.title('Comparison Interpolating')
+    # plt.plot(target.lines,target.spec,'.-')
+    # plt.subplot(2,1,2)
+    # plt.plot(target.lines,veg_spec,'.-')
+    # # plt.plot(target.lines,reg_spec,'.-')
+    # plt.plot(std.lines,std.spec,'.-')
+    # plt.show()
+
+# - - #
 
     # file_name = dt.os.path.join(dt.CAL_DIR,'standards','Vega','vega_std.fit')
     # # lims = [592,618,251,-1,600,612,243,-1]
@@ -195,7 +224,7 @@ if __name__ == '__main__':
     # dsp.show_fits(std,show=True)
     # meandata = std.data.mean(axis=1)
     # data = np.array([ std.data[i,:] / meandata[i] for i in range(len(meandata)) ])
-    # std.spec, std.std = clcr.mean_n_std(data, axis=0)
+    # std.spec, std.std = spc.mean_n_std(data, axis=0)
 
     # from numpy.typing import ArrayLike
     # print(' - - STARDARD - - ')
@@ -203,7 +232,7 @@ if __name__ == '__main__':
     # balm, balmerr, lines, errs = np.loadtxt(file_path, unpack=True)
     # lines += std.lims[2]
     # ord = 3
-    # fit = clcr.FuncFit(xdata=lines, xerr=errs, ydata=balm, yerr=balmerr)
+    # fit = spc.FuncFit(xdata=lines, xerr=errs, ydata=balm, yerr=balmerr)
     # initial_values = [0] + [1]*(ord-1) + [np.mean(lines)]
     # fit.pol_fit(ord, initial_values=initial_values)
     # pop = fit.fit_par.copy()
@@ -280,7 +309,7 @@ if __name__ == '__main__':
 
 
 
-    # sc_frame, lamp = clcr.get_target_data(night,target_name,selection,angle=None)
+    # sc_frame, lamp = spc.get_target_data(night,target_name,selection,angle=None)
 
     # spectr = np.mean(sc_frame.data, axis=0)
 
