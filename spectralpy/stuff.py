@@ -156,7 +156,18 @@ class Spectrum():
         if self.sigma is not None:
             self.sigma = self.sigma[lims]
 
-    def angle_correction(self, angle: float | None = None, init: list[float] = [0.9, 0.], diagn_plots: bool = False, **pltargs) -> tuple['Spectrum',float]:
+    def rotate_target(self, angle: float = 0, **imagepar) -> 'Spectrum':
+        if 'reshape' not in imagepar.keys():
+            imagepar['reshape'] = False
+        from scipy import ndimage
+        target = self.copy()
+        target.data = ndimage.rotate(target.data,angle=angle,**imagepar)
+        if target.sigma is not None:
+            target.sigma = ndimage.rotate(target.sigma, angle=angle, **imagepar)
+        return target
+
+
+    def angle_correction(self, angle: float | None = None, init: list[float] = [0.9, 0.], gauss_corr: bool = True, diagn_plots: bool = False, **pltargs) -> tuple['Spectrum',float]:
         """To correct the inclination of spectrum, rotating the image.
         
         Parameters
@@ -187,7 +198,6 @@ class Spectrum():
         After then the image is rotated (and its uncertainties too, if any)
         """
         target = self.copy()
-        from scipy import ndimage
         if angle is None:
             lims = target.cut       #: cut image edges to correct inclination 
             print('CUT',lims)
@@ -200,75 +210,87 @@ class Spectrum():
             y_pos = np.argmax(data, axis=0)
             x_pos = np.arange(len(y_pos))
             # set a fixed uncertainty
-            Dy = 0.5
-            Dx = 0.5
-            # compute the fit
-            def fitlin(x,m,q):
-                return x*m+q
+            Dy = 1/np.sqrt(12)
+            Dx = 1/np.sqrt(12)
             
             fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy, xerr=Dx)
-            fit.pipeline(fitlin,init,names=['m','q'])
+            fit.linear_fit(init)
             pop, perr = fit.results()
             m = pop[0]
             Dm = perr[0]
             # compute the angle in the degrees from the angular coefficient
             angle1 = np.arctan(m)*180/np.pi  
             Dangle1 = 180/np.pi * Dm/(1+m**2)
-            # correct data
-            data = ndimage.rotate(data, angle1, reshape=False).copy()
-            
+
             ## Fit of Gaussians
-            print('\nGAUSSIAN CORRECTION')
-            if diagn_plots: fig, ax = plt.subplots(1,1)
-            # prepare data 
-            x_pos = x_pos[::50]
-            y_pos, Dy = np.array([]), np.array([])
-            # fit colums with a gaussian
-            for i in x_pos:
-                values = data[:,i]
-                Dvalues = target.sigma[:,i].copy() if target.sigma is not None else None
-                y = np.arange(len(values))
-                # estimate HWHM for the initial value of the sigma
-                hwhm = abs(np.argmax(values) - np.argmin(abs(values - max(values)/2)))
-                initial_values = [max(values),np.argmax(values),hwhm]
-                # take only values greater than the double of the mean
-                pos = np.where(values > np.mean(values)*2)
-                if len(pos[0]) <= 3: pos = np.where(values > np.mean(values))
-                values = values[pos]
-                y = y[pos]
-                # compute the fit
-                fit = FuncFit(xdata=y, ydata=values,xerr=0.5,yerr=Dvalues)
-                fit.gaussian_fit(initial_values)
+            if gauss_corr:
+                from scipy import ndimage
+                # correct data
+                data = ndimage.rotate(data, angle1, reshape=False).copy()
+                print('\nGAUSSIAN CORRECTION')
+                if diagn_plots: fig, ax = plt.subplots(1,1)
+                # prepare data 
+                x_pos = x_pos[::50]
+                y_pos, Dy = np.array([]), np.array([])
+                # fit colums with a gaussian
+                for i in x_pos:
+                    values = data[:,i]
+                    Dvalues = target.sigma[:,i].copy() if target.sigma is not None else None
+                    y = np.arange(len(values))
+                    # estimate HWHM for the initial value of the sigma
+                    hwhm = abs(np.argmax(values) - np.argmin(abs(values - max(values)/2)))
+                    initial_values = [max(values),np.argmax(values),hwhm]
+                    # take only values greater than the double of the mean
+                    pos = np.where(values > np.mean(values)*2)
+                    if len(pos[0]) <= 3: pos = np.where(values > np.mean(values))
+                    values = values[pos]
+                    y = y[pos]
+                    # compute the fit
+                    fit = FuncFit(xdata=y, ydata=values,xerr=0.5,yerr=Dvalues)
+                    fit.gaussian_fit(initial_values)
+                    pop, perr = fit.results()
+                    # store results
+                    y_pos = np.append(y_pos,pop[1])
+                    Dy = np.append(Dy,pop[2])
+                    method = fit.res['func']
+                    color = (1-i/max(x_pos),i/max(x_pos),i/(2*max(x_pos))+0.5)
+                    if diagn_plots:
+                        ax.plot(data[:,i],color=color,label='fit',**pltargs)
+                        ax.plot(y, method(y,*pop), '--',color=color,**pltargs)
+                if diagn_plots: ax.legend()            
+                print(len(x_pos),len(y_pos))
+                # compute the fit to get inclination angle
+                fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy)
+                fit.linear_fit(init)
                 pop, perr = fit.results()
-                # store results
-                y_pos = np.append(y_pos,pop[1])
-                Dy = np.append(Dy,pop[2])
-                method = fit.res['func']
-                color = (1-i/max(x_pos),i/max(x_pos),i/(2*max(x_pos))+0.5)
+                m  = pop[0]
+                Dm = perr[0]
+                # compute the angle in the degrees from the angular coefficient
+                angle2 = np.arctan(m)*180/np.pi   
+                Dangle2 = 180/np.pi * Dm/(1+m**2)
+                # compute the total angle
+                angle  = angle1 + angle2
+                Dangle = np.sqrt(Dangle1**2 + Dangle2**2)
+            else: 
+                angle  = angle1
+                Dangle = Dangle1
                 if diagn_plots:
-                    ax.plot(data[:,i],color=color,label='fit')
-                    ax.plot(y, method(y,*pop), '--',color=color)
-            if diagn_plots: ax.legend()            
-            print(len(x_pos),len(y_pos))
-            # compute the fit to get inclination angle
-            fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy)
-            fit.pipeline(fitlin,init,names=['m','q'])
-            pop, perr = fit.results()
-            m  = pop[0]
-            Dm = perr[0]
-            # compute the angle in the degrees from the angular coefficient
-            angle2 = np.arctan(m)*180/np.pi   
-            Dangle2 = 180/np.pi * Dm/(1+m**2)
-            # compute the total angle
-            angle = angle1 + angle2
-            Dangle = np.sqrt(Dangle1**2 + Dangle2**2)
+                    plt.figure()
+                    plt.errorbar(x_pos,y_pos,Dy,Dx,'.')
+                    plt.plot(x_pos[[0,-1]], fit.fvalues()[[0,-1]])
+                    plt.figure()
+                    cov = fit.res['cov']
+                    err = lambda x : np.sum([ x**(2-(i+j)) * cov[i,j] for i in range(2) for j in range(2)],axis=0)
+                    sigma = np.sqrt(Dy**2 + (Dx*m)**2 + err(x_pos))
+                    plt.errorbar(x_pos,fit.residuals(),sigma,fmt='.')
+                    plt.axhline(0,0,1,color='k')
+                    plt.show()
+
             print(f'Inclination Angle : {angle:.2} +- {Dangle:.2} deg -> {Dangle/angle*100:.2f} %')
         # rotate the image
+        target = target.rotate_target(angle)
         target.angle = angle
-        target.data = ndimage.rotate(target.data, angle, reshape=False)
-        if target.sigma is not None:
-            # rotate the sigma, if any
-            target.sigma = ndimage.rotate(target.sigma, angle, reshape=False)
+        print(target.angle)
         return target, angle
     
     def compute_lines(self, shift: float = 0, Dx: ArrayLike = 1/np.sqrt(12)) -> None:
@@ -521,6 +543,17 @@ class FuncFit():
 
     def results(self) -> tuple[ndarray, ndarray] | tuple[None, None]:
         return np.copy(self.fit_par), np.copy(self.fit_err)
+    
+    def method(self, xdata: ArrayLike) -> ArrayLike:
+        func = self.res['func']
+        pop = np.copy(self.fit_par)
+        return func(xdata,*pop)
+
+    def fvalues(self) -> ArrayLike:
+        return self.method(self.data[0])
+    
+    def residuals(self) -> ArrayLike:
+        return self.data[1] - self.fvalues()
 
     def pipeline(self,method: Callable[[Any,Any],Any], initial_values: Sequence[Any], names: Sequence[str] | None = None,**kwargs) -> None:
         self.fit(method=method,initial_values=initial_values,**kwargs)
