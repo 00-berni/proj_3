@@ -52,30 +52,58 @@ def display_lines(minpos: float, edges: tuple[float, float]) -> None:
 
 if __name__ == '__main__':
 
-    ## Calibration with Vega
-    obs_night = '22-07-26_ohp'
-    target_name = 'vega' 
-    selection = 0
+    # ## Calibration with Vega
+    # obs_night = '22-07-26_ohp'
+    # target_name = 'vega' 
+    # selection = 0
 
-    ord_lamp = 2
-    ord_balm = 2
-    display_plots = False
-    vega, v_lamp = spc.calibration(obs_night, target_name, selection, ord_lamp=ord_lamp, ord_balm=ord_balm, display_plots=False)
+    # ord_lamp = 2
+    # ord_balm = 2
+    # display_plots = False
+    # vega, v_lamp = spc.calibration(obs_night, target_name, selection, ord_lamp=ord_lamp, ord_balm=ord_balm, display_plots=False)
 
-    target_name = 'giove'    
-    jupiter, lamp = spc.calibration(obs_night, target_name, selection, angle=vega.angle, other_lamp=v_lamp, display_plots=display_plots)
+    # target_name = 'giove'    
+    # jupiter, lamp = spc.calibration(obs_night, target_name, selection, angle=vega.angle, other_lamp=v_lamp, display_plots=display_plots)
 
-    spc.show_fits(jupiter,show=True)
-    sel1 = 46
-    sel2 = 112
-    j1 = jupiter.data[sel1,:].copy()
-    j2 = jupiter.data[sel2,:].copy()
-
-    plt.figure()
-    plt.plot(jupiter.lines,j1,'.-',label=sel1)
-    plt.plot(jupiter.lines,j2,'.-',label=sel2)
-    plt.legend()
-    plt.show()
+    # spc.show_fits(jupiter,show=True)
 
     ## Jupiter 
+    obs_night = '18-04-22'
+    target_name = 'giove'    
+    selection = 0
+    jupiter, lamp = spc.get_target_data(obs_night,target_name,selection,angle=None,gauss_corr=False,lamp_incl=False)
 
+
+    # cuts = [0,5,10,20]
+
+    # data = jupiter.data.copy()
+
+    # img, imgx = plt.subplots(1,1)
+    # imgx.imshow(data,cmap='gray')
+    # fig = plt.figure()
+    # for i in range(len(cuts)):
+    #     sel = cuts[i]
+    #     ax = fig.add_subplot(1,len(cuts),i+1)
+    #     ax.plot(data[sel,:],label=f'{sel}')
+    #     imgx.axhline(sel,0,1)
+    #     if sel == 0: sel += 1
+    #     sel = data.shape[0] - sel
+    #     ax.plot(data[sel,:],label=f'{sel}')
+    #     ax.grid()
+    #     ax.legend()
+    #     ax.set_xlim(800,900)
+    #     imgx.axhline(sel,0,1)
+    # plt.figure()
+    # middle = int(data.shape[0]//2)
+    # plt.plot(data[middle,:])
+    # plt.plot(data[cuts[2],:])
+    # plt.plot(data[-cuts[2],:])
+    # plt.grid()
+    # plt.xlim(800,900)
+    # plt.figure()
+    # line_mean = np.mean(data,axis=1)
+    # norm_data = np.array([data[i,:] / line_mean[i] for i in range(len(data))])
+    # mean_data, std_data = spc.mean_n_std(norm_data,axis=0)
+    # plt.errorbar(np.arange(len(mean_data)),mean_data,std_data, np.full(len(mean_data),1/np.sqrt(12)),fmt='.-')
+    # plt.grid()
+    # plt.show()
