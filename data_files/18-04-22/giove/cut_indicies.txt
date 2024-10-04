@@ -3,6 +3,6 @@
 #	The first row is for the target acquisition
 #	The last one is for the lamp
 #
-#yl	yu	xl	xu
-0	-1	0	-1
-0	-1	0	-1
+#cyl	cyu	cxl	cxu	yl	yu	xl	xu
+565	1372	0	-1	624	730	21	-1
+0	-1	0	-1	0	-1	0	-1
