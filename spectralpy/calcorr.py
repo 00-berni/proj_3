@@ -127,7 +127,7 @@ def compute_master_flat(flat: Spectrum, master_dark: Spectrum | None = None, mas
         _ = show_fits(master_flat,show=True,**figargs)
     return master_flat
 
-def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], cut: bool = True, angle: float | None = 0, display_plots: bool = True, diagn_plots: bool = False,**figargs) -> tuple[Spectrum, Spectrum]:
+def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], cut: bool = True, angle: float | None = 0, gauss_corr: bool = True, lamp_incl: bool = True, display_plots: bool = True, diagn_plots: bool = False,**figargs) -> tuple[Spectrum, Spectrum]:
     """To get the science frames of target and its calibration lamp
 
     Parameters
@@ -170,55 +170,56 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
         plt.show()
     
     ## Calibration correction
-    calibration = extract_cal_data(ch_obs)
-    if len(calibration) > 1:
-        if len(calibration) == 3:   #: in this case `calibration = [flat, dark, bias]` 
-            # compute master dark
-            calibration[1] = compute_master_dark(*calibration[1:], diagn_plots=diagn_plots,**figargs)
-            # bias correction
-            bias = calibration[2]
-            target.data = target - bias
-            target.sigma = compute_err(target, bias)
+    if ch_obs != '18-04-22':
+        calibration = extract_cal_data(ch_obs)
+        if len(calibration) > 1:
+            if len(calibration) == 3:   #: in this case `calibration = [flat, dark, bias]` 
+                # compute master dark
+                calibration[1] = compute_master_dark(*calibration[1:], diagn_plots=diagn_plots,**figargs)
+                # bias correction
+                bias = calibration[2]
+                target.data = target - bias
+                target.sigma = compute_err(target, bias)
+                if lamp.name != 'empty':
+                    lamp.data = lamp - bias
+                    lamp.sigma = compute_err(lamp, bias)
+            # check the exposure times
+            tg_exp = target.get_exposure()
+            dk_exp = calibration[1].get_exposure()
+            if tg_exp != dk_exp:
+                calibration[1].data = calibration[1].data  / dk_exp * tg_exp
+                calibration[1].sigma = calibration[1].sigma / dk_exp * tg_exp
+            # dark correction
+            dark = calibration[1].copy()
+            target.data = target - dark
+            target.sigma = compute_err(target, dark)
             if lamp.name != 'empty':
-                lamp.data = lamp - bias
-                lamp.sigma = compute_err(lamp, bias)
-        # check the exposure times
-        tg_exp = target.get_exposure()
-        dk_exp = calibration[1].get_exposure()
-        if tg_exp != dk_exp:
-            calibration[1].data = calibration[1].data  / dk_exp * tg_exp
-            calibration[1].sigma = calibration[1].sigma / dk_exp * tg_exp
-        # dark correction
-        dark = calibration[1].copy()
-        target.data = target - dark
-        target.sigma = compute_err(target, dark)
-        if lamp.name != 'empty':
-            lamp.data = lamp - dark
-            lamp.sigma = compute_err(lamp, dark)
-    # compute master flat
-    master_flat = compute_master_flat(*calibration,diagn_plots=diagn_plots,**figargs)
-    print('MIN',master_flat.data.min())
-    flat_err = lambda data : 0 if master_flat.sigma is None else (data*master_flat.sigma / master_flat.data**2)**2
-    # flat correction
-    err = lambda sigma : 0 if sigma is None else (sigma / master_flat.data)**2
-    target_err = flat_err(target.data) + err(target.sigma)
-    target.data = target.data / master_flat.data
-    target.sigma = None if isinstance(target_err, int) else np.sqrt(target_err)
+                lamp.data = lamp - dark
+                lamp.sigma = compute_err(lamp, dark)
+        # compute master flat
+        master_flat = compute_master_flat(*calibration,diagn_plots=diagn_plots,**figargs)
+        print('MIN',master_flat.data.min())
+        flat_err = lambda data : 0 if master_flat.sigma is None else (data*master_flat.sigma / master_flat.data**2)**2
+        # flat correction
+        err = lambda sigma : 0 if sigma is None else (sigma / master_flat.data)**2
+        target_err = flat_err(target.data) + err(target.sigma)
+        target.data = target.data / master_flat.data
+        target.sigma = None if isinstance(target_err, int) else np.sqrt(target_err)
 
-    if lamp.name != 'empty':
-        lamp_err = flat_err(lamp.data) + err(lamp.sigma)
-        lamp.data = lamp.data / master_flat.data  
-        lamp.sigma = None if isinstance(lamp_err, int) else np.sqrt(lamp_err)
-        #? CHECK
-        if lamp.sigma is not None:
-            pos = np.where(lamp.sigma < 0)
-            if len(pos[0]) != 0:
-                plt.figure()
-                plt.title('HELP')
-                plt.imshow(lamp.sigma,cmap='gray')
-                plt.plot(pos[1],pos[0],'.',color='red')
-                plt.show()
-                raise
+        if lamp.name != 'empty':
+            lamp_err = flat_err(lamp.data) + err(lamp.sigma)
+            lamp.data = lamp.data / master_flat.data  
+            lamp.sigma = None if isinstance(lamp_err, int) else np.sqrt(lamp_err)
+            #? CHECK
+            if lamp.sigma is not None:
+                pos = np.where(lamp.sigma < 0)
+                if len(pos[0]) != 0:
+                    plt.figure()
+                    plt.title('HELP')
+                    plt.imshow(lamp.sigma,cmap='gray')
+                    plt.plot(pos[1],pos[0],'.',color='red')
+                    plt.show()
+                    raise
     
     ## Inclination Correction
     ylen, xlen = target.data.shape      # sizes of the image
@@ -228,13 +229,14 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
         exit_cond = False  
         norm = 'linear'
         if cut:    
-            target, angle = target.angle_correction(angle=angle, diagn_plots=diagn_plots)      
+            target, angle = target.angle_correction(angle=angle, gauss_corr=gauss_corr, diagn_plots=diagn_plots)      
             if np.all(target.lims == IMAGE_ENDS): 
                 exit_cond = True
                 norm = 'log'
             target.cut_image()
             if lamp.name != 'empty':
-                lamp, _ = lamp.angle_correction(angle=angle, diagn_plots=diagn_plots)      
+                if lamp_incl: 
+                    lamp, _ = lamp.angle_correction(angle=angle, gauss_corr=gauss_corr, diagn_plots=diagn_plots)      
                 lamp.cut_image()
     else:
         exit_cond = True  
@@ -453,7 +455,7 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
     shift = np.argmax(corr) - (len(corr)/2)  
     return shift
 
-def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, height: ArrayLike | None = None, row_num: int = 3, lag: int = 10, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
+def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, gauss_corr: bool = True, height: ArrayLike | None = None, row_num: int = 3, lag: int = 10, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
     """To open and calibrate data
 
     Parameters
@@ -499,7 +501,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     """    
     ## Data
     # extract data
-    target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, display_plots=display_plots, diagn_plots=diagn_plots,**figargs)
+    target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, gauss_corr=gauss_corr, display_plots=display_plots, diagn_plots=diagn_plots,**figargs)
     # normalize along the x axis
     data = target.data.mean(axis=1)
     data = np.array([ target.data[i,:] / data[i] for i in range(len(data)) ])
