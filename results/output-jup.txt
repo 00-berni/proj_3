@@ -1,7 +1,7 @@
 Filename: /home/bernardo/Scrivania/FISICA/ASTROFISICA/Astr_Oss/Progetti/proj_3/data_files/18-04-22/giove/giove_spec.fit
 No.    Name      Ver    Type      Cards   Dimensions   Format
   0  PRIMARY       1 PrimaryHDU      35   (1392, 1040)   int16 (rescales to uint16)   
-NEWS [565 1372 0 None] [624 730 21 None]
+NEWS [568 791 0 None] [624 730 21 None]
  - HEADER -
 SIMPLE =	True
 BITPIX =	16 \ 8 unsigned int, 16 & 32 int, -32 & -64 real
@@ -81,11 +81,42 @@ CWHITE =	12380 \ Initial display white level in ADUs
 PEDESTAL =	0 \ Correction to add for zero-based ADU
 SWOWNER =	FOXMASTER \ Licensed owner of software
 
-CUT [565 1372 0 1392]
+[0.08051761] [0.08123652]
+[[  0 112]
+ [108 221]]
+27
+XERR None
 
 Fit results:
-	m: 0.078 +- 1.9e-05  -->  0.02 %
-	q: 6.3e+01 +- 0.016  -->  0.02 %
-	red_chi = 562620.24 +- 3.79 %
-Inclination Angle : 4.5 +- 0.0011 deg -> 0.02 %
-4.455071360478094
+	mode : curve_fit
+	m: 7.654e-02 +/- 8.9e-04  -->  1.16 %	init : 0.081
+	q: 6.081e+01 +/- 7.1e-01  -->  1.17 %	init : 0.0
+	corr_m-q	 = -0.86
+	chi_sq = 212.63  -->  red = 322.16 %
+	chi0 = 66.00 +/- 11.49  -->  "NO"
+Inclination Angle : 4.377e+00 +/- 5.1e-02 deg  -->  1.16 %
+4.376751907609588
+
+Fit results:
+	mode : odr
+	m: 7.986e-02 +/- 4.0e-04  -->  0.51 %	init : 0.08
+	q: 6.49479e+03 +/- 3.7e-01  -->  0.01 %	init : 0.0
+	corr_m-q	 = -0.85
+	chi_sq = 0.81  -->  red = 80.63 %
+	chi0 = 1.00 +/- 1.41  -->  "OK"
+LEN 1371 [1371]
+
+Fit results:
+	mode : odr
+	sigma: 7.3e-01 +/- 5.3e-01  -->  72.75 %	init : 0.28
+	gamma: -8e-01 +/- 1.6e+00  -->  203.61 %	init : 0.28
+	k: 1.5e-01 +/- 1.6e-01  -->  109.85 %	init : 0.23
+	median: 6.563213e+03 +/- 4.2e-02  -->  0.00 %	init : 6.6e+03
+	corr_sigma-gamma	 = -1.0
+	corr_sigma-k	 = -0.99
+	corr_sigma-median	 = 0.088
+	corr_gamma-k	 = 0.99
+	corr_gamma-median	 = -0.094
+	corr_k-median	 = -0.1
+	chi_sq = 0.21  -->  red = 1.06 %
+	chi0 = 20.00 +/- 6.32  -->  "NO"
