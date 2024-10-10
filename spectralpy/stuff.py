@@ -24,7 +24,7 @@ STUFF PACKAGE
 import numpy as np
 from numpy import ndarray
 from numpy.typing import ArrayLike
-from typing import Callable, Sequence, Any
+from typing import Callable, Sequence, Any, Literal
 from astropy.io.fits import HDUList
 import matplotlib.pyplot as plt
 
@@ -167,7 +167,7 @@ class Spectrum():
         return target
 
 
-    def angle_correction(self, angle: float | None = None, init: list[float] = [0.9, 0.], gauss_corr: bool = True, diagn_plots: bool = False, **pltargs) -> tuple['Spectrum',float]:
+    def angle_correction(self, angle: float | None = None, lim_width: Sequence[int | Sequence[int]] | None = None, init: list[float] | None = None, lag: int = 10, gauss_corr: bool = True, fit_args: dict = {}, diagn_plots: bool = False, **pltargs) -> tuple['Spectrum',float]:
         """To correct the inclination of spectrum, rotating the image.
         
         Parameters
@@ -200,21 +200,57 @@ class Spectrum():
         target = self.copy()
         if angle is None:
             lims = target.cut       #: cut image edges to correct inclination 
-            print('CUT',lims)
-            # cut image
-            data = target.data[slice(*lims[:2]), slice(*lims[2:])]
-            # plt.figure(); plt.imshow(data); plt.show()
+            ylim = lims[:2]
+            xlim = lims[2:]
+            data = target.data[slice(*ylim), slice(*xlim)].copy()
+            if not gauss_corr:
+                if lim_width is None:
+                    print('CUT',lims)
+                    # cut image
+                    plt.figure()
+                    plt.imshow(data,cmap='gray_r',norm='log')
+                    plt.show()
+                    exit()
+                xx = np.array([*lim_width[0]])
+                yy = np.array([*lim_width[1]])
+                m1 = np.diff(yy[0])/np.diff(xx)
+                m2 = np.diff(yy[1])/np.diff(xx)
+                print(m1,m2)
+                print(yy)
+                yc = np.mean(yy,axis=0)
+                mean_width = abs(np.diff(yy,axis=0).mean()/4).astype(int)
+                
+                m12 = np.diff(yc)/np.diff(xx)
 
             ## Fit of Maxima 
             # compute maxima coordinates
-            y_pos = np.argmax(data, axis=0)
-            x_pos = np.arange(len(y_pos))
-            # set a fixed uncertainty
-            Dy = 1/np.sqrt(12)
-            Dx = 1/np.sqrt(12)
-            
+            x_pos = np.arange(0,data.shape[1],lag)
+            y_pos = np.argmax(data[:,x_pos], axis=0)
+            if not gauss_corr:
+                pos = np.where((y_pos <= x_pos*m12[0] + yc[0] - mean_width) | (y_pos >= x_pos*m12[0] + yc[0] + mean_width))[0]
+                if diagn_plots:
+                    plt.figure()
+                    plt.imshow(data,cmap='gray_r',norm='log',origin='lower')
+                    plt.plot(xx,xx*m1[0]+yy[0,0],color='violet')
+                    plt.plot(xx,xx*m2[0]+yy[1,0],color='orange')
+                    plt.plot(xx,xx*m12[0]+yc[0]+mean_width,'--',color='green')
+                    plt.plot(xx,xx*m12[0]+yc[0]-mean_width,'--',color='green')
+                    plt.plot(np.delete(x_pos,pos),np.delete(y_pos,pos),'.')
+                    plt.show()
+                print(mean_width)
+                if len(pos) >= len(x_pos)-1: 
+                    print('NO GOOD')
+                    pos = []
+                r_p = (x_pos[pos],y_pos[pos])
+                x_pos = np.delete(x_pos,pos) 
+                y_pos = np.delete(y_pos,pos) 
+
+            Dx = 0
+            Dy = 3
+
+            if init is None: init = [np.mean([m1,m2,m12]),0.] if not gauss_corr else [0.9,ylim[0]]
             fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy, xerr=Dx)
-            fit.linear_fit(init)
+            fit.linear_fit(init,mode='curve_fit',absolute_sigma=True)
             pop, perr = fit.results()
             m = pop[0]
             Dm = perr[0]
@@ -230,7 +266,7 @@ class Spectrum():
                 print('\nGAUSSIAN CORRECTION')
                 if diagn_plots: fig, ax = plt.subplots(1,1)
                 # prepare data 
-                x_pos = x_pos[::50]
+                x_pos = x_pos#[::50]
                 y_pos, Dy = np.array([]), np.array([])
                 # fit colums with a gaussian
                 for i in x_pos:
@@ -247,7 +283,7 @@ class Spectrum():
                     y = y[pos]
                     # compute the fit
                     fit = FuncFit(xdata=y, ydata=values,xerr=0.5,yerr=Dvalues)
-                    fit.gaussian_fit(initial_values)
+                    fit.gaussian_fit(initial_values,**fit_args)
                     pop, perr = fit.results()
                     # store results
                     y_pos = np.append(y_pos,pop[1])
@@ -261,7 +297,7 @@ class Spectrum():
                 print(len(x_pos),len(y_pos))
                 # compute the fit to get inclination angle
                 fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy)
-                fit.linear_fit(init)
+                fit.linear_fit(init,**fit_args)
                 pop, perr = fit.results()
                 m  = pop[0]
                 Dm = perr[0]
@@ -276,17 +312,14 @@ class Spectrum():
                 Dangle = Dangle1
                 if diagn_plots:
                     plt.figure()
-                    plt.errorbar(x_pos,y_pos,Dy,Dx,'.')
-                    plt.plot(x_pos[[0,-1]], fit.fvalues()[[0,-1]])
-                    plt.figure()
-                    cov = fit.res['cov']
-                    err = lambda x : np.sum([ x**(2-(i+j)) * cov[i,j] for i in range(2) for j in range(2)],axis=0)
-                    sigma = np.sqrt(Dy**2 + (Dx*m)**2 + err(x_pos))
-                    plt.errorbar(x_pos,fit.residuals(),sigma,fmt='.')
-                    plt.axhline(0,0,1,color='k')
+                    plt.imshow(data,cmap='gray_r',origin='lower')
+                    plt.plot(x_pos, y_pos,'.')
+                    plt.plot(r_p[0], r_p[1],'.',color='red')
+                    fit.plot(points_num=3)
                     plt.show()
-
-            print(f'Inclination Angle : {angle:.2} +- {Dangle:.2} deg -> {Dangle/angle*100:.2f} %')
+            fmt = unc_format(angle,Dangle)
+            str_res ='Inclination Angle : {angle:' + fmt[0][1:] + '} +/- {Dangle:' + fmt[1][1:] + '} deg  -->  ' + f'{Dangle/angle*100:.2f} %'
+            print(str_res.format(angle=angle,Dangle=Dangle))
         # rotate the image
         target = target.rotate_target(angle)
         target.angle = angle
@@ -303,7 +336,7 @@ class Spectrum():
             lag between two different lamps obtained from the
             cross-correlation of them, by default `0`
         """
-        pxs = np.arange(len(self.spec)) + self.lims[2] + shift
+        pxs = np.arange(self.lims[2],self.lims[3]) + shift
         cal_func, err_func = self.func
         self.lines = cal_func(pxs)
         self.errs  = err_func(pxs,Dx)
@@ -464,7 +497,7 @@ class FuncFit():
         sigma = 0.20 +- 0.01
         red_chi = 72 +- 15 %
     """
-    def __init__(self, xdata: Any, ydata: Any, yerr: Any = None, xerr: Any = None) -> None:
+    def __init__(self, xdata: ArrayLike, ydata: ArrayLike, yerr: ArrayLike | None = None, xerr: ArrayLike | None = None) -> None:
         """Constructor of the class
 
         Parameters
@@ -478,13 +511,65 @@ class FuncFit():
         xerr : Any, default None
             if there is, the uncertainties of `xdata` 
         """
+        if np.all(xerr == 0): xerr = None
+        elif isinstance(xerr,(int,float)): xerr = np.full(xdata.shape,xerr)
+        if np.all(yerr == 0): yerr = None
+        elif isinstance(yerr,(int,float)): yerr = np.full(ydata.shape,yerr)
         self.data = [xdata, ydata, yerr, xerr]
         self.fit_par: ndarray | None = None
         self.fit_err: ndarray | None = None
         self.res = {}
 
+    def odr_routine(self, **odrargs) -> None:
+        xdata, ydata, yerr, xerr = self.data
+        beta0 = self.res['init']
+        from scipy import odr
+        method = self.res['func']
+        def fit_model(pars, x):
+            return method(x, *pars)
+        model = odr.Model(fit_model)
+        data = odr.RealData(xdata,ydata,sx=xerr,sy=yerr)
+        alg = odr.ODR(data, model, beta0=beta0,**odrargs)
+        out = alg.run()
+        pop = out.beta
+        pcov = out.cov_beta
+        Dpop = np.sqrt(pcov.diagonal())
+        self.fit_par = pop
+        self.fit_err = Dpop
+        self.res['cov'] = pcov
+        if yerr is not None or xerr is not None:
+            chisq = out.sum_square
+            chi0 = len(ydata) - len(pop)
+            self.res['chisq'] = (chisq, chi0)
 
-    def fit(self, method: Callable[[Any,Any],Any], initial_values: Sequence[Any], **kwargs) -> None:
+    def chi_routine(self, err_func: Callable[[ArrayLike,ArrayLike,Any], ArrayLike] | None = None, iter: int = 3, **chiargs) -> None:
+        xdata, ydata, yerr, xerr = self.data
+        initial_values = self.res['init']
+        method = self.res['func']
+        from scipy.optimize import curve_fit
+        if yerr is None: 
+            chiargs['absolute_sigma'] = False
+        pop, pcov = curve_fit(method, xdata, ydata, initial_values, sigma=yerr, **chiargs)
+        sigma = yerr
+        print('XERR',xerr)
+        if xerr is not None:
+            initial_values = [*pop]
+            sigma = np.sqrt(yerr**2 + err_func(xdata,xerr,*pop))
+            for _ in iter:
+                pop, pcov = curve_fit(method, xdata, ydata, initial_values, sigma=sigma, **chiargs)
+                initial_values = [*pop]
+                sigma = np.sqrt(yerr**2 + err_func(xdata,xerr,*pop))
+        Dpop = np.sqrt(pcov.diagonal())
+        self.fit_par = pop
+        self.fit_err = Dpop
+        self.res['cov'] = pcov
+        if sigma is not None:
+            chisq = np.sum(((ydata - method(xdata,*pop)) / sigma)**2)
+            chi0 = len(ydata) - len(pop)
+            self.res['chisq'] = (chisq, chi0)        
+            
+
+    def fit(self, method: Callable[[Any,Any],Any], initial_values: Sequence[Any], mode: Literal['odr','curve_fit'] = 'odr', **fitargs) -> None:
         """To compute the fit
 
         Parameters
@@ -496,28 +581,18 @@ class FuncFit():
         """
         # importing the function
         xdata, ydata = self.data[:2]
-        sigma = self.data[2]
-        Dx = self.data[3]
-        if len(xdata) != len(ydata): raise Exception(f'Different arrays length:\nxdata : {len(xdata)}\nydata : {len(ydata)}')
+        if len(xdata) != len(ydata): return IndexError(f'different arrays length:\nxdata : {len(xdata)}\nydata : {len(ydata)}')
         self.res['func'] = method
-        from scipy import odr
-        def fit_model(pars, x):
-            return method(x, *pars)
-        model = odr.Model(fit_model)
-        data = odr.RealData(xdata,ydata,sx=Dx,sy=sigma)
-        alg = odr.ODR(data, model, beta0=initial_values)
-        out = alg.run()
-        pop = out.beta
-        pcov = out.cov_beta
-        Dpop = np.sqrt(pcov.diagonal())
-        self.fit_par = pop
-        self.fit_err = Dpop
-        self.res['cov'] = pcov
-        if sigma is not None or Dx is not None:
-            chisq = out.sum_square
-            chi0 = len(ydata) - len(pop)
-            self.res['chisq'] = (chisq, chi0)
-    
+        self.res['init'] = np.copy(initial_values)
+        # if Dx is None: mode = 'curve_fit'
+        self.res['mode'] = mode
+        if mode == 'curve_fit':
+            self.chi_routine(**fitargs)
+        elif mode == 'odr':
+            self.odr_routine(**fitargs)
+        else: return ValueError(f'mode = `{mode}` is not accepted')
+
+
     def infos(self, names: Sequence[str] | None = None) -> None:
         """To plot information about the fit
 
@@ -529,17 +604,34 @@ class FuncFit():
         pop  = self.fit_par
         Dpop = self.fit_err
         print('\nFit results:')
+        print('\tmode : '+self.res['mode'])
+        initial_values = self.res['init']        
         if names is None:
             names = [f'par{i}' for i in range(len(pop))]
-        for name, par, Dpar in zip(names,pop,Dpop):
-            print(f'\t{name}: {par:.2} +- {Dpar:.2}  -->  {abs(Dpar/par)*100:.2f} %')
+        for name, par, Dpar, init in zip(names,pop,Dpop,initial_values):
+            fmt_m, fmt_u = unc_format(par,Dpar)
+            fmt_measure = '\t{name}: {par:' + fmt_m[1:] + '} +/- {Dpar:' + fmt_u[1:] + '}  -->  {relerr:.2f} %\tinit : {init:.2}'
+            # if Dpar != 0. : fmt_measure = fmt_measure + 
+            try:
+                info_str = fmt_measure.format(name=name, par=par, Dpar=Dpar,relerr=abs(Dpar/par)*100,init=init)
+            except ValueError:
+                info_str = f'\t{name}: {par} +/- {Dpar}  -->  {abs(Dpar/par)*100:.2f} %\tinit : {init:.2}'
+            print(info_str)
+        cov = self.res['cov']
+        corr = np.array([ cov[i,j]/np.sqrt(cov[i,i]*cov[j,j]) for i in range(cov.shape[0]) for j in range(i+1,cov.shape[1])])
+        names = np.array([ names[i] + '-' + names[j] for i in range(cov.shape[0]) for j in range(i+1,cov.shape[1])])
+        for c, name in zip(corr,names):
+            print(f'\tcorr_{name}\t = {c:.2}')
         if 'chisq' in self.res:
             chisq, chi0 = self.res['chisq']
+            Dchi0 = np.sqrt(2*chi0)
+            res = '"OK"' if abs(chisq-chi0) <= Dchi0 else '"NO"'
             if chi0 == 0:
                 print('! ERROR !')
                 print('\t',chisq,chi0)
-                raise Exception('Null degrees of freedom. Few points for the fit!')
-            print(f'\tred_chi = {chisq/chi0*100:.2f} +- {np.sqrt(2/chi0)*100:.2f} %')
+                raise ValueError('Null degrees of freedom. Overfitting!')
+            print(f'\tchi_sq = {chisq:.2f}  -->  red = {chisq/chi0*100:.2f} %')
+            print(f'\tchi0 = {chi0:.2f} +/- {Dchi0:.2f}  -->  '+res)
 
     def results(self) -> tuple[ndarray, ndarray] | tuple[None, None]:
         return np.copy(self.fit_par), np.copy(self.fit_err)
@@ -555,11 +647,11 @@ class FuncFit():
     def residuals(self) -> ArrayLike:
         return self.data[1] - self.fvalues()
 
-    def pipeline(self,method: Callable[[Any,Any],Any], initial_values: Sequence[Any], names: Sequence[str] | None = None,**kwargs) -> None:
-        self.fit(method=method,initial_values=initial_values,**kwargs)
+    def pipeline(self,method: Callable[[Any,Any],Any], initial_values: Sequence[Any], names: Sequence[str] | None = None, mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
+        self.fit(method=method,initial_values=initial_values,mode=mode,**fitargs)
         self.infos(names=names)
     
-    def gaussian_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('k','mu','sigma'),**kwargs) -> None:
+    def gaussian_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('k','mu','sigma'),mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
         """To fit with a Gaussian
 
         Parameters
@@ -569,21 +661,88 @@ class FuncFit():
         names : list[str] | None, optional
             names, by default None
         """
-        def gauss_func(data: float | ndarray, *args) -> float | ndarray:
+        def gauss_func(data: ArrayLike, *args) -> ArrayLike:
             k, mu, sigma = args
             z = (data - mu) / sigma
             return k * np.exp(-z**2/2)
+        
+        self.pipeline(method=gauss_func,initial_values=initial_values,names=names,mode=mode,**fitargs)
+        
+        def err_func(xdata: ArrayLike, Dx: ArrayLike | None) -> ArrayLike:
+            par = self.fit_par
+            cov = self.res['cov']
+            coeff = gauss_func(xdata,*par) 
+            der = np.array([np.ones(xdata.shape)/par[0],
+                            (xdata-par[1])/par[2]**2,
+                            (xdata-par[1])**2/par[2]**3])
+            der *= coeff
+            err = np.sum([ der[i]*der[j] * cov[i,j] for i in range(3) for j in range(3)],axis=0)
+            if Dx is not None:
+                err += (coeff * (xdata-par[1]) / par[2]**2 * Dx )**2
+            err = np.sqrt(err)
+            return err
+        self.res['errfunc'] = err_func
 
-        self.pipeline(method=gauss_func,initial_values=initial_values,names=names,**kwargs)
+    def voigt_fit(self, initial_values: Sequence[float], names: Sequence[str] = ['sigma','gamma','k','median'], mode: Literal['odr','curve_fit'] = 'odr',**fitargs):
+        def voigt_func(data: ArrayLike, *args) -> ArrayLike:
+            from scipy.special import voigt_profile
+            sigma, gamma, k, mu = args
+            return k*voigt_profile(data-mu,sigma,gamma)
+        
+        self.pipeline(method=voigt_func,initial_values=initial_values,names=names,mode=mode, **fitargs)
 
-    def pol_fit(self, ord: int, initial_values: Sequence[float], names: Sequence[str] | None = None) -> None:
+
+    def pol_fit(self, ord: int, initial_values: Sequence[float], names: Sequence[str] | None = None, mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
         def pol_func(x, *args):
             poly = [ args[i] * x**(ord - i) for i in range(ord+1)]
             return np.sum(poly,axis=0)
-        self.pipeline(pol_func,initial_values=initial_values,names=names)
+        
+        self.pipeline(pol_func,initial_values=initial_values,names=names, mode=mode, **fitargs)
+        
+        def err_func(xdata: ArrayLike, Dx: ArrayLike | None) -> ArrayLike:
+            par = self.fit_par
+            cov = self.res['cov']
+            der = lambda i : xdata**(ord-i)
+            err = np.sum([ der(i)*der(j) * cov[i,j] for i in range(ord+1) for j in range(ord+1)],axis=0)
+            if Dx is not None:
+                err += (np.sum([ par[i] * (ord-i) * xdata**(ord-i-1) for i in range(ord)],axis=0) * Dx)**2
+            err = np.sqrt(err)
+            return err
+        self.res['errfunc'] = err_func
 
-    def linear_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('m','q')) -> None:
-        self.pol_fit(ord=1, initial_values=initial_values, names=names)
+    def linear_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('m','q'), mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
+        self.pol_fit(ord=1, initial_values=initial_values, names=names, mode=mode, **fitargs)
+    
+    def sigma(self) -> ArrayLike:
+        err_func = self.res['errfunc']
+        xdata, _, Dy, Dx = self.data
+        err = err_func(xdata,Dx)
+        if Dy is not None:
+            err = np.sqrt(Dy**2 + err**2)
+        return err
+
+    def plot(self, sel: Literal['data','residuals','all'] = 'all', mode: Literal['plots', 'subplots'] = 'plots', points_num: int = 200) -> None:
+        xdata = self.data[0]
+        if sel == 'all' and mode == 'subplots':
+            xx = np.linspace(xdata.min(),xdata.max(),points_num)
+            fig = plt.figure()
+            ax1, ax2 = fig.subplots(2, 1, sharex=True, gridspec_kw=dict(height_ratios=[2, 1], hspace=0.05))        
+            ax1.errorbar(*self.data,fmt='.')
+            ax1.plot(xx,self.method(xx))
+            ax1.grid(color='lightgray', ls='dashed')
+            ax2.errorbar(xdata,self.residuals(),self.sigma(),fmt='.')
+            ax2.axhline(0,0,1,color='black')
+            ax2.grid(color='lightgray', ls='dashed')
+        else:
+            if sel in ['data','all']:
+                xx = np.linspace(xdata.min(),xdata.max(),points_num)
+                plt.figure()
+                plt.errorbar(*self.data,fmt='.')
+                plt.plot(xx,self.method(xx))
+            if sel in ['residuals', 'all']:
+                plt.figure()
+                plt.errorbar(xdata,self.residuals(),self.sigma(),fmt='.')
+                plt.axhline(0,0,1,color='black')
 
 def mean_n_std(data: ArrayLike, axis: int | None = None, weights: Sequence[Any] | None = None) -> tuple[float, float]:
     """To compute the mean and standard deviation from it
@@ -679,6 +838,7 @@ def hotpx_remove(data: ndarray) -> ndarray:
     return data
 
 def magnitude_order(number: ArrayLike) -> ArrayLike:
+    number = np.abs(number) 
     order = np.floor(np.log10(number)).astype(int)
     return order
 
@@ -689,3 +849,17 @@ def unc_format(value: ArrayLike, err: ArrayLike) -> list[str]:
     fmt = [f'%.{order:d}e',r'%.1e']
     return fmt
 
+
+def argmax(arr: ndarray, out: Literal['ndarray','tuple'] = 'tuple' , **maxkw) -> ndarray:
+    maxpos = np.unravel_index(np.argmax(arr, **maxkw), arr.shape)
+    if out == 'tuple':
+        return maxpos
+    elif out == 'ndarray':
+        return np.array([*maxpos])
+
+def argmin(arr: ndarray, out: Literal['ndarray','tuple'] = 'tuple', **minkw) -> tuple[ndarray,ndarray] | ndarray:
+    minpos = np.unravel_index(np.argmin(arr, **minkw), arr.shape)
+    if out == 'tuple':
+        return minpos
+    elif out == 'ndarray':
+        return np.array([*minpos])
