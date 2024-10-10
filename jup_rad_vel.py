@@ -52,27 +52,88 @@ def display_lines(minpos: float, edges: tuple[float, float]) -> None:
 
 if __name__ == '__main__':
 
-    # ## Calibration with Vega
-    # obs_night = '22-07-26_ohp'
-    # target_name = 'vega' 
-    # selection = 0
-
-    # ord_lamp = 2
-    # ord_balm = 2
-    # display_plots = False
-    # vega, v_lamp = spc.calibration(obs_night, target_name, selection, ord_lamp=ord_lamp, ord_balm=ord_balm, display_plots=False)
-
-    # target_name = 'giove'    
-    # jupiter, lamp = spc.calibration(obs_night, target_name, selection, angle=vega.angle, other_lamp=v_lamp, display_plots=display_plots)
-
-    # spc.show_fits(jupiter,show=True)
-
-    ## Jupiter 
+    ## DATA
     obs_night = '18-04-22'
     target_name = 'giove'    
     selection = 0
-    jupiter, lamp = spc.get_target_data(obs_night,target_name,selection,angle=None,gauss_corr=False,lamp_incl=False)
+    fit_args = {    'mode': 'curve_fit',
+                    'absolute_sigma': True }
+    fit_args = {    'mode': 'odr' }
+    lim_width = [[0,1391],[[0,112],[108,221]]]
+    lag = 20
+    jupiter, lamp = spc.get_target_data(obs_night,target_name,selection,angle=None,lim_width=lim_width,lag=lag,gauss_corr=False,lamp_incl=False, fit_args=fit_args, diagn_plots=False)
+    heights = np.array([710+i*5 for i in range(4)])
+    lamp.spec, lamp.std = spc.mean_n_std(lamp.data[heights],axis=0)
+    plt.errorbar(np.arange(*lamp.spec.shape),lamp.spec,lamp.std,fmt='.-')
+    plt.show()
 
+    ## WAVELENGTH CALIBRATION
+    lines, px, Dpx = spc.get_cal_lines(obs_night,target_name)
+    Dlines = lines/20000 / 2
+
+    m0 = np.mean(np.diff(lines)/np.diff(px))
+    fit = spc.FuncFit(xdata=px,xerr=Dpx,ydata=lines,yerr=Dlines)
+    fit.linear_fit([m0,0])
+    fit.plot(mode='subplots',points_num=3)
+    plt.show()
+
+    ## BALMER CALIBRATION
+    data = jupiter.data.copy()
+    row_mean = np.mean(data,axis=1)
+    norm_data = np.array([data[i,:] / row_mean[i] for i in range(len(data))])
+    jupiter.spec, jupiter.std = spc.mean_n_std(norm_data,axis=0)
+    print('LEN',len(jupiter.spec),np.diff(jupiter.lims[2:]))
+    jupiter.func = [fit.method, fit.res['errfunc']]
+    jupiter.compute_lines()
+
+    cut = 0.867
+
+    plt.figure()
+    plt.errorbar(*jupiter.spectral_data(plot_format=True),fmt='.-')
+    display_lines(jupiter.spec.min(),(jupiter.lines.min(), jupiter.lines.max()))
+    plt.grid()
+    plt.axhline(cut,0,1,color='k',linestyle='dashed',alpha=0.5)
+    plt.show()
+
+    slice_pos = np.where(jupiter.spec <= cut)[0]
+    slice_data = [ elem[slice_pos] for elem in jupiter.spectral_data(True)]
+
+
+    shift = slice_data[1].max()
+    x = slice_data[0] 
+    y = slice_data[1] = shift - slice_data[1]
+
+    hm = (y.max()-y.min())/2
+    hm_pos = np.argmin(np.abs(hm-y))
+    peak_pos = y.argmax()
+    hwhm = abs(x[peak_pos]-x[hm_pos])/2
+    fit = spc.FuncFit(*slice_data)
+    fit.voigt_fit([hwhm,hwhm,y.max(),x.mean()])
+    # fit.plot(sel='data')
+
+    slice_data[1] = shift - slice_data[1] 
+    plt.figure()
+    xx = np.linspace(x.min(),x.max(),200)
+    plt.errorbar(*slice_data,fmt='.--')
+    plt.plot(xx,shift - fit.method(xx))
+    display_lines(jupiter.spec.min(),(jupiter.lines.min(), jupiter.lines.max()))
+    plt.grid()
+    plt.show()
+
+    med, Dmed = fit.fit_par[-1], fit.fit_err[-1]
+
+    shift = med - balmer[0]
+    Dshift = np.sqrt(Dmed**2 + bal_err[0])
+
+    jupiter.lines -= shift
+    jupiter.errs = np.sqrt(jupiter.errs**2 + Dshift**2)
+    plt.figure()
+    plt.errorbar(jupiter.lines,norm_data[10], xerr=jupiter.errs,fmt='.-', color='violet')
+    plt.errorbar(jupiter.lines,norm_data[-10], xerr=jupiter.errs,fmt='.-', color='red')
+    # plt.errorbar(*jupiter.spectral_data(plot_format=True),fmt='.-')
+    display_lines(jupiter.spec.min(),(jupiter.lines.min(), jupiter.lines.max()))
+    plt.grid()
+    plt.show()
 
     # cuts = [0,5,10,20]
 

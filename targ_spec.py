@@ -75,12 +75,12 @@ if __name__ == '__main__':
     2  - Regolo
     3  - WR140
     """    
-    # night, target_name, selection = TARGETS[0]
+    night, target_name, selection = TARGETS[0]
 
-    # ord1 = 2
-    # ord2 = 3
-    # display_plots = True
-    # target, lamp = spc.calibration(night, target_name, selection, ord_lamp=ord1, ord_balm=ord2, display_plots=False)
+    ord1 = 2
+    ord2 = 3
+    display_plots = True
+    target, lamp = spc.calibration(night, target_name, selection, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=True)
 
     # # - - #
 
@@ -101,13 +101,13 @@ if __name__ == '__main__':
 
     ord_lamp = 2
     ord_balm = 2
-    display_plots = False
-    target, lamp = spc.calibration(night, target_name, selection,lag=7,row_num=4, ord_lamp=ord_lamp, ord_balm=ord_balm, display_plots=display_plots)
+    display_plots = True
+    target, lamp = spc.calibration(night, target_name, selection,lag=7,row_num=4, ord_lamp=ord_lamp, ord_balm=ord_balm, display_plots=display_plots,diagn_plots=True)
     
     
-    night, target_name, selection = TARGETS[5]
+    # night, target_name, selection = TARGETS[5]
 
-    target, lamp = spc.calibration(night, target_name, selection, angle=target.angle, other_lamp=lamp, display_plots=True,diagn_plots=True)
+    # target, lamp = spc.calibration(night, target_name, selection, angle=target.angle, other_lamp=lamp, display_plots=True,diagn_plots=True)
 
     
 
