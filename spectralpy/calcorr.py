@@ -127,7 +127,7 @@ def compute_master_flat(flat: Spectrum, master_dark: Spectrum | None = None, mas
         _ = show_fits(master_flat,show=True,**figargs)
     return master_flat
 
-def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], cut: bool = True, angle: float | None = 0, gauss_corr: bool = True, lamp_incl: bool = True, display_plots: bool = True, diagn_plots: bool = False,**figargs) -> tuple[Spectrum, Spectrum]:
+def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], cut: bool = True, angle: float | None = 0, lim_width: Sequence | None = None, lag: int = 10, fit_args: dict = {}, gauss_corr: bool = True, lamp_incl: bool = True, display_plots: bool = True, diagn_plots: bool = False,**figargs) -> tuple[Spectrum, Spectrum]:
     """To get the science frames of target and its calibration lamp
 
     Parameters
@@ -229,14 +229,14 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
         exit_cond = False  
         norm = 'linear'
         if cut:    
-            target, angle = target.angle_correction(angle=angle, gauss_corr=gauss_corr, diagn_plots=diagn_plots)      
+            target, angle = target.angle_correction(angle=angle, gauss_corr=gauss_corr, lim_width=lim_width, lag=lag, diagn_plots=diagn_plots, fit_args=fit_args)      
             if np.all(target.lims == IMAGE_ENDS): 
                 exit_cond = True
                 norm = 'log'
             target.cut_image()
             if lamp.name != 'empty':
                 if lamp_incl: 
-                    lamp, _ = lamp.angle_correction(angle=angle, gauss_corr=gauss_corr, diagn_plots=diagn_plots)      
+                    lamp, _ = lamp.angle_correction(angle=angle, gauss_corr=gauss_corr,lim_width=lim_width, lag=lag, diagn_plots=diagn_plots, fit_args=fit_args)      
                 lamp.cut_image()
     else:
         exit_cond = True  
@@ -261,7 +261,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     if exit_cond: exit()
     return target, lamp
 
-def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: int = 2, initial_values: Sequence[float] | None = None, display_plots: bool = True) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
+def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: int = 2, lines_err: float = 3.63, initial_values: Sequence[float] | None = None, fit_args: dict = {}, display_plots: bool = True) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
     """To compute the calibration function
 
     Parameters
@@ -304,13 +304,13 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: 
         exit()
     # shift the pixels
     pxs += trsl
-    Dlines = np.full(lines.shape,3.63)      #: uncertainties of the lines in armstrong
+    Dlines = np.full(lines.shape,lines_err)      #: uncertainties of the lines in armstrong
     if initial_values is None:
         initial_values = [0] + [1]*(ord-1) + [np.mean(pxs)]
     
     ## Fit
     fit = FuncFit(xdata=pxs,ydata=lines,xerr=errs,yerr=Dlines)
-    fit.pol_fit(ord=ord,initial_values=initial_values)
+    fit.pol_fit(ord=ord,initial_values=initial_values,**fit_args)
     pop = fit.fit_par.copy()
     cov = fit.res['cov']
 
@@ -337,7 +337,7 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: 
         plt.show()
     return px_to_arm, err_func
 
-def balmer_calibration(ch_obs: str, ch_obj: str, target: Spectrum, lamp_cal: tuple[Callable, Callable], ord: int = 3, initial_values: Sequence[float] | None = None, display_plots: bool = True) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
+def balmer_calibration(ch_obs: str, ch_obj: str, target: Spectrum, lamp_cal: tuple[Callable, Callable], ord: int = 3, initial_values: Sequence[float] | None = None, fit_arg: dict = {}, display_plots: bool = True) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
     
     tmp_target = target.copy()
     
@@ -367,7 +367,7 @@ def balmer_calibration(ch_obs: str, ch_obj: str, target: Spectrum, lamp_cal: tup
     fit = FuncFit(xdata=lines, xerr=errs, ydata=balm, yerr=balmerr)
     if initial_values is None:
         initial_values = [0] + [1]*(ord-1) + [np.mean(lines)]
-    fit.pol_fit(ord, initial_values=initial_values)
+    fit.pol_fit(ord, initial_values=initial_values,**fit_arg)
     pop = fit.fit_par.copy()
     cov = fit.res['cov']
 
@@ -455,7 +455,7 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
     shift = np.argmax(corr) - (len(corr)/2)  
     return shift
 
-def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, gauss_corr: bool = True, height: ArrayLike | None = None, row_num: int = 3, lag: int = 10, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
+def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, gauss_corr: bool = True, angle_fitargs: dict = {}, height: ArrayLike | None = None, row_num: int = 3, lag: int = 10, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, lamp_fitargs: dict = {}, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, balmer_fitargs: dict = {}, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
     """To open and calibrate data
 
     Parameters
@@ -501,7 +501,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     """    
     ## Data
     # extract data
-    target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, gauss_corr=gauss_corr, display_plots=display_plots, diagn_plots=diagn_plots,**figargs)
+    target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, gauss_corr=gauss_corr, fit_args=angle_fitargs, display_plots=display_plots, diagn_plots=diagn_plots,**figargs)
     # normalize along the x axis
     data = target.data.mean(axis=1)
     data = np.array([ target.data[i,:] / data[i] for i in range(len(data)) ])
@@ -549,9 +549,9 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         target.compute_lines(shift=shift)
     elif lamp.name != 'empty':
         # compute the calibration function via fit
-        cal_func, err_func = lines_calibration(ch_obs, ch_obj, trsl=lamp.lims[2], lamp=lamp, ord=ord_lamp, initial_values=initial_values_lamp, display_plots=display_plots)
+        cal_func, err_func = lines_calibration(ch_obs, ch_obj, trsl=lamp.lims[2], lamp=lamp, ord=ord_lamp, initial_values=initial_values_lamp, fit_args=lamp_fitargs, display_plots=display_plots)
         if balmer_cal:
-            cal_func, err_func = balmer_calibration(ch_obs, ch_obj, target=target, lamp_cal=(cal_func,err_func), ord=ord_balm, initial_values=initial_values_balm, display_plots=display_plots)
+            cal_func, err_func = balmer_calibration(ch_obs, ch_obj, target=target, lamp_cal=(cal_func,err_func), ord=ord_balm, initial_values=initial_values_balm, fit_arg=balmer_fitargs, display_plots=display_plots)
         # store results
         lamp.func = [cal_func, err_func]
         target.func = [*lamp.func]
