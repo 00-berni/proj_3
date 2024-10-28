@@ -104,19 +104,5 @@ Fit results:
 	corr_m-q	 = -0.85
 	chi_sq = 0.81  -->  red = 80.63 %
 	chi0 = 1.00 +/- 1.41  -->  "OK"
-LEN 1371 [1371]
-
-Fit results:
-	mode : odr
-	sigma: 7.3e-01 +/- 5.3e-01  -->  72.75 %	init : 0.28
-	gamma: -8e-01 +/- 1.6e+00  -->  203.61 %	init : 0.28
-	k: 1.5e-01 +/- 1.6e-01  -->  109.85 %	init : 0.23
-	median: 6.563213e+03 +/- 4.2e-02  -->  0.00 %	init : 6.6e+03
-	corr_sigma-gamma	 = -1.0
-	corr_sigma-k	 = -0.99
-	corr_sigma-median	 = 0.088
-	corr_gamma-k	 = 0.99
-	corr_gamma-median	 = -0.094
-	corr_k-median	 = -0.1
-	chi_sq = 0.21  -->  red = 1.06 %
-	chi0 = 20.00 +/- 6.32  -->  "NO"
+Select ends separate by comma: CORR 0
+[-81  81]
