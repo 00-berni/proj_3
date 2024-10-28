@@ -27,6 +27,8 @@ from numpy.typing import ArrayLike
 from typing import Callable, Sequence, Any, Literal
 from astropy.io.fits import HDUList
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.axes import Axes
 
 
 class Spectrum():
@@ -111,6 +113,8 @@ class Spectrum():
         self.lims = lims
         self.cut  = cut 
         self.angle = None
+        self.sldata  : None | ndarray = None
+        self.slsigma : None | ndarray = None
         self.spec  : None | ndarray = None
         self.std   : None | ndarray = None
         self.lines : None | ndarray = None
@@ -122,11 +126,7 @@ class Spectrum():
         # take the header
         hdr = self.hdul[0].header
         print(' - HEADER -')
-        for parameter in hdr:
-            hdr_info = f'{parameter} =\t{hdr[parameter]}' 
-            comm = hdr.comments[parameter]
-            if comm != '': hdr_info = hdr_info + ' \ ' + comm 
-            print(hdr_info)
+        print(hdr.tostring(sep='\n'))
         print()
     
     def get_exposure(self) -> float:
@@ -459,6 +459,13 @@ class Spectrum():
             return self.data * spec.data
         else:
             return self.data * spec
+    
+    def __getitem__(self, index: int | Sequence[int | slice] | slice) -> ndarray:
+        return self.data[index]
+
+    # def __setitem__(self, index: int | Sequence[int | slice] | slice, value: ArrayLike) -> None:
+    #     self.data[index] = value
+
 
 class FuncFit():
     """To compute the fit procedure of some data
@@ -542,7 +549,7 @@ class FuncFit():
             chi0 = len(ydata) - len(pop)
             self.res['chisq'] = (chisq, chi0)
 
-    def chi_routine(self, err_func: Callable[[ArrayLike,ArrayLike,Any], ArrayLike] | None = None, iter: int = 3, **chiargs) -> None:
+    def chi_routine(self, err_func: Callable[[ArrayLike,ArrayLike,ArrayLike], ArrayLike] | None = None, iter: int = 3, **chiargs) -> None:
         xdata, ydata, yerr, xerr = self.data
         initial_values = self.res['init']
         method = self.res['func']
@@ -553,12 +560,13 @@ class FuncFit():
         sigma = yerr
         print('XERR',xerr)
         if xerr is not None:
+            if yerr is None: yerr = 0
             initial_values = [*pop]
-            sigma = np.sqrt(yerr**2 + err_func(xdata,xerr,*pop))
-            for _ in iter:
+            sigma = np.sqrt(yerr**2 + err_func(xdata,xerr,pop))
+            for _ in range(iter):
                 pop, pcov = curve_fit(method, xdata, ydata, initial_values, sigma=sigma, **chiargs)
                 initial_values = [*pop]
-                sigma = np.sqrt(yerr**2 + err_func(xdata,xerr,*pop))
+                sigma = np.sqrt(yerr**2 + err_func(xdata,xerr,pop))
         Dpop = np.sqrt(pcov.diagonal())
         self.fit_par = pop
         self.fit_err = Dpop
@@ -615,7 +623,7 @@ class FuncFit():
             try:
                 info_str = fmt_measure.format(name=name, par=par, Dpar=Dpar,relerr=abs(Dpar/par)*100,init=init)
             except ValueError:
-                info_str = f'\t{name}: {par} +/- {Dpar}  -->  {abs(Dpar/par)*100:.2f} %\tinit : {init:.2}'
+                info_str = f'\t{name}: {par} +/- {Dpar}  -->  {abs(Dpar/par)*100.0:.2f} %\tinit : {init*1.0:.2}'
             print(info_str)
         cov = self.res['cov']
         corr = np.array([ cov[i,j]/np.sqrt(cov[i,i]*cov[j,j]) for i in range(cov.shape[0]) for j in range(i+1,cov.shape[1])])
@@ -666,11 +674,15 @@ class FuncFit():
             z = (data - mu) / sigma
             return k * np.exp(-z**2/2)
         
+        def err_der(x: ArrayLike, Dx: ArrayLike, par: ArrayLike) -> ArrayLike:
+            coeff = gauss_func(x,*par) 
+            return np.abs(coeff * (x-par[1]) / par[2]**2 * Dx)
+
+        if mode == 'curve_fit': 
+            fitargs['err_func'] = err_der
         self.pipeline(method=gauss_func,initial_values=initial_values,names=names,mode=mode,**fitargs)
         
-        def err_func(xdata: ArrayLike, Dx: ArrayLike | None) -> ArrayLike:
-            par = self.fit_par
-            cov = self.res['cov']
+        def err_func(xdata: ArrayLike, Dx: ArrayLike | None, par: ArrayLike, cov: ArrayLike) -> ArrayLike:
             coeff = gauss_func(xdata,*par) 
             der = np.array([np.ones(xdata.shape)/par[0],
                             (xdata-par[1])/par[2]**2,
@@ -678,12 +690,19 @@ class FuncFit():
             der *= coeff
             err = np.sum([ der[i]*der[j] * cov[i,j] for i in range(3) for j in range(3)],axis=0)
             if Dx is not None:
-                err += (coeff * (xdata-par[1]) / par[2]**2 * Dx )**2
+                err += ( err_der(xdata, Dx, par))**2
             err = np.sqrt(err)
             return err
-        self.res['errfunc'] = err_func
+        error_function = lambda x, Dx : err_func(x,Dx,self.fit_par,self.res['cov'])
+        self.res['errfunc'] = error_function
 
     def voigt_fit(self, initial_values: Sequence[float], names: Sequence[str] = ['sigma','gamma','k','median'], mode: Literal['odr','curve_fit'] = 'odr',**fitargs):
+        # def voigt_func(data: ArrayLike, *args) -> ArrayLike:
+        #     sigma, gamma, k, mu_g, mu_l = args
+        #     gauss = np.exp(-((data-mu_g)/sigma)**2/2) / np.sqrt(2*np.pi*sigma**2)
+        #     loren = gamma / ((data-mu_l)**2 + gamma**2) / np.pi
+        #     voigt = np.convolve(gauss,loren,mode='same')
+        #     return k * voigt / voigt.mean()
         def voigt_func(data: ArrayLike, *args) -> ArrayLike:
             from scipy.special import voigt_profile
             sigma, gamma, k, mu = args
@@ -693,22 +712,26 @@ class FuncFit():
 
 
     def pol_fit(self, ord: int, initial_values: Sequence[float], names: Sequence[str] | None = None, mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
-        def pol_func(x, *args):
+        def pol_func(x: ArrayLike, *args) -> ArrayLike:
             poly = [ args[i] * x**(ord - i) for i in range(ord+1)]
             return np.sum(poly,axis=0)
         
+        def err_der(x: ArrayLike, Dx: ArrayLike, par: ArrayLike) -> ArrayLike:
+            return np.abs(np.sum([ par[i] * (ord-i) * x**(ord-i-1) for i in range(ord)],axis=0) * Dx)
+
+        if mode == 'curve_fit': 
+            fitargs['err_func'] = err_der
         self.pipeline(pol_func,initial_values=initial_values,names=names, mode=mode, **fitargs)
         
-        def err_func(xdata: ArrayLike, Dx: ArrayLike | None) -> ArrayLike:
-            par = self.fit_par
-            cov = self.res['cov']
+        def err_func(xdata: ArrayLike, Dx: ArrayLike | None, par: ArrayLike, cov: ArrayLike) -> ArrayLike:
             der = lambda i : xdata**(ord-i)
             err = np.sum([ der(i)*der(j) * cov[i,j] for i in range(ord+1) for j in range(ord+1)],axis=0)
             if Dx is not None:
-                err += (np.sum([ par[i] * (ord-i) * xdata**(ord-i-1) for i in range(ord)],axis=0) * Dx)**2
+                err += (err_der(xdata,Dx,par))**2
             err = np.sqrt(err)
             return err
-        self.res['errfunc'] = err_func
+        error_function = lambda x, Dx : err_func(x, Dx, self.fit_par, self.res['cov'])
+        self.res['errfunc'] = error_function
 
     def linear_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('m','q'), mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
         self.pol_fit(ord=1, initial_values=initial_values, names=names, mode=mode, **fitargs)
@@ -721,28 +744,42 @@ class FuncFit():
             err = np.sqrt(Dy**2 + err**2)
         return err
 
-    def plot(self, sel: Literal['data','residuals','all'] = 'all', mode: Literal['plots', 'subplots'] = 'plots', points_num: int = 200) -> None:
+    def data_plot(self, ax: Axes, points_num: int = 200, grid: bool = True, pltarg1: dict = {}, pltarg2: dict = {}) -> None:
         xdata = self.data[0]
+        xx = np.linspace(xdata.min(),xdata.max(),points_num)
+        if 'fmt' not in pltarg1.keys():
+            pltarg1['fmt'] = '.'        
+        ax.errorbar(*self.data,**pltarg1)
+        ax.plot(xx,self.method(xx),**pltarg2)
+        if grid: ax.grid(color='lightgray', ls='dashed')
+
+    def residuals_plot(self, ax: Axes, grid: bool = True, **pltargs) -> None:
+        xdata = self.data[0]
+        if 'fmt' not in pltargs.keys():
+            pltargs['fmt'] = '.'
+        ax.errorbar(xdata,self.residuals(),self.sigma(),**pltargs)
+        ax.axhline(0,0,1,color='black')
+        if grid: ax.grid(color='lightgray', ls='dashed')
+
+    def plot(self, sel: Literal['data','residuals','all'] = 'all', mode: Literal['plots', 'subplots'] = 'plots', points_num: int = 200, fig: None | Figure | tuple[Figure,Figure] = None, grid: bool = True, plot1: dict = {}, plot2: dict = {}, **resarg) -> None:
+        if fig is None:
+            if sel in ['data','all']: 
+                fig = plt.figure()
+            if sel in ['residuals', 'all'] and mode != 'subplots': 
+                fig2 = plt.figure()
+        elif isinstance(fig,tuple):
+            fig, fig2 = fig
         if sel == 'all' and mode == 'subplots':
-            xx = np.linspace(xdata.min(),xdata.max(),points_num)
-            fig = plt.figure()
             ax1, ax2 = fig.subplots(2, 1, sharex=True, gridspec_kw=dict(height_ratios=[2, 1], hspace=0.05))        
-            ax1.errorbar(*self.data,fmt='.')
-            ax1.plot(xx,self.method(xx))
-            ax1.grid(color='lightgray', ls='dashed')
-            ax2.errorbar(xdata,self.residuals(),self.sigma(),fmt='.')
-            ax2.axhline(0,0,1,color='black')
-            ax2.grid(color='lightgray', ls='dashed')
+            self.data_plot(ax=ax1,points_num=points_num,grid=grid,pltarg1=plot1,pltarg2=plot2)
+            self.residuals_plot(ax=ax2,**resarg)
         else:
             if sel in ['data','all']:
-                xx = np.linspace(xdata.min(),xdata.max(),points_num)
-                plt.figure()
-                plt.errorbar(*self.data,fmt='.')
-                plt.plot(xx,self.method(xx))
+                ax = fig.add_subplot(111)
+                self.data_plot(ax=ax, points_num=points_num,grid=grid,pltarg1=plot1,pltarg2=plot2)
             if sel in ['residuals', 'all']:
-                plt.figure()
-                plt.errorbar(xdata,self.residuals(),self.sigma(),fmt='.')
-                plt.axhline(0,0,1,color='black')
+                ax2 = fig2.add_subplot(111)
+                self.residuals_plot(ax=ax2,**resarg)
 
 def mean_n_std(data: ArrayLike, axis: int | None = None, weights: Sequence[Any] | None = None) -> tuple[float, float]:
     """To compute the mean and standard deviation from it
@@ -848,7 +885,7 @@ def unc_format(value: ArrayLike, err: ArrayLike) -> list[str]:
     order = val_ord - err_ord + 1
     fmt = [f'%.{order:d}e',r'%.1e']
     return fmt
-
+    
 
 def argmax(arr: ndarray, out: Literal['ndarray','tuple'] = 'tuple' , **maxkw) -> ndarray:
     maxpos = np.unravel_index(np.argmax(arr, **maxkw), arr.shape)
