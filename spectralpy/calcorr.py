@@ -244,14 +244,15 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     
     ## Plots
     if display_plots or exit_cond:
-        show_fits(target, title='Science Frame',norm=norm,**figargs)
+        figargs['norm'] = norm
+        show_fits(target, title='Science Frame',**figargs)
         if diagn_plots and target.sigma is not None: 
             plt.figure()
             plt.title('sigma targ')
             plt.imshow(target.sigma)
             plt.colorbar()
         if lamp.name != 'empty':
-            show_fits(lamp, title='Science Frame',norm=norm,**figargs)
+            show_fits(lamp, title='Science Frame',**figargs)
             if diagn_plots and lamp.sigma is not None: 
                 plt.figure()
                 plt.title('sigma lamp')
