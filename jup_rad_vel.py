@@ -122,11 +122,8 @@ if __name__ == '__main__':
 
     v  = np.array([])
     Dv = np.array([])
-    t  = np.array([])
-    Dt = np.array([])
     s  = np.array([])
     Ds = np.array([])
-    xxx = np.array([])
     fig, ax = plt.subplots(2,1)
     xdata = np.arange(data.shape[0])
     N = data.shape[1]
@@ -155,14 +152,10 @@ if __name__ == '__main__':
         v  = np.append(v,-b/2/a)
 
         Dv = np.append(Dv,err)
-        if delta >=0:
-            t = np.append(t,-b/2/a - np.sqrt(delta/4/a**2))
-            xxx = np.append(xxx,i)
     # plt.show()
     plt.figure()
     plt.imshow(data,origin='lower',norm='log',cmap='gray_r')
     plt.errorbar(xx,v,Dv,fmt='.-')
-    plt.plot(xxx,t,'.')
     plt.show()
 
 
@@ -184,9 +177,7 @@ if __name__ == '__main__':
                         [-np.sin(angle),np.cos(angle)] ])
     # _,p1 = rot_mat.dot(np.array([0,fit.fit_par[1]]))
     _,p1  = np.array([rot_mat.dot([xx[i],v[i]]) for i in range(len(xx))]).mean(axis=0)
-    _,t  = np.array([rot_mat.dot([xxx[i],t[i]]) for i in range(len(xxx))]).mean(axis=0)
-    print('mid',p1,'low',t)
-    print(p1-t)
+    print('mid',p1)
 
     uncut_data = jupiter.data.copy()
     jupiter.lims = [626,730,42,1391]
@@ -211,45 +202,21 @@ if __name__ == '__main__':
         fit.gaussian_fit([ydata.max(),xdata.mean(),2],mode='curve_fit')
         color1 = (i/N,0,0.5)
         color2 = (i/N,1-i/N,0.5)
-        fit.data_plot(ax[0],pltarg1={'color':color1},pltarg2={'color':color2})
-        fit.residuals_plot(ax[1],color=color1)
+        if i % 3 == 0 and i % 17 == 0:
+            fit.data_plot(ax[0],pltarg1={'color':color1},pltarg2={'color':color2})
+            fit.residuals_plot(ax[1],color=color1)
         k,mu,sigma = fit.fit_par
         Dk,Dmu,Dsigma = fit.fit_err
 
         cov = fit.res['cov']
         v  = np.append(v,mu)
         Dv = np.append(Dv,Dmu)
-
-        # ydata = data[:,i]
-        # fit = spc.FuncFit(xdata=xdata,ydata=ydata,xerr=1)
-        # fit.pol_fit(2,[-0.2,1,1],mode='curve_fit')
-        # color1 = (i/N,0,0.5)
-        # color2 = (i/N,1-i/N,0.5)
-        # fit.data_plot(ax[0],pltarg1={'color':color1},pltarg2={'color':color2})
-        # fit.residuals_plot(ax[1],color=color1)
-        # a,b,c = fit.fit_par
-        # cov = fit.res['cov']
-        # delta = b**2 - 4*a*c
-        # der = [ 4*c/(4*a) + delta/(4*a**2),
-        #         -2*b/(4*a),
-        #         1 ]
-        # err = np.sqrt(np.sum([der[j]*der[k]*cov[j,k] for k in range(len(der)) for j in range(len(der))]))
-        # s  = np.append(s,-delta/4/a)
-        # Ds = np.append(Ds,err)
-        # der = [ b/(2*a**2),
-        #         -1/(2*a) ]
-        # err = np.sqrt(np.sum([der[j]*der[k]*cov[j,k] for k in range(len(der)) for j in range(len(der))]))
-        # v  = np.append(v,-b/2/a)
-
-        # Dv = np.append(Dv,err)
-        # if delta >=0:
-        #     t = np.append(t,-b/2/a - np.sqrt(delta/4/a**2))
-        #     xxx = np.append(xxx,i)
-    # plt.show()
+        t  = np.append(t,mu-sigma)
+        Dt = np.append(Dt,np.sqrt(Dmu**2 + Dsigma**2))
     plt.figure()
     plt.imshow(data,origin='lower',norm='log',cmap='gray_r')
     plt.errorbar(xx,v,Dv,fmt='.-')
-    plt.plot(xxx,t,'.')
+    plt.plot(xx,t,'.')
     plt.show()
 
     plt.figure()
@@ -259,8 +226,13 @@ if __name__ == '__main__':
     plt.axvline(t.mean(),0,1,linestyle='--')
     plt.show()
 
-    p1 = v.mean()
-    t = -10#t.mean()
+
+    p1, Dp1 = spc.mean_n_std(v)
+    t, Dt = spc.mean_n_std(t)
+
+    print('P1',p1,Dp1,Dp1/p1*100)
+    print('T',t,Dt,Dt/t*100)
+     
     lim0 = jupiter.lims[0]
     jupiter.data = uncut_data.copy()
     jupiter.lims = [np.floor(t+lim0).astype(int),np.floor(2*p1-t+lim0).astype(int),42,1391]
@@ -271,6 +243,7 @@ if __name__ == '__main__':
     for i in range(data.shape[1])[::50]:
         plt.plot(data[:,i])
     plt.axvline(p1+lim0-jupiter.lims[0],0,1,linestyle='--')
+    plt.axvline(t+lim0-jupiter.lims[0],0,1,linestyle='--')
     plt.show()
 
 
@@ -285,11 +258,13 @@ if __name__ == '__main__':
 
     mid = p1+lim0-jupiter.lims[0]
     r = mid
+    Dr = np.sqrt(Dp1**2+Dt**2)
     plt.show()
     sel = input('Select the height: ')
-    bottom = 20 if sel == '' else int(sel)
+    bottom = 23 if sel == '' else int(sel)
     top = np.floor(2*mid - bottom).astype(int)
     h = mid - bottom
+    Dh = Dr
 
     print(bottom)
     if bottom > len(data): print('Oh no'); exit()
@@ -326,8 +301,10 @@ if __name__ == '__main__':
     else:
         px_val = np.arange(start,data.shape[1]+stop)
 
-    j1 = j1[slice(start,stop)] - data.mean(axis=0)[slice(start,stop)]
-    j2 = j2[slice(start,stop)] - data.mean(axis=0)[slice(start,stop)]
+    j1_p = j1[slice(start,stop)].copy()
+    j2_p = j2[slice(start,stop)].copy()
+    j1 = j1_p - data.mean(axis=0)[slice(start,stop)]
+    j2 = j2_p - data.mean(axis=0)[slice(start,stop)]
     plt.figure()
     plt.imshow(data[:,slice(start,stop)],cmap='gray_r',norm='log',origin='lower')
     plt.axhline(top,0,1,linestyle='dashed',color='black',alpha=0.7)
@@ -340,54 +317,48 @@ if __name__ == '__main__':
     plt.legend()
     plt.show()
     corr = np.correlate(j1,j2,mode='full')
+    from scipy.signal import find_peaks
+    pks, _ = find_peaks(corr,threshold=0.0001e8)
+    plt.figure()
+    plt.plot(corr)
+    plt.plot(pks,corr[pks],'.',color='red')
     lags = np.arange(len(corr)) - (len(j1)-1)
-    pos_corr = np.where(lags >= 0, corr, 0)
-    shift = lags[pos_corr.argmax()]
-    shift = lags[corr.argmax()]
-    print('CORR',shift)
+    p_corr = np.where(lags >= 0, corr, 0)
+    n_corr = np.where(lags <= 0, corr, 0)
+    shift1 = lags[n_corr.argmax()]
+    shift2 = lags[p_corr.argmax()]
+    # shift = lags[corr.argmax()]
+    print('CORR',shift1)
+    print('CORR',shift2)
     print(lags[[0,-1]])
     plt.figure()
     plt.plot(lags,corr)
+    plt.axvline(shift1,0,1,color='orange',linestyle='--')
+    plt.axvline(shift2,0,1,color='orange',linestyle='--')
     plt.grid()
     plt.show()
 
-    j1 += data.mean(axis=0)[slice(start,stop)]
-    j2 += data.mean(axis=0)[slice(start,stop)]
+    j1 = j1_p.copy()
+    j2 = j2_p.copy()
 
-    if shift < 0: 
-        plt.figure()
-        plt.subplot(2,1,2)
-        plt.plot(px_val,j1,label=f'h = {top}')
-        plt.plot(px_val[:shift],j2[-shift:],label=f'h = {bottom}')
-        plt.grid()
-        plt.subplot(2,1,1)
-        plt.plot(px_val,j1)
-        plt.plot(px_val,j2)
-        plt.grid()
-        plt.show()
-    elif shift > 0: 
-        plt.figure()
-        plt.subplot(2,1,2)
-        plt.plot(px_val,j1,label=f'h = {top}')
-        plt.plot(px_val[shift:],j2[:-shift],label=f'h = {bottom}')
-        plt.grid()
-        plt.subplot(2,1,1)
-        plt.plot(px_val,j1)
-        plt.plot(px_val,j2)
-        plt.grid()
-        plt.show()
-    # else:
-    #     plt.figure()
-    #     plt.suptitle('MIO')
-    #     plt.subplot(2,1,2)
-    #     plt.plot(px_val,j1,label=f'h = {height}')
-    #     plt.plot(px_val[3:],j2[:-3],label=f'h = {data.shape[0]-height}')
-    #     plt.grid()
-    #     plt.subplot(2,1,1)
-    #     plt.plot(px_val,j1)
-    #     plt.plot(px_val,j2)
-    #     plt.grid()
-    #     plt.show()
+    plt.figure()
+    plt.subplot(3,1,1)
+    plt.plot(px_val,j1)
+    plt.plot(px_val,j2)
+    plt.grid()
+    plt.subplot(3,1,2)
+    plt.title(f'shift: {shift1}')
+    plt.plot(px_val,j1,label=f'h = {top}')
+    plt.plot(px_val[:shift1],j2[-shift1:],label=f'h = {bottom}')
+    plt.grid()
+    plt.legend()
+    plt.subplot(3,1,3)
+    plt.title(f'shift: {shift2}')
+    plt.plot(px_val,j1,label=f'h = {top}')
+    plt.plot(px_val[shift2:],j2[:-shift2],label=f'h = {bottom}')
+    plt.grid()
+    plt.legend()
+    plt.show()
 
     ## WAVELENGTH CALIBRATION
     heights = np.array([710+i*5 for i in range(4)])
@@ -408,28 +379,66 @@ if __name__ == '__main__':
     ang_diam = 44.29871
     ang_rad  = ang_diam / 2
 
+    print('Ang_pix', ang_rad/r)
+
     ## PERIOD ESTIMATION
     # T = 8pi Rg/c l/Dl x/R
 
+    from spectralpy.stuff import unc_format
+    from astropy.constants import c
     m  = fit.fit_par[0]
     Dm = fit.fit_err[0]
-    delta_l = m*abs(shift)
-    Dl = Dm*abs(shift)
-    from spectralpy.stuff import unc_format
-    fmt = unc_format(delta_l,Dl)
-    res_str = 'Delta L = {delta_l:' + fmt[0][1:] + '} +/- {Dl:' + fmt[1][1:] + '} AA'
-    print(res_str.format(delta_l=delta_l,Dl=Dl))
-    from astropy.constants import c
+    R = 71492 * u.km
+    DR = 4 * u.km 
     c = c.to(u.m/u.s)
-    v  = c.value*delta_l/balmer[0] / 4
-    Dv = c.value*Dl/balmer[0] / 4
+
+    P = []
+    DP = []
+
+    print('shift1',shift1)
+    delta_l1 = m*abs(shift1)
+    Dl1 = Dm*abs(shift1)
+    fmt = unc_format(delta_l1,Dl1)
+    res_str = 'Delta L1 = {delta_l:' + fmt[0][1:] + '} +/- {Dl:' + fmt[1][1:] + '} AA'
+    print(res_str.format(delta_l=delta_l1,Dl=Dl1))
+    v  = c.value*delta_l1/balmer[0] / 4
+    Dv = v * np.sqrt((Dl1/delta_l1)**2 + (bal_err[0]/balmer[0])**2)
     fmt1 = unc_format(v,Dv)
-    res_str = 'v = {v:' + fmt1[0][1:] + '} +/- {Dv:' + fmt1[1][1:] + '} m/s'
+    res_str = 'v1 = {v:' + fmt1[0][1:] + '} +/- {Dv:' + fmt1[1][1:] + '} m/s'
     print(res_str.format(v=v,Dv=Dv))
-    R = 69911 * u.km
-    DR = 6 * u.km 
     T = R/(v*u.m/u.s)*2*np.pi
     DT = (Dv/v + DR/R) * T
-    print(T.to(u.h), DT.to(u.h))
-    T = 8*np.pi * (R/c) * (balmer[0]/delta_l) * (h/r)
-    print(T.to(u.h))
+    print('T1',T.to(u.h), DT.to(u.h))
+    T = 8*np.pi * (R/c) * (balmer[0]/delta_l1) * (h/r)
+    DT = T * np.sqrt( (DR/R)**2 + (bal_err[0]/balmer[0])**2 + (Dl1/delta_l1)**2 + (Dr/r)**2 + (Dh/h)**2)
+    print('T1',T.to(u.h),DT.to(u.h))
+
+    P  += [T.to(u.h).value]
+    DP += [DT.to(u.h).value]
+
+    print('shift2',shift2)
+    delta_l2 = m*abs(shift2)
+    Dl2 = Dm*abs(shift2)
+    fmt = unc_format(delta_l2,Dl2)
+    res_str = 'Delta L2 = {delta_l:' + fmt[0][1:] + '} +/- {Dl:' + fmt[1][1:] + '} AA'
+    print(res_str.format(delta_l=delta_l2,Dl=Dl2))
+    v  = c.value*delta_l2/balmer[0] / 4
+    Dv = v * np.sqrt((Dl2/delta_l2)**2 + (bal_err[0]/balmer[0])**2)
+    fmt1 = unc_format(v,Dv)
+    res_str = 'v2 = {v:' + fmt1[0][1:] + '} +/- {Dv:' + fmt1[1][1:] + '} m/s'
+    print(res_str.format(v=v,Dv=Dv))
+    T = R/(v*u.m/u.s)*2*np.pi
+    DT = (Dv/v + DR/R) * T
+    print('T2',T.to(u.h), DT.to(u.h))
+    T = 8*np.pi * (R/c) * (balmer[0]/delta_l2) * (h/r)
+    DT = T * np.sqrt( (DR/R)**2 + (bal_err[0]/balmer[0])**2 + (Dl2/delta_l2)**2 + (Dr/r)**2 + (Dh/h)**2)
+    print('T2',T.to(u.h),DT.to(u.h))
+
+    P  += [T.to(u.h).value]
+    DP += [DT.to(u.h).value]
+
+    P = np.mean(P)
+    DP = np.sqrt(DP[0]**2 + DP[1]**2)
+    print(f'period = {P:.2f} +/- {DP:.2f} h --> {DP/P:.2%}')
+    period = 9 + 55/60 + 29.711/3600
+    print(f'period = {period} h -->', 'OK' if P-DP <= period <= P+DP else 'NO') 
