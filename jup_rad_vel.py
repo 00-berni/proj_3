@@ -54,45 +54,6 @@ def display_lines(minpos: float, edges: tuple[float, float]) -> None:
 
 if __name__ == '__main__':
 
-    # N = 100
-    # shift = 4
-    # xx = np.arange(N)
-    # s1 = np.random.normal(0,0.2,N)
-    # s1[5] += -2
-    # s1[13] += -1
-    # s2 = np.random.normal(0,0.2,N)
-    # s2[5+shift] += -2
-    # s2[13+shift] += -1
-
-    # plt.figure()
-    # plt.plot(xx,s1,label='s1')
-    # plt.plot(xx,s2,label='s2')
-    # plt.legend()
-
-    # corr = correlate(s1,s2,mode='full')
-    # print(len(corr))
-    # lags = np.arange(len(corr)) - (N - 1)
-    # plt.figure()
-    # plt.plot(lags,corr)
-    # plt.axvline(-shift,0,1,color='k')
-
-    # sh_pos = corr.argmax()
-    # shift1 = lags[sh_pos]
-    # print(shift1)
-    # if shift1 < 0:
-    #     plt.figure()
-    #     plt.plot(xx,s1,label='s1')
-    #     plt.plot(xx[:shift1],s2[-shift1:],label='s2')
-    #     plt.legend()
-    # elif shift1 >0:
-    #     plt.figure()
-    #     plt.plot(xx[:-shift1],s1[shift1:],label='s1')
-    #     plt.plot(xx,s2,label='s2')
-    #     plt.legend()
-    # plt.show()
-
-
-    # exit()
     ## DATA
     obs_night = '18-04-22'
     target_name = 'giove'    
@@ -102,15 +63,8 @@ if __name__ == '__main__':
     fit_args = {    'mode': 'odr' }
     lim_width = [[0,1391],[[0,112],[108,221]]]
     lag = 15
-    # jupiter, lamp = spc.get_target_data(obs_night,target_name,selection,angle=None,lim_width=lim_width,lag=lag,gauss_corr=True,lamp_incl=False, fit_args=fit_args, diagn_plots=True,norm='log')
     jupiter, lamp = spc.get_target_data(obs_night,target_name,selection,angle=None,lim_width=lim_width,lag=lag,gauss_corr=False,lamp_incl=False, fit_args=fit_args, diagn_plots=False,norm='log')
     
-
-    # plt.figure()
-    # plt.imshow(jupiter.data,origin='lower',norm='log',cmap='gray_r')
-    # plt.show()
-
-
     ## VELOCITY ESTIMATION
     data = jupiter.data.copy()[5:] 
 
@@ -150,7 +104,6 @@ if __name__ == '__main__':
                 -1/(2*a) ]
         err = np.sqrt(np.sum([der[j]*der[k]*cov[j,k] for k in range(len(der)) for j in range(len(der))]))
         v  = np.append(v,-b/2/a)
-
         Dv = np.append(Dv,err)
     # plt.show()
     plt.figure()
@@ -175,7 +128,6 @@ if __name__ == '__main__':
     angle *= np.pi/180
     rot_mat = np.array([[np.cos(angle), np.sin(angle)],
                         [-np.sin(angle),np.cos(angle)] ])
-    # _,p1 = rot_mat.dot(np.array([0,fit.fit_par[1]]))
     _,p1  = np.array([rot_mat.dot([xx[i],v[i]]) for i in range(len(xx))]).mean(axis=0)
     print('mid',p1)
 
@@ -184,66 +136,71 @@ if __name__ == '__main__':
     jupiter.cut_image()
     data = jupiter.data.copy()
 
-    v  = np.array([])
-    Dv = np.array([])
-    t  = np.array([])
-    Dt = np.array([])
-    s  = np.array([])
-    Ds = np.array([])
-    xxx = np.array([])
+    v  = []
+    Dv = []
+    r  = []
+    Dr = []
+    tmp = []
     fig, ax = plt.subplots(2,1)
+    fig0, ax0 = plt.subplots(1,1)
     xdata = np.arange(data.shape[0])
     N = data.shape[1]
     step = 10
     xx = np.arange(N)[::step]
+    ext_data = uncut_data[jupiter.lims[0]-20 : jupiter.lims[1]+20, jupiter.lims[2]:].copy()
     for i in xx:
         ydata = data[:,i]
         fit = spc.FuncFit(xdata=xdata,ydata=ydata,xerr=1)
         fit.gaussian_fit([ydata.max(),xdata.mean(),2],mode='curve_fit')
         color1 = (i/N,0,0.5)
         color2 = (i/N,1-i/N,0.5)
-        if i % 3 == 0 and i % 17 == 0:
-            fit.data_plot(ax[0],pltarg1={'color':color1},pltarg2={'color':color2})
-            fit.residuals_plot(ax[1],color=color1)
         k,mu,sigma = fit.fit_par
         Dk,Dmu,Dsigma = fit.fit_err
 
         cov = fit.res['cov']
-        v  = np.append(v,mu)
-        Dv = np.append(Dv,Dmu)
-        t  = np.append(t,mu-sigma)
-        Dt = np.append(Dt,np.sqrt(Dmu**2 + Dsigma**2))
+        v  += [mu]
+        Dv += [Dmu]
+        k10 = k / 10
+        pos = np.argmin(abs(ext_data[:,i]-k10))
+        r  += [abs(mu-pos)]
+        Dr += [np.sqrt(Dmu**2 + 0.5**2)]
+        tmp += [sigma]
+        if i % 3 == 0:
+            fit.data_plot(ax[0],pltarg1={'color':color1},pltarg2={'color':color2})
+            fit.residuals_plot(ax[1],color=color1)
+            ax[0].axhline(k,0,1)
+            ax0.plot(ext_data[:,i],color=color1)
+            ax0.axvline(pos,0,1,color=color2)
+
     plt.figure()
     plt.imshow(data,origin='lower',norm='log',cmap='gray_r')
     plt.errorbar(xx,v,Dv,fmt='.-')
-    plt.plot(xx,t,'.')
+    plt.errorbar(xx,np.array(v)+np.array(r),Dr,fmt='.-',color='orange')
+    plt.errorbar(xx,np.array(v)-np.array(r),Dr,fmt='.-',color='orange')
     plt.show()
 
-    plt.figure()
-    for i in xx:
-        plt.plot(data[:,i])
-    plt.axvline(v.mean(),0,1,linestyle='--')
-    plt.axvline(t.mean(),0,1,linestyle='--')
-    plt.show()
+    cen, Dcen = spc.mean_n_std(v)
+    r, Dr = spc.mean_n_std(r) 
 
-
-    p1, Dp1 = spc.mean_n_std(v)
-    t, Dt = spc.mean_n_std(t)
-
-    print('P1',p1,Dp1,Dp1/p1*100)
-    print('T',t,Dt,Dt/t*100)
+    print('Centre',cen,Dcen,Dcen/p1*100)
+    print('Radius',r,Dr,Dr/r*100)
+    print('Sigma',np.mean(tmp))
      
     lim0 = jupiter.lims[0]
+    cen += lim0
+    up  = cen + r
+    low = cen - r
     jupiter.data = uncut_data.copy()
-    jupiter.lims = [np.floor(t+lim0).astype(int),np.floor(2*p1-t+lim0).astype(int),42,1391]
+    jupiter.lims = [np.floor(low).astype(int),np.floor(up).astype(int),42,1391]
     jupiter.cut_image()
     data = jupiter.data.copy()
 
     plt.figure()
     for i in range(data.shape[1])[::50]:
         plt.plot(data[:,i])
-    plt.axvline(p1+lim0-jupiter.lims[0],0,1,linestyle='--')
-    plt.axvline(t+lim0-jupiter.lims[0],0,1,linestyle='--')
+    plt.axvline(cen-jupiter.lims[0],0,1,linestyle='--')
+    plt.axvline(up -jupiter.lims[0],0,1,linestyle='--')
+    plt.axvline(low-jupiter.lims[0],0,1,linestyle='--')
     plt.show()
 
 
@@ -251,20 +208,19 @@ if __name__ == '__main__':
     plt.imshow(jupiter.data,origin='lower',norm='log',cmap='gray_r')
     plt.figure()
     plt.imshow(uncut_data,origin='lower',norm='log',cmap='gray_r')
-    plt.axhline(p1+lim0,0,1,color='red')
-    plt.axhline( t+lim0,0,1,color='red')
-    plt.axhline(2*p1-t+lim0+1,0,1,color='red')
-
-
-    mid = p1+lim0-jupiter.lims[0]
-    r = mid
-    Dr = np.sqrt(Dp1**2+Dt**2)
+    plt.axhline(cen,0,1,color='red')
+    plt.axhline(up ,0,1,color='red')
+    plt.axhline(low,0,1,color='red')
     plt.show()
+
+
+    mid = cen - jupiter.lims[0]
+    Dmid = np.sqrt((2*Dcen)**2 + Dr**2)
     sel = input('Select the height: ')
-    bottom = 23 if sel == '' else int(sel)
+    bottom = 24 if sel == '' else int(sel)
     top = np.floor(2*mid - bottom).astype(int)
     h = mid - bottom
-    Dh = Dr
+    Dh = Dmid
 
     print(bottom)
     if bottom > len(data): print('Oh no'); exit()
@@ -383,7 +339,6 @@ if __name__ == '__main__':
 
     ## PERIOD ESTIMATION
     # T = 8pi Rg/c l/Dl x/R
-
     from spectralpy.stuff import unc_format
     from astropy.constants import c
     m  = fit.fit_par[0]
