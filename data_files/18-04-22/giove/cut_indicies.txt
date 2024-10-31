@@ -4,5 +4,5 @@
 #	The last one is for the lamp
 #
 #cyl	cyu	cxl	cxu	yl	yu	xl	xu
-568	791	0	-1	624	730	21	-1
+568	791	0	-1	624	735	21	-1
 0	-1	0	-1	0	-1	0	-1
