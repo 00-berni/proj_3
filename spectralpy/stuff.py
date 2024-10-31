@@ -29,7 +29,7 @@ from astropy.io.fits import HDUList
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
-
+from astropy.units import Quantity
 
 class Spectrum():
     """To store spectrum information
@@ -112,7 +112,7 @@ class Spectrum():
         self.sigma = np.copy(sigma) if sigma is not None else None
         self.lims = lims
         self.cut  = cut 
-        self.angle = None
+        self.angle : None | tuple[float, float] = None
         self.sldata  : None | ndarray = None
         self.slsigma : None | ndarray = None
         self.spec  : None | ndarray = None
@@ -322,7 +322,7 @@ class Spectrum():
             print(str_res.format(angle=angle,Dangle=Dangle))
         # rotate the image
         target = target.rotate_target(angle)
-        target.angle = angle
+        target.angle = (angle,Dangle)
         print(target.angle)
         return target, angle
     
@@ -522,6 +522,10 @@ class FuncFit():
         elif isinstance(xerr,(int,float)): xerr = np.full(xdata.shape,xerr)
         if np.all(yerr == 0): yerr = None
         elif isinstance(yerr,(int,float)): yerr = np.full(ydata.shape,yerr)
+        xdata = np.copy(xdata)
+        ydata = np.copy(ydata)
+        xerr  = np.copy(xerr) if xerr is not None else None
+        yerr  = np.copy(yerr) if yerr is not None else None
         self.data = [xdata, ydata, yerr, xerr]
         self.fit_par: ndarray | None = None
         self.fit_err: ndarray | None = None
@@ -886,6 +890,20 @@ def unc_format(value: ArrayLike, err: ArrayLike) -> list[str]:
     fmt = [f'%.{order:d}e',r'%.1e']
     return fmt
     
+def print_measure(value: float | Quantity, err: float | Quantity, name: str = 'value', unit: str | None = None) -> None:
+    from spectralpy.stuff import unc_format
+    if isinstance(value, Quantity) and isinstance(err, Quantity):
+        unit = value.unit.to_string()
+        value = value.value
+        err = err.value
+    fmt = unc_format(value,err)
+    if value != 0:
+        fmt = name + ' = {value:' + fmt[0][1:] + '} +/- {err:' + fmt[1][1:] + '} ' + unit + ' ---> {perc:.2%}'
+        print(fmt.format(value=value,err=err,perc=err/value))
+    else:
+        fmt = name + ' = {value:' + fmt[0][1:] + '} +/- {err:' + fmt[1][1:] + '} ' + unit 
+        print(fmt.format(value=value,err=err))
+
 
 def argmax(arr: ndarray, out: Literal['ndarray','tuple'] = 'tuple' , **maxkw) -> ndarray:
     maxpos = np.unravel_index(np.argmax(arr, **maxkw), arr.shape)
