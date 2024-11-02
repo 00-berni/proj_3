@@ -236,7 +236,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
             target.cut_image()
             if lamp.name != 'empty':
                 if lamp_incl: 
-                    lamp, _ = lamp.angle_correction(angle=angle, gauss_corr=gauss_corr,lim_width=lim_width, lag=lag, diagn_plots=diagn_plots, fit_args=fit_args)      
+                    lamp, _ = lamp.angle_correction(*target.angle, gauss_corr=gauss_corr,lim_width=lim_width, lag=lag, diagn_plots=diagn_plots, fit_args=fit_args)      
                 lamp.cut_image()
     else:
         exit_cond = True  
@@ -316,14 +316,16 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: 
     cov = fit.res['cov']
 
     ## Functions 
-    def px_to_arm(x: ArrayLike) -> ArrayLike:     #: function to pass from px to A
-        cal_func = fit.res['func']
-        return cal_func(x,*pop)     
+    px_to_arm = fit.method
+    # def px_to_arm(x: ArrayLike) -> ArrayLike:     #: function to pass from px to A
+    #     cal_func = fit.res['func']
+    #     return cal_func(x,*pop)     
     # compute the function to evaluate the uncertainty associated with `px_to_arm`
-    def err_func(x: ArrayLike, Dx: ArrayLike = 1/np.sqrt(12)) -> ArrayLike:
-        par_err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
-        err = np.sum([ pop[i]*(ord-i)*x**(ord-i-1)  for i in range(ord) ], axis=0)
-        return np.sqrt((err * Dx)**2 + np.sum(par_err, axis=0))
+    err_func = fit.res['errfunc']
+    # def err_func(x: ArrayLike, Dx: ArrayLike = 1/np.sqrt(12)) -> ArrayLike:
+    #     par_err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
+    #     err = np.sum([ pop[i]*(ord-i)*x**(ord-i-1)  for i in range(ord) ], axis=0)
+    #     return np.sqrt((err * Dx)**2 + np.sum(par_err, axis=0))
 
     ## Plot
     if display_plots:
@@ -372,19 +374,20 @@ def balmer_calibration(ch_obs: str, ch_obj: str, target: Spectrum, lamp_cal: tup
     pop = fit.fit_par.copy()
     cov = fit.res['cov']
 
-    def balm_calfunc(x: ArrayLike) -> ArrayLike:
-        return fit.res['func'](x, *pop)
-
-    def balm_errfunc(x: ArrayLike, Dx: ArrayLike) -> ArrayLike:
-        par_err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
-        err = np.sum([ pop[i]*(ord-i)*x**(ord-i-1) for i in range(ord) ],axis=0)
-        return np.sqrt((err * Dx)**2 + np.sum(par_err, axis=0))
+    balm_calfunc = fit.method
+    # def balm_calfunc(x: ArrayLike) -> ArrayLike:
+    #     return fit.res['func'](x, *pop)
+    balm_errfunc = fit.res['errfunc']
+    # def balm_errfunc(x: ArrayLike, Dx: ArrayLike) -> ArrayLike:
+    #     par_err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
+    #     err = np.sum([ pop[i]*(ord-i)*x**(ord-i-1) for i in range(ord) ],axis=0)
+    #     return np.sqrt((err * Dx)**2 + np.sum(par_err, axis=0))
 
     lamp_calfunc, lamp_errfunc = lamp_cal
 
     def px_to_arm(x: ArrayLike) -> ArrayLike: 
         return balm_calfunc(lamp_calfunc(x))
-    def err_func(x: ArrayLike, Dx: ArrayLike = 1/np.sqrt(12)): 
+    def err_func(x: ArrayLike, Dx: ArrayLike = 1): 
         return balm_errfunc(lamp_calfunc(x),lamp_errfunc(x,Dx))
 
     ## Plot
@@ -448,12 +451,14 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
     # compute cross-correlation
     from scipy.signal import correlate
     corr = correlate(lamp1,lamp2)
+    lags = np.arange(len(corr)) - (len(lamp1)-1)
     print('MAX POS: ',np.argmax(corr)/len(corr)*100, len(corr) // np.argmax(corr))
     if display_plots:
-        quickplot(corr,title=f'Cross corr -> {np.argmax(corr)/len(corr)*100} : {len(corr) // np.argmax(corr)}',**pltargs)
+        quickplot((lags,corr),title=f'Cross corr -> {np.argmax(corr)/len(corr)*100} : {len(corr) // np.argmax(corr)}',**pltargs)
         plt.show()
     # compute the lag
-    shift = np.argmax(corr) - (len(corr)/2)  
+    shift = lags[corr.argmax()]  
+    exit()
     return shift
 
 def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, gauss_corr: bool = True, angle_fitargs: dict = {}, height: ArrayLike | None = None, row_num: int = 3, lag: int = 10, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, lamp_fitargs: dict = {}, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, balmer_fitargs: dict = {}, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
@@ -555,7 +560,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
             cal_func, err_func = balmer_calibration(ch_obs, ch_obj, target=target, lamp_cal=(cal_func,err_func), ord=ord_balm, initial_values=initial_values_balm, fit_arg=balmer_fitargs, display_plots=display_plots)
         # store results
         lamp.func = [cal_func, err_func]
-        target.func = [*lamp.func]
+        target.func = [cal_func, err_func]
         # compute the values in armstrong
         lamp.compute_lines()
         target.compute_lines()
@@ -567,6 +572,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
             plt.errorbar(lamp.lines, lamp.spec,yerr=lamp.std,xerr=lamp.errs,fmt='.')
         else:
             plt.errorbar(lamp.lines, lamp.spec,xerr=lamp.errs,fmt='.')
+        print(len(target.lines), len(target.spec))
         quickplot((target.lines,target.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=4,**pltargs)
         plt.errorbar(target.lines,target.spec,target.std,target.errs,fmt='.')
         plt.yscale('log')
