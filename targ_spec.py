@@ -80,13 +80,13 @@ if __name__ == '__main__':
     ord1 = 2
     ord2 = 3
     display_plots = True
-    target, lamp = spc.calibration(night, target_name, selection, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=True)
+    target, lamp = spc.calibration(night, target_name, selection, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
 
     # # - - #
 
-    # night, target_name, selection = TARGETS[3]
+    night, target_name, selection = TARGETS[3]
 
-    # target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=True)
+    target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=True)
 
 #    ## 22-07-26_ohp night
     """
@@ -97,12 +97,12 @@ if __name__ == '__main__':
     8  - pCygni
     9  - m57
     """    
-    night, target_name, selection = TARGETS[4]
+    # night, target_name, selection = TARGETS[4]
 
-    ord_lamp = 2
-    ord_balm = 2
-    display_plots = True
-    target, lamp = spc.calibration(night, target_name, selection,lag=7,row_num=4, ord_lamp=ord_lamp, ord_balm=ord_balm, display_plots=display_plots,diagn_plots=True)
+    # ord_lamp = 2
+    # ord_balm = 2
+    # display_plots = True
+    # target, lamp = spc.calibration(night, target_name, selection,lag=7,row_num=4, ord_lamp=ord_lamp, ord_balm=ord_balm, display_plots=display_plots,diagn_plots=True)
     
     
     # night, target_name, selection = TARGETS[5]
