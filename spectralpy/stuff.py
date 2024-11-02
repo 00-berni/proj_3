@@ -167,7 +167,7 @@ class Spectrum():
         return target
 
 
-    def angle_correction(self, angle: float | None = None, lim_width: Sequence[int | Sequence[int]] | None = None, init: list[float] | None = None, lag: int = 10, gauss_corr: bool = True, fit_args: dict = {}, diagn_plots: bool = False, **pltargs) -> tuple['Spectrum',float]:
+    def angle_correction(self, angle: float | None = None, Dangle: float | None = None, lim_width: Sequence[int | Sequence[int]] | None = None, init: list[float] | None = None, lag: int = 10, gauss_corr: bool = True, fit_args: dict = {}, diagn_plots: bool = False, **pltargs) -> tuple['Spectrum',float]:
         """To correct the inclination of spectrum, rotating the image.
         
         Parameters
@@ -732,6 +732,8 @@ class FuncFit():
             err = np.sum([ der(i)*der(j) * cov[i,j] for i in range(ord+1) for j in range(ord+1)],axis=0)
             if Dx is not None:
                 err += (err_der(xdata,Dx,par))**2
+            print(err[err<0])
+            if len(np.where(err<0)[0]) != 0: exit()
             err = np.sqrt(err)
             return err
         error_function = lambda x, Dx : err_func(x, Dx, self.fit_par, self.res['cov'])
