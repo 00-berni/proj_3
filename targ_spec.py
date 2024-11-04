@@ -73,7 +73,7 @@ if __name__ == '__main__':
     0  - Vega01
     1  - Polluce
     2  - Regolo
-    3  - WR140
+    3  - Arturo
     """    
     night, target_name, selection = TARGETS[0]
 
@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     night, target_name, selection = TARGETS[3]
 
-    target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=True)
+    target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
 
 #    ## 22-07-26_ohp night
     """
