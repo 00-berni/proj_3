@@ -66,10 +66,14 @@ class Spectrum():
         if lims is not None and 0 not in shape:
             lims = np.copy(lims)
             for i in [0,1]:
+                print('Start',lims)
                 n = shape[i]    #: size of image
-                k = 2*i+1       #: position of upper edge 
+                print('N =',n)
+                k = 2*i+1       #: position of upper end 
+                print('K =',k)
                 if lims[k] is None: lims[k] = n
                 elif lims[k] < 0: lims[k] = n + lims[k]
+                print(lims)
         return lims
 
     @staticmethod
@@ -105,7 +109,7 @@ class Spectrum():
         """
         if check_edges:
             lims = Spectrum.check_edges(lims, shape=data.shape)
-            cut  = Spectrum.check_edges(cut,  shape=data.shape)
+            cut  = Spectrum.check_edges(cut , shape=data.shape)
         self.name = name
         self.hdul = hdul.copy()
         self.data  = hotpx_remove(data) if hotpx else data 
@@ -120,6 +124,8 @@ class Spectrum():
         self.lines : None | ndarray = None
         self.errs  : None | ndarray = None
         self.func : None | tuple[Callable, Callable]  = None
+        print(self.cut)
+        print(self.lims)
 
     def print_header(self) -> None:
         """To print the header of fits file"""
@@ -128,6 +134,10 @@ class Spectrum():
         print(' - HEADER -')
         print(hdr.tostring(sep='\n'))
         print()
+    
+    def format_ends(self) -> None:
+        self.lims = Spectrum.check_edges(self.lims,self.data.shape)
+        self.cut  = Spectrum.check_edges(self.cut ,self.data.shape)
     
     def get_exposure(self) -> float:
         """To get the exposure time
@@ -151,6 +161,7 @@ class Spectrum():
     
     def cut_image(self) -> None:
         """To cut the image"""
+        # self.format_ends()
         lims = (slice(*self.lims[:2]),slice(*self.lims[2:]))
         self.data = self.data[lims]
         if self.sigma is not None:
@@ -337,9 +348,12 @@ class Spectrum():
             cross-correlation of them, by default `0`
         """
         pxs = np.arange(self.lims[2],self.lims[3]) + shift
+        print('PXS',self.lims)
+        print('PXS',self.lims[2],self.lims[3])
         cal_func, err_func = self.func
         self.lines = cal_func(pxs)
         self.errs  = err_func(pxs,Dx)
+        print('LINES',self.lines)
 
     def binning(self, bin: ArrayLike = 50, edges: None | Sequence[float] = None) -> tuple[tuple[ndarray,ndarray], tuple[ndarray,ndarray], ndarray]:
         """To bin spectrum data

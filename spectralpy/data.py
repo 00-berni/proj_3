@@ -494,7 +494,8 @@ def extract_data(ch_obs: str, ch_obj: str, selection: str | Literal['mean'], dia
                 target.lims = lim[4:]
                 target.cut  = lim[:4]
             target.data, target.sigma = mean_n_std(target.data,axis=0)
-            print('LIMS',target.lims)
+            target.format_ends()
+            print('LIMS',target.cut,target.lims)
             target.name = tmp.name
         elif int(selection) in range(len(obj_fit)):
             selection = int(selection)
