@@ -101,11 +101,11 @@
         ],
         "Muceps":[
             [
-                "mucep-001_30sec",
-                "mucep-002_30sec",
-                "mucep-003_30sec",
-                "mucep-004_30sec",
-                "mucep-005_30sec"
+                "mucep-001__30sec",
+                "mucep-002__30sec",
+                "mucep-003__30sec",
+                "mucep-004__30sec",
+                "mucep-005__30sec"
             ],
             "muceps_lamp"
         ],
