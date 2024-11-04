@@ -26,26 +26,50 @@ mgI  = [4351.9057]
 mgII = [4384.637]
 arI  = []
 arII = [4401.75478] 
+caII = [3968.47,3933.66]
 
-def display_lines(minpos: float, edges: tuple[float, float]) -> None:
-    for (b,err,name) in zip(balmer,bal_err,b_name):
-        # b += 100
-        if edges[0] <= b <= edges[1]:
-            plt.axvline(b,0,1, color='blue',label=label(b,balmer,'H I'))
-            plt.annotate(name,(b,minpos),(b+10,minpos))
-            plt.axvspan(b-err,b+err,0,1,color='blue',alpha=0.3)
-    # plot_line(feI, 'Fe I','orange',minpos)
-    # plot_line(feII,'Fe II','yellow',minpos)
-    # plot_line(tiI, 'Ti I','violet',minpos)
-    # plot_line(tiII,'Ti II','plum',minpos)
-    # plot_line(neI, 'Ne I','green',minpos)
-    # plot_line(neII,'Ne II','lime',minpos)
-    # plot_line(oI, 'O I','deeppink',minpos)
-    # plot_line(oII,'O II','hotpink',minpos)
-    # plot_line(mgI, 'Mg I','red',minpos)
-    # plot_line(mgII,'Mg II','tomato',minpos)
-    # plot_line(arI, 'Ar I','aqua',minpos)
-    # plot_line(arII,'Ar II','cyan',minpos)
+def display_lines(minpos: float, edges: tuple[float, float], sel: str | list[str] = 'HI') -> None:
+    if 'HI' in sel:
+        for (b,err,name) in zip(balmer,bal_err,b_name):
+            # b += 100
+            if edges[0] <= b <= edges[1]:
+                plt.axvline(b,0,1, color='blue',label=label(b,balmer,'H I'))
+                plt.annotate(name,(b,minpos),(b+10,minpos))
+                plt.axvspan(b-err,b+err,0,1,color='blue',alpha=0.3)
+    if 'BHa' in sel:
+        plot_line(balmer[0:1], b_name[0],'orange',minpos)
+    if 'BHb' in sel:
+        plot_line(balmer[1:2], b_name[1],'orange',minpos)
+    if 'BHc' in sel:
+        plot_line(balmer[2:3], b_name[2],'orange',minpos)
+    if 'BHd' in sel:
+        plot_line(balmer[3:4], b_name[4],'orange',minpos)
+    if 'Fe' in sel or 'FeI' in sel:
+        plot_line(feI, 'Fe I','orange',minpos)
+    if 'Fe' in sel or 'FeII' in sel:
+        plot_line(feII,'Fe II','yellow',minpos)
+    if 'Ti' in sel or 'TiI' in sel:
+        plot_line(tiI, 'Ti I','violet',minpos)
+    if 'Ti' in sel or 'TiII' in sel:
+        plot_line(tiII,'Ti II','plum',minpos)
+    if 'Ne' in sel or 'NeI' in sel:
+        plot_line(neI, 'Ne I','green',minpos)
+    if 'Ne' in sel or 'NeII' in sel:
+        plot_line(neII,'Ne II','lime',minpos)
+    if 'O' in sel or 'OI' in sel:
+        plot_line(oI, 'O I','deeppink',minpos)
+    if 'O' in sel or 'OII' in sel:
+        plot_line(oII,'O II','hotpink',minpos)
+    if 'Mg' in sel or 'MgI' in sel:
+        plot_line(mgI, 'Mg I','red',minpos)
+    if 'Mg' in sel or 'MgII' in sel:
+        plot_line(mgII,'Mg II','tomato',minpos)
+    if 'Ar' in sel or 'ArI' in sel:
+        plot_line(arI, 'Ar I','aqua',minpos)
+    if 'Ar' in sel or 'ArII' in sel:
+        plot_line(arII,'Ar II','cyan',minpos)
+    if 'Ca' in sel or 'CaII' in sel:
+        plot_line(caII,'Ca II','cyan',minpos)
     plt.legend()
 
 
@@ -70,10 +94,10 @@ if __name__ == '__main__':
 
 #    ## 17-03-27 night
     """
-    0  - Vega01
-    1  - Polluce
-    2  - Regolo
-    3  - Arturo
+    0  - Vega01     : A0Va
+    1  - Arturo     : K1.5III
+    2  - Muceps     : M2-Ia
+    3  - Rastaban   : G2Ib-IIa
     """    
     night, target_name, selection = TARGETS[0]
 
@@ -82,11 +106,67 @@ if __name__ == '__main__':
     display_plots = True
     target, lamp = spc.calibration(night, target_name, selection, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
 
+    # ## Lines
+    # data = target.spectral_data(plot_format=True)
+    # minpos = data[1].min()
+    # l = data[0]
+    # plt.figure()
+    # plt.title(target.name)
+    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    # plt.xlim(3600,7800)
+    # display_lines(minpos,(l.min(),l.max()))
+    # plt.show()
+
     # # - - #
 
-    night, target_name, selection = TARGETS[3]
+    # night, target_name, selection = TARGETS[1]
 
-    target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
+    # target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
+
+    # ## Lines
+    # data = target.spectral_data(plot_format=True)
+    # minpos = data[1].min()
+    # l = data[0]
+    # plt.figure()
+    # plt.title(target.name)
+    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    # plt.xlim(3600,7800)
+    # display_lines(minpos,(l.min(),l.max()),sel=['CaI','CaII','BHa','BHb'])
+    # plt.show()
+
+    # # - - #
+
+    # night, target_name, selection = TARGETS[2]
+
+    # target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
+
+    # ## Lines
+    # data = target.spectral_data(plot_format=True)
+    # minpos = data[1].min()
+    # l = data[0]
+    # plt.figure()
+    # plt.title(target.name)
+    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    # plt.xlim(3600,7800)
+    # display_lines(minpos,(l.min(),l.max()),sel=['CaI'])
+    # plt.show()
+
+    # # - - #
+
+    # night, target_name, selection = TARGETS[3]
+
+    # target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
+
+    # ## Lines
+    # data = target.spectral_data(plot_format=True)
+    # minpos = data[1].min()
+    # l = data[0]
+    # plt.figure()
+    # plt.title(target.name)
+    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    # plt.xlim(3600,7800)
+    # display_lines(minpos,(l.min(),l.max()),sel=['O','CaII','FeI','Na','ArI','BHa','BHb','Mg'])
+    # plt.show()
 
 #    ## 22-07-26_ohp night
     """
@@ -118,15 +198,6 @@ if __name__ == '__main__':
     # display_plots = True
     # target, lamp = spc.calibration(night, target_name, selection, ord=ord, display_plots=True)
 
-#    ## Lines
-    data = target.spectral_data(plot_format=True)
-    minpos = data[1].min()
-    l = data[0]
-    plt.figure()
-    plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    plt.xlim(3600,7800)
-    display_lines(minpos,(l.min(),l.max()))
-    plt.show()
 
     # night, target_name, selection = TARGETS[2]
 
@@ -152,66 +223,72 @@ if __name__ == '__main__':
     # target2, lamp2 = spc.calibration(night, target_name, selection, other_lamp=lamp)
 
 #    ## Vega
-    # night = '17-03-27'
-    # target_name = 'Vega'
-    # selection = 'mean'
-    # bin_width = 50
-    # alt = np.array([20,35,43,58],dtype=float)
-    # Dalt = np.full(alt.shape,0.5)
-    # vega : list[dt.Spectrum] = []
-    # line = []
-    # for i in range(len(alt)):
-    #     tmp, _ = spc.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, display_plots=False)
-    #     vega += [tmp]
-    #     line += [[tmp.lines[0],tmp.lines[-1]]]
+    night = '17-03-27'
+    target_name = 'Vega'
+    selection = 'mean'
+    bin_width = 50
+    alt = np.array([20,35,43,58],dtype=float)
+    Dalt = np.full(alt.shape,0.5)
+    vega : list[spc.Spectrum] = []
+    line = []
+    for i in range(len(alt)):
+        tmp, _ = spc.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, display_plots=False)
+        vega += [tmp]
+        line += [[tmp.lines[0],tmp.lines[-1]]]
 
-    # wlen, rfunc, tau = spc.ccd_response((alt, Dalt), vega, line, bin_width=bin_width,display_plots=False)
+    wlen, rfunc, tau = spc.ccd_response((alt, Dalt), vega, line, bin_width=bin_width,display_plots=True)
 
-    # # alt_reg = 58 + 9*60 + 33.6*3600
-    # # airmass = 1/np.sin(alt_reg*np.pi/180)
+    # alt_reg = 58 + 9*60 + 33.6*3600
+    # airmass = 1/np.sin(alt_reg*np.pi/180)
     
-    # # (reg_wlen,_), (reg_spec,_), _  = target.binning(bin=wlen[-1])
+    # (reg_wlen,_), (reg_spec,_), _  = target.binning(bin=wlen[-1])
 
-    # # reg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() * rfunc[0]
+    # reg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() * rfunc[0]
 
-    # target = vega[0]
-    # airmass = 1/np.sin(alt[0]*np.pi/180)
-    # (veg_wlen,_), (veg_spec,_), _  = target.binning(bin=wlen[-1])
-    # veg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() / rfunc[0]
+    target = vega[0]
+    airmass = 1/np.sin(alt[0]*np.pi/180)
+    (veg_wlen,Dveg_wlen), (veg_spec,Dveg_spec), _  = target.binning(bin=wlen[-1])
+    veg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() / rfunc[0]
 
-    # std = spc.vega_std()
+    std = spc.vega_std()
 
-    # (std_wlen,_), (std_spec,_), _ = std.binning(bin=wlen[-1])
+    plt.figure()
+    plt.errorbar(*std.spectral_data(True))
+    display_lines(std.spec.min(),(std.lines.min(),std.lines.max()))
+    plt.show()
 
-    # plt.figure()
-    # plt.subplot(2,1,1)
-    # plt.title('Comparison')
-    # (tar_wlen,_), (tar_spec,_), _ = target.binning(bin=wlen[-1])
-    # plt.plot(tar_wlen,tar_spec,'.-')
-    # plt.subplot(2,1,2)
-    # plt.plot(veg_wlen,veg_spec,'.-')
-    # # plt.plot(reg_wlen,reg_spec,'.-')
-    # plt.plot(std_wlen,std_spec,'.-')
+    (std_wlen,_), (std_spec,_), _ = std.binning(bin=wlen[-1])
 
-
-
-    # from scipy.interpolate import CubicSpline
-    # rfunc = CubicSpline(wlen[0],rfunc[0])
-    # tau = CubicSpline(wlen[0],tau[0])
-
-    # veg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
-    # # reg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
-
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.title('Comparison')
+    (tar_wlen,_), (tar_spec,_), _ = target.binning(bin=wlen[-1])
+    plt.plot(tar_wlen,tar_spec,'.-')
+    plt.subplot(2,1,2)
+    plt.errorbar(veg_wlen,veg_spec,Dveg_spec,Dveg_wlen,'.-')
+    # plt.plot(reg_wlen,reg_spec,'.-')
+    plt.plot(std_wlen,std_spec,'.-')
 
     # plt.figure()
-    # plt.subplot(2,1,1)
-    # plt.title('Comparison Interpolating')
-    # plt.plot(target.lines,target.spec,'.-')
-    # plt.subplot(2,1,2)
-    # plt.plot(target.lines,veg_spec,'.-')
-    # # plt.plot(target.lines,reg_spec,'.-')
-    # plt.plot(std.lines,std.spec,'.-')
-    # plt.show()
+    # plt.plot(wlen,std_spec-veg_spec)
+
+    from scipy.interpolate import CubicSpline
+    rfunc = CubicSpline(wlen[0],rfunc[0])
+    tau = CubicSpline(wlen[0],tau[0])
+
+    veg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
+    # reg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
+
+
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.title('Comparison Interpolating')
+    plt.plot(target.lines,target.spec,'.-')
+    plt.subplot(2,1,2)
+    plt.plot(target.lines,veg_spec,'.-')
+    # plt.plot(target.lines,reg_spec,'.-')
+    plt.plot(std.lines,std.spec,'.-')
+    plt.show()
 
 # - - #
 
