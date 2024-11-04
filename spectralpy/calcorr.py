@@ -168,7 +168,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
         if lamp.name != 'empty':
             show_fits(lamp, title='Light Frame',**figargs)
         plt.show()
-    
+
     ## Calibration correction
     if ch_obs != '18-04-22':
         calibration = extract_cal_data(ch_obs)
@@ -632,7 +632,7 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
     l_data, Dl_data = wlen
     y_data, Dy_data = data
     bins = np.copy(bins)
-    # prepare arrays to collect values of I0 and tau
+    # prepare arrays to collect values of I0 and tau with uncertainties
     a_I0  = np.empty((0,2))
     a_tau = np.empty((0,2))
     if display_plots:
@@ -658,22 +658,21 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
         #.. Assuming N/t = exp(-tau*a)*I0 then 
         #.. log(N/t) = - tau * a + log(I0)
         initial_values = [-0.5, np.log(y).max()]
-        fit = FuncFit(x, np.log(y), xerr=Dx, yerr=Dy/y)
+        fit = FuncFit(xdata=x, ydata=np.log(y), xerr=Dx, yerr=Dy/y)
         fit.linear_fit(initial_values, names=('tau','ln(I0)'))
         pop, Dpop = fit.results()
         I0  = np.exp(pop[1])
         DI0 = Dpop[1] * I0
         # store the results
         a_I0  = np.append(a_I0,  [ [I0, DI0] ], axis=0)
-        a_tau = np.append(a_tau, [ [-pop[0], Dpop[0]] ], axis=0)
+        a_tau = np.append(a_tau, [ [abs(pop[0]), Dpop[0]] ], axis=0)
         # plot them
         if diagn_plot:
-            func = fit.res['func']
             xx = np.linspace(x.min(),x.max(),50)
             color = (0.5,i/l_data.shape[1],1-i/l_data.shape[1])
             ax1.errorbar(x, np.log(y), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
-            ax1.plot(xx, func(xx,*pop), color=color)
-            ax2.errorbar(x, np.log(y) - func(x,*pop), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
+            ax1.plot(xx, fit.method(xx), color=color)
+            ax2.errorbar(x, np.log(y) - fit.method(x), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
     print('DIFF',np.diff(bins,axis=0), np.diff(Dl_data,axis=0))
     # select a row
     l_data, Dl_data = l_data[0], Dl_data[0] 
@@ -685,7 +684,7 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
     if display_plots:
         plt.figure()
         plt.title('Estimated Optical Depth')
-        plt.errorbar(l_data,tau,Dtau,Dl_data,'.',linestyle='dashed')
+        plt.errorbar(l_data,-tau,Dtau,Dl_data,'.',linestyle='dashed')
         plt.xlabel('$\\lambda$ [$\\AA$]')
         plt.ylabel('$\\tau$')
         plt.show()
@@ -700,7 +699,7 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
         plt.show()
     return (I0, DI0), (tau, Dtau)
 
-def vega_std():
+def vega_std() -> Spectrum:
     import spectralpy.data as dt
     file_name = dt.os.path.join(dt.CAL_DIR,'standards','Vega','vega_std.fit')
     # lims = [592,618,251,-1,600,612,243,-1]
@@ -724,15 +723,14 @@ def vega_std():
     cov = fit.res['cov']
 
     def balm_calfunc(x: ArrayLike) -> ArrayLike:
-        return fit.res['func'](x, *pop)
+        return fit.method(x)
 
     def balm_errfunc(x: ArrayLike, Dx: ArrayLike) -> ArrayLike:
-        par_err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
-        err = np.sum([ pop[i]*(ord-i)*x**(ord-i-1) for i in range(ord) ],axis=0)
-        return np.sqrt((err * Dx)**2 + np.sum(par_err, axis=0))
+        errfunc = fit.res['errfunc']
+        return errfunc(x,Dx)
 
     std.spec = std.spec / std.get_exposure()
-    std.std = std.std / std.get_exposure()
+    std.std  = std.std / std.get_exposure()
 
     std.func = [balm_calfunc, balm_errfunc]
     std.compute_lines()

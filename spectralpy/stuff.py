@@ -348,12 +348,9 @@ class Spectrum():
             cross-correlation of them, by default `0`
         """
         pxs = np.arange(self.lims[2],self.lims[3]) + shift
-        print('PXS',self.lims)
-        print('PXS',self.lims[2],self.lims[3])
         cal_func, err_func = self.func
         self.lines = cal_func(pxs)
         self.errs  = err_func(pxs,Dx)
-        print('LINES',self.lines)
 
     def binning(self, bin: ArrayLike = 50, edges: None | Sequence[float] = None) -> tuple[tuple[ndarray,ndarray], tuple[ndarray,ndarray], ndarray]:
         """To bin spectrum data

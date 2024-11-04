@@ -304,6 +304,7 @@ def get_data_fit(path: str, lims: Sequence[int | None | list[int]] = [0,None,0,N
     # display target image
     if diagn_plots: 
         _ = show_fits(target, **figargs) 
+        plt.axhline(500,0,1)
     return target
 ##*
 
