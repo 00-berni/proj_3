@@ -382,30 +382,36 @@ class Spectrum():
         # store data
         spectrum = self.spec.copy()
         lines = self.lines.copy()
-        if isinstance(bin,(float,int)):     #: `bin` is the bin width
-            bin_width = bin
-            # compute and approximate the ends of wavelengths range
-            if edges is None: edges = (lines[0], lines[-1])
-            appr = lambda l : np.rint(l / bin_width) * bin_width
-            edges = (appr(edges[0]), appr(edges[1])+1)
-            if isinstance(bin_width,int):
-                bins = np.arange(*edges,bin_width) 
-            else:
-                num = int((edges[1] - edges[0]) // bin_width + 1)
-                bins = np.linspace(*edges,num)
-        else:
-            bins = np.copy(bin)
-            bin_width = np.diff(bin).astype(int)[0]
-        # define some useful quantities
-        half_bin = bin_width / 2
-        bin_num = len(bins) - 2 
-        # define array of the central value in each bin
-        bin_lines = bins[:-1] + half_bin
-        # set the every uncertainties to the half width
-        err_lines = np.full(bin_lines.shape, bin_width / 2)
-        # average over the values in each bin
-        pos = lambda i : np.where((bin_lines[i] - half_bin <= lines) & (lines < bin_lines[i] + half_bin))[0]
-        bin_spect, err_spect = np.array([ [*mean_n_std(spectrum[pos(i)])] for i in range(bin_num+1)]).transpose()
+        (bin_lines, err_lines), (bin_spect, err_spect), bins = binning(spectrum,lines,bin,edges)
+        # if isinstance(bin,(float,int)):     #: `bin` is the bin width
+        #     bin_width = bin
+        #     # compute and approximate the ends of wavelengths range
+        #     if edges is None: edges = (lines[0], lines[-1])
+        #     appr = lambda l : np.rint(l / bin_width) * bin_width
+        #     edges = (appr(edges[0]), appr(edges[1])+1)
+        #     if isinstance(bin_width,int):
+        #         bins = np.arange(*edges,bin_width) 
+        #     else:
+        #         num = int((edges[1] - edges[0]) // bin_width + 1)
+        #         bins = np.linspace(*edges,num)
+        # else:
+        #     bins = np.copy(bin)
+        #     bin_width = np.diff(bin).astype(int)[0]
+        # # define some useful quantities
+        # half_bin = bin_width / 2
+        # bin_num = len(bins) - 2 
+        # # define array of the central value in each bin
+        # bin_lines = bins[:-1] + half_bin
+        # # set the all uncertainties to the half width
+        # err_lines = np.full(bin_lines.shape, bin_width / 2)
+        # # average over the values in each bin
+        # pos = lambda i : np.where((bins[i] <= lines) & (lines < bins[i+1]))[0]
+        # print('EDGES',bins[[0,-1]])
+        # bin_spect, err_spect = np.array([ [*mean_n_std(spectrum[pos(i)])] for i in range(bin_num+1)]).transpose()
+        # # plt.figure()
+        # # plt.plot(bin_lines,[np.mean(spectrum[pos(i)]) for i in range(len(bin_lines))], '.-')
+        # # plt.plot(bin_lines, bin_spect,'x-')
+        # # plt.show()
         return (bin_lines, err_lines), (bin_spect, err_spect), bins
 
     def spectral_data(self, plot_format: bool = False) -> ndarray[float,ndarray]:
@@ -609,6 +615,7 @@ class FuncFit():
         self.res['init'] = np.copy(initial_values)
         # if Dx is None: mode = 'curve_fit'
         self.res['mode'] = mode
+        print(self.res['mode'])
         if mode == 'curve_fit':
             self.chi_routine(**fitargs)
         elif mode == 'odr':
@@ -797,6 +804,65 @@ class FuncFit():
             if sel in ['residuals', 'all']:
                 ax2 = fig2.add_subplot(111)
                 self.residuals_plot(ax=ax2,**resarg)
+
+def binning(spectrum: ArrayLike, lines: ArrayLike, bin: float | int | ArrayLike = 50, edges: None | Sequence[float] = None):
+    """To bin spectrum data
+
+    Parameters
+    ----------
+    bin : ArrayLike, optional
+        The width of each bin if a `float` or a `int` is passed, by default `50`
+        It is possible to pass instead the array of specific values of the bins
+    edges : None | Sequence[float], optional
+        the ends of the wavelengths range to bin, by default `None` 
+        If `edges is None` then the extremes of `self.lines` array are taken
+        Values are approximated to the nearest multiple of the bin width
+        If `bin` is an array then this parameter is ignored
+                        
+
+    Returns
+    -------
+    (bin_lines, err_lines) : tuple[ndarray, ndarray]
+        central values of bins and their uncertainties
+        Each value has an uncertainty equal to `bin / 2`
+    (bin_spect, err_spect) : tuple[ndarray, ndarray]
+        binned spectrum and the uncertainty
+        Each value is the average over the values in the bin
+        and the relative uncertainty is the STD
+    bins : ndarray
+        bins values
+    """
+    if isinstance(bin,(float,int)):     #: `bin` is the bin width
+        bin_width = bin
+        # compute and approximate the ends of wavelengths range
+        if edges is None: edges = (lines[0], lines[-1])
+        appr = lambda l : np.rint(l / bin_width) * bin_width
+        edges = (appr(edges[0]), appr(edges[1])+1)
+        if isinstance(bin_width,int):
+            bins = np.arange(*edges,bin_width) 
+        else:
+            num = int((edges[1] - edges[0]) // bin_width + 1)
+            bins = np.linspace(*edges,num)
+    else:
+        bins = np.copy(bin)
+        bin_width = np.diff(bin).astype(int)[0]
+    # define some useful quantities
+    half_bin = bin_width / 2
+    bin_num = len(bins) - 2 
+    # define array of the central value in each bin
+    bin_lines = bins[:-1] + half_bin
+    # set the all uncertainties to the half width
+    err_lines = np.full(bin_lines.shape, bin_width / 2)
+    # average over the values in each bin
+    pos = lambda i : np.where((bins[i] <= lines) & (lines < bins[i+1]))[0]
+    print('EDGES',bins[[0,-1]])
+    bin_spect, err_spect = np.array([ [*mean_n_std(spectrum[pos(i)])] for i in range(bin_num+1)]).transpose()
+    # plt.figure()
+    # plt.plot(bin_lines,[np.mean(spectrum[pos(i)]) for i in range(len(bin_lines))], '.-')
+    # plt.plot(bin_lines, bin_spect,'x-')
+    # plt.show()
+    return (bin_lines, err_lines), (bin_spect, err_spect), bins
+
 
 def mean_n_std(data: ArrayLike, axis: int | None = None, weights: Sequence[Any] | None = None) -> tuple[float, float]:
     """To compute the mean and standard deviation from it
