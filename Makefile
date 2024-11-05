@@ -5,11 +5,17 @@ requirements:
 spectra_r:
 	python3 ./targ_spec.py > ./results/output-target.txt
 
+abs_cal_r:
+	python3 ./abs_cal.py
+
 jupiter_r:
 	python3 ./jup_rad_vel.py > ./results/output-jup.txt
 
 spectra:
 	python3 ./targ_spec.py
+
+abs_cal:
+	python3 ./abs_cal.py
 
 jupiter:
 	python3 ./jup_rad_vel.py
