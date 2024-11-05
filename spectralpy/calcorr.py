@@ -548,6 +548,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     if other_lamp is not None :      
         # compute the lag between the two lamps
         shift = lamp_correlation(lamp, other_lamp, display_plots=display_plots, **pltargs)
+        # shift=0
         # store the functions
         lamp.func = [*other_lamp.func]
         target.func = [*other_lamp.func]
@@ -738,7 +739,7 @@ def vega_std() -> Spectrum:
 
 
 
-def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], ends_wlen: list[list[float]],  bin_width: float | int = 50, std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
+def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen_ends: list[list[float]],  bin_width: float | int = 50, std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
     """To estimate instrument response function
 
     Parameters
@@ -747,8 +748,8 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], ends
         different altitudes values and the corresponding uncertainties
     tg_obs : list[Spectrum]
         spectrum data of target for different altitudes
-    ends_wlen : list[list[float]]
-        list of extremes of each wavelengths range acquired at different altitudes
+    wlen_ends : list[list[float]]
+        list of ends of each wavelengths range acquired at different altitudes
     bin_width : float | int, optional
         the width of each bin, by default `50`
     std_name : str, optional
@@ -775,8 +776,8 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], ends
     x  = 1/np.sin(alt*np.pi/180)
     Dx = Dalt * np.cos(alt*np.pi/180) * x**2 * np.pi/180 
     # ends of the wavelengths range
-    min_line = np.max(ends_wlen,axis=0)[0]
-    max_line = np.min(ends_wlen,axis=0)[1]
+    min_line = np.max(wlen_ends,axis=0)[0]
+    max_line = np.min(wlen_ends,axis=0)[1]
     # define variables to collect values
     l_data = []     #: central values of binned wavelengths
     y_data = []     #: binned spectrum data
