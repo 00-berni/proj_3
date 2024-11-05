@@ -77,8 +77,8 @@ if __name__ == '__main__':
     night = '17-03-27'
     target_name = 'Vega'
     selection = 'mean'
-    alt  = np.array([20,35,43,58],dtype=float)
-    Dalt = np.full(alt.shape,0.5)
+    alt  = np.array([21.57,34.68,43.90,59.06],dtype=float)
+    Dalt = np.full(alt.shape,0.03)
 
     ## Wavelength Calibration
     ord1 = 2
@@ -94,10 +94,10 @@ if __name__ == '__main__':
         tmp, _ = spc.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, display_plots=False)
         vega += [tmp]
         wlen_ends += [[tmp.lines[0],tmp.lines[-1]]]
-        plt.figure()
-        plt.errorbar(*tmp.spectral_data(True),fmt='.-')
-        display_lines(tmp.spec.min(),(tmp.lines.min(),tmp.lines.max()))
-        plt.show()
+        # plt.figure()
+        # plt.errorbar(*tmp.spectral_data(True),fmt='.-')
+        # display_lines(tmp.spec.min(),(tmp.lines.min(),tmp.lines.max()))
+        # plt.show()
 
     ## Response Function
     wlen, rfunc, tau = spc.ccd_response((alt, Dalt), vega, wlen_ends, bin_width=bin_width,display_plots=True)
@@ -108,21 +108,22 @@ if __name__ == '__main__':
     # (reg_wlen,_), (reg_spec,_), _  = target.binning(bin=wlen[-1])
 
     # reg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() * rfunc[0]
-
+    print(tau)
     sel = 0
     target = vega[sel]
     airmass = 1/np.sin(alt[sel]*np.pi/180)
     (veg_wlen,Dveg_wlen), (veg_spec,Dveg_spec), _  = target.binning(bin=wlen[-1])
     veg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() / rfunc[0]
 
-    std = spc.vega_std()
+    (std_wlen, std_Dwlen), (std_spec, std_Dspec) = spc.vega_std(wlen[-1],diagn_plots=display_plots)
+
 
     plt.figure()
-    plt.errorbar(*std.spectral_data(True))
-    display_lines(std.spec.min(),(std.lines.min(),std.lines.max()))
+    plt.errorbar(std_wlen,std_spec,std_Dspec,std_Dwlen,'.-')
+    display_lines(std_spec.min(),(std_wlen.min(),std_wlen.max()))
     plt.show()
 
-    (std_wlen,_), (std_spec,_), _ = std.binning(bin=wlen[-1])
+    # (std_wlen,_), (std_spec,_), _ = std.binning(bin=wlen[-1])
 
     plt.figure()
     plt.subplot(2,1,1)
@@ -152,5 +153,5 @@ if __name__ == '__main__':
     plt.subplot(2,1,2)
     plt.plot(target.lines,veg_spec,'.-')
     # plt.plot(target.lines,reg_spec,'.-')
-    plt.plot(std.lines,std.spec,'.-')
+    plt.plot(std_wlen,std_spec,'.-')
     plt.show()

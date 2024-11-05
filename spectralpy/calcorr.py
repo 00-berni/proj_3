@@ -27,7 +27,7 @@ from numpy.typing import ArrayLike
 from scipy import odr
 from .display import *
 from .data import extract_data, extract_cal_data, get_cal_lines, get_standard, store_results, get_balm_lines
-from .stuff import FuncFit, compute_err, mean_n_std, unc_format
+from .stuff import FuncFit, compute_err, mean_n_std, unc_format, binning
 
 def compute_master_dark(mean_dark: Spectrum | None, master_bias: Spectrum | None = None, diagn_plots: bool = False, **figargs) -> Spectrum:
     """To compute master dark
@@ -548,7 +548,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     if other_lamp is not None :      
         # compute the lag between the two lamps
         shift = lamp_correlation(lamp, other_lamp, display_plots=display_plots, **pltargs)
-        # shift=0
+        shift=0
         # store the functions
         lamp.func = [*other_lamp.func]
         target.func = [*other_lamp.func]
@@ -636,17 +636,6 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
     # prepare arrays to collect values of I0 and tau with uncertainties
     a_I0  = np.empty((0,2))
     a_tau = np.empty((0,2))
-    if display_plots:
-        plt.figure()
-        plt.title('Binned data for different airmass')
-        for i in range(l_data.shape[0]):
-            plt.errorbar(l_data[i],y_data[i],Dy_data[i],Dl_data[i], label=f'$X = ${x[i]:.2}')
-            plt.xticks(bins[i],bins[i],rotation=45)
-        plt.xlabel('$\\lambda$ [$\\AA$]')
-        plt.ylabel('Norm. Data [counts/s]')
-        plt.grid(True,which='both',axis='x')
-        plt.legend()
-        plt.show()
     if diagn_plot:    
         fig1, ax1 = plt.subplots(1,1)
         fig2, ax2 = plt.subplots(1,1)
@@ -659,6 +648,7 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
         #.. Assuming N/t = exp(-tau*a)*I0 then 
         #.. log(N/t) = - tau * a + log(I0)
         initial_values = [-0.5, np.log(y).max()]
+        # initial_values = [-1,1]
         fit = FuncFit(xdata=x, ydata=np.log(y), xerr=Dx, yerr=Dy/y)
         fit.linear_fit(initial_values, names=('tau','ln(I0)'))
         pop, Dpop = fit.results()
@@ -700,42 +690,68 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
         plt.show()
     return (I0, DI0), (tau, Dtau)
 
-def vega_std() -> Spectrum:
-    import spectralpy.data as dt
-    file_name = dt.os.path.join(dt.CAL_DIR,'standards','Vega','vega_std.fit')
-    # lims = [592,618,251,-1,600,612,243,-1]
-    lims = [592,618,251,-1,605,610,243,-1]
-    std = dt.get_data_fit(file_name,lims,obj_name='Standard Vega')
-    std, _ = std.angle_correction(diagn_plots=False)
-    std.cut_image()
-    show_fits(std,show=True)
-    meandata = std.data.mean(axis=1)
-    data = np.array([ std.data[i,:] / meandata[i] for i in range(len(meandata)) ])
-    std.spec, std.std = mean_n_std(data, axis=0)
-    print(' - - STARDARD - - ')
-    file_path = dt.os.path.join(dt.CAL_DIR,'standards','Vega','H_calibration.txt')
-    balm, balmerr, lines, errs = np.loadtxt(file_path, unpack=True)
-    lines += std.lims[2]
-    ord = 3
-    fit = FuncFit(xdata=lines, xerr=errs, ydata=balm, yerr=balmerr)
-    initial_values = [0] + [1]*(ord-1) + [np.mean(lines)]
-    fit.pol_fit(ord, initial_values=initial_values)
-    pop = fit.fit_par.copy()
-    cov = fit.res['cov']
+def vega_std(bin: int | float | ArrayLike = 50, edges: None | Sequence[float] = None, diagn_plots: bool = False) -> tuple[tuple[ndarray, ndarray],tuple[ndarray,ndarray]]:
+    """To bin spectrum data
 
-    def balm_calfunc(x: ArrayLike) -> ArrayLike:
-        return fit.method(x)
+    Parameters
+    ----------
+    bin : ArrayLike, optional
+        The width of each bin if a `float` or a `int` is passed, by default `50`
+        It is possible to pass instead the array of specific values of the bins
+    edges : None | Sequence[float], optional
+        the ends of the wavelengths range to bin, by default `None` 
+        If `edges is None` then the extremes of `self.lines` array are taken
+        Values are approximated to the nearest multiple of the bin width
+        If `bin` is an array then this parameter is ignored
+                        
 
-    def balm_errfunc(x: ArrayLike, Dx: ArrayLike) -> ArrayLike:
-        errfunc = fit.res['errfunc']
-        return errfunc(x,Dx)
+    Returns
+    -------
+    (bin_lines, err_lines) : tuple[ndarray, ndarray]
+        central values of bins and their uncertainties
+        Each value has an uncertainty equal to `bin / 2`
+    (bin_spect, err_spect) : tuple[ndarray, ndarray]
+        binned spectrum and the uncertainty
+        Each value is the average over the values in the bin
+        and the relative uncertainty is the STD
+    """
+    wlen, data = get_standard(diagn_plots=diagn_plots)
+    (bin_wlen, bin_Dwlen), (bin_spec, bin_Dspec), _ = binning(data,wlen,bin,edges)
+    # import spectralpy.data as dt
+    # file_name = dt.os.path.join(dt.CAL_DIR,'standards','Vega','vega_std.fit')
+    # # lims = [592,618,251,-1,600,612,243,-1]
+    # lims = [592,618,251,-1,605,610,243,-1]
+    # std = dt.get_data_fit(file_name,lims,obj_name='Standard Vega')
+    # std, _ = std.angle_correction(diagn_plots=False)
+    # std.cut_image()
+    # show_fits(std,show=True)
+    # meandata = std.data.mean(axis=1)
+    # data = np.array([ std.data[i,:] / meandata[i] for i in range(len(meandata)) ])
+    # std.spec, std.std = mean_n_std(data, axis=0)
+    # print(' - - STARDARD - - ')
+    # file_path = dt.os.path.join(dt.CAL_DIR,'standards','Vega','H_calibration.txt')
+    # balm, balmerr, lines, errs = np.loadtxt(file_path, unpack=True)
+    # lines += std.lims[2]
+    # ord = 3
+    # fit = FuncFit(xdata=lines, xerr=errs, ydata=balm, yerr=balmerr)
+    # initial_values = [0] + [1]*(ord-1) + [np.mean(lines)]
+    # fit.pol_fit(ord, initial_values=initial_values)
+    # pop = fit.fit_par.copy()
+    # cov = fit.res['cov']
 
-    std.spec = std.spec / std.get_exposure()
-    std.std  = std.std / std.get_exposure()
+    # def balm_calfunc(x: ArrayLike) -> ArrayLike:
+    #     return fit.method(x)
 
-    std.func = [balm_calfunc, balm_errfunc]
-    std.compute_lines()
-    return std
+    # def balm_errfunc(x: ArrayLike, Dx: ArrayLike) -> ArrayLike:
+    #     errfunc = fit.res['errfunc']
+    #     return errfunc(x,Dx)
+
+    # std.spec = std.spec / std.get_exposure()
+    # std.std  = std.std / std.get_exposure()
+
+    # std.func = [balm_calfunc, balm_errfunc]
+    # std.compute_lines()
+    return (bin_wlen, bin_Dwlen), (bin_spec, bin_Dspec)
 
 
 
@@ -776,8 +792,9 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen
     x  = 1/np.sin(alt*np.pi/180)
     Dx = Dalt * np.cos(alt*np.pi/180) * x**2 * np.pi/180 
     # ends of the wavelengths range
-    min_line = np.max(wlen_ends,axis=0)[0]
-    max_line = np.min(wlen_ends,axis=0)[1]
+    min_line = np.trunc(np.max(wlen_ends,axis=0)[0])
+    max_line = np.trunc(np.min(wlen_ends,axis=0)[1]) + 1
+    print('MINMAX',min_line,max_line)
     # define variables to collect values
     l_data = []     #: central values of binned wavelengths
     y_data = []     #: binned spectrum data
@@ -804,7 +821,18 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen
     l_data, Dl_data = np.array(l_data).transpose((1,0,2))
     y_data, Dy_data = np.array(y_data).transpose((1,0,2))
     a_bin = np.array(a_bin)
-    
+    if display_plots:
+        plt.figure()
+        plt.title('Binned data for different airmass')
+        for i in range(l_data.shape[0]):
+            plt.errorbar(l_data[i],y_data[i],Dy_data[i],Dl_data[i], label=f'$X = ${x[i]:.2f} -> {alt[i]:.0f} deg')
+            plt.xticks(a_bin[i],a_bin[i],rotation=45)
+        plt.xlabel('$\\lambda$ [$\\AA$]')
+        plt.ylabel('Norm. Data [counts/s]')
+        plt.grid(True,which='both',axis='x')
+        plt.legend()
+        plt.show()
+
     ## Atmospheric Transfer Function
     # estimate 0 airmass spectrum
     (I0, DI0), (op_dep, Dop_dep) = atm_transfer((x,Dx), (l_data,Dl_data), (y_data,Dy_data), a_bin, display_plots=display_plots, diagn_plot=diagn_plots)
@@ -818,43 +846,47 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen
     # get the data of the standard
     # std_wlen, std_data = get_standard(name=std_name, sel=selection, diagn_plots=diagn_plots)
     # std = Spectrum.empty()      #: variable to collect standard spectrum data
-    std = vega_std()
+    # std = vega_std()
+    (std_wlen, std_Dwlen), (std_spec, std_Dspec) = vega_std(bins,diagn_plots=display_plots)
+    plt.figure()
+    plt.plot(std_wlen,std_spec,'.-')
+    plt.show()
     # store the ends of wavelengths range of the standard 
-    start, end = std.lines[0], std.lines[-1]
+    # start, end = std.lines[0], std.lines[-1]
     # check the length
-    if start > bins[1]: 
-        pos = np.argmin(np.abs(bins-start))
-        min_line = bins[pos]
-        bins = bins[pos:]
-        l_data = l_data[pos:]
-        print('Less')
-        print('\t',len(I0))
-        I0 = I0[pos:]
-        DI0 = DI0[pos:]
-        print('\t',min_line,len(I0))
-    if end < bins[-2]: 
-        pos = np.argmin(np.abs(bins-end))
-        max_line = bins[pos]
-        bins = bins[:pos+1]
-        l_data = l_data[:pos]
-        print('More')
-        print('\t',len(I0))
-        I0 = I0[:pos]
-        DI0 = DI0[:pos]
-        print('\t',max_line,len(I0))
+    # if start > bins[1]: 
+    #     pos = np.argmin(np.abs(bins-start))
+    #     min_line = bins[pos]
+    #     bins = bins[pos:]
+    #     l_data = l_data[pos:]
+    #     print('Less')
+    #     print('\t',len(I0))
+    #     I0 = I0[pos:]
+    #     DI0 = DI0[pos:]
+    #     print('\t',min_line,len(I0))
+    # if end < bins[-2]: 
+    #     pos = np.argmin(np.abs(bins-end))
+    #     max_line = bins[pos]
+    #     bins = bins[:pos+1]
+    #     l_data = l_data[:pos]
+    #     print('More')
+    #     print('\t',len(I0))
+    #     I0 = I0[:pos]
+    #     DI0 = DI0[:pos]
+    #     print('\t',max_line,len(I0))
     # # store data
     # std.lines = std_wlen
     # std.spec  = std_data
     # bin data
-    bstd_wlen, bstd_s, _ = std.binning(bin=bins)
-    print('SEE',len(I0),len(bstd_wlen[0]),len(l_data))
+    # bstd_wlen, bstd_s, _ = std.binning(bin=bins)
+    # print('SEE',len(I0),len(bstd_wlen[0]),len(l_data))
 
     if display_plots:
         plt.figure()
         plt.suptitle('Spectra of Standard and Target after resizing')
         plt.subplot(2,1,1)
         plt.title('Standard')
-        plt.plot(bstd_wlen[0],bstd_s[0],'.-')
+        plt.plot(std_wlen,std_spec,'.-')
         plt.ylabel('$S_{std}$ [erg/(s cm$^2$ $\\AA$)]')
         plt.subplot(2,1,2)
         plt.title('Target')
@@ -865,7 +897,7 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen
     if diagn_plots:
         plt.figure()
         plt.title('Binned Standard Data')
-        plt.errorbar(bstd_wlen[0],bstd_s[0],bstd_s[1],bstd_wlen[1],'.',linestyle='dashed')
+        plt.errorbar(std_wlen,std_spec,std_Dspec,std_Dwlen,'.',linestyle='dashed')
         plt.grid(True,which='both',axis='x')
         plt.xticks(bins,bins,rotation=45)
         plt.ylabel('$S_{std}$ [erg/(s cm$^2$ $\\AA$)]')
@@ -874,7 +906,7 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen
     if display_plots:
         plt.figure()
         plt.title('Response Function')
-        plt.plot(l_data,I0/bstd_s[0],'.-')
+        plt.plot(l_data,I0/std_spec[0],'.-')
         plt.grid(True,which='both',axis='x')
         plt.xticks(bins,bins,rotation=45)
         plt.xlabel('$\\lambda$ [$\\AA$]')
@@ -882,7 +914,7 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen
     
     plt.show()
 
-    stand, Dstand = bstd_s
+    stand, Dstand = std_spec, std_Dspec
     R = I0/stand
     DR = R * np.sqrt((DI0/I0)**2 + (Dstand/stand)**2)
     return (l_data, Dl_data, bins), (R, DR), (op_dep, Dop_dep)
