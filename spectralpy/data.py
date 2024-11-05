@@ -123,18 +123,15 @@ def get_standard(name: str = 'Vega', sel: int = 0, diagn_plots: bool = False) ->
     """
     dir_path = os.path.join(CAL_DIR,'standards',name)
     if name == 'Vega':
-        file_name = 'theocomb_'
-        # spec_region = ['b','g','r','i']
-        spec_region = ['b','g','r']
+        file_name = 'vega_std.txt'
 
         wlen = np.empty(0)
         data = np.empty(0)
 
-        for r in spec_region:
-            data_file = os.path.join(dir_path,file_name + r + '.txt')
-            l, d, _, d2, _ = np.loadtxt(data_file, unpack=True)
-            wlen = np.append(wlen,l)
-            data = np.append(data,d) if sel == 0 else np.append(data,d2)
+        data_file = os.path.join(dir_path,file_name)
+        l, spec,_ = np.loadtxt(data_file, unpack=True)
+        wlen = np.append(wlen,l)
+        data = np.append(data,spec)
 
         pos = np.argsort(wlen)
         wlen = wlen[pos]
