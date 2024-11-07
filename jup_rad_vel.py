@@ -320,9 +320,11 @@ if __name__ == '__main__':
         Dw = w * Dt/t
         v  = (w*R).to(u.km/u.s)
         Dv = v * np.sqrt((Dw/w)**2 + (DR/R)**2)
+        spc.print_measure(delta,Ddelta,'Dl'+str(index),'AA')
         spc.print_measure(t,Dt,'T'+str(index))
         spc.print_measure(w,Dw,'omega'+str(index))
         spc.print_measure(v,Dv,'v_tan'+str(index))
+        print(f'period = {PERIOD} -->', 'OK' if t-Dt <= PERIOD <= t+Dt else 'NO') 
         return t, Dt
 
     p1 = period(shift1,'1')
