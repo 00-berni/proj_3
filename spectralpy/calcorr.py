@@ -579,7 +579,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         print(len(target.lines), len(target.spec))
         quickplot((target.lines,target.spec),labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),numfig=4,**pltargs)
         plt.errorbar(target.lines,target.spec,target.std,target.errs,fmt='.')
-        plt.yscale('log')
+        # plt.yscale('log')
         plt.show()        
     
     ## Store
@@ -690,7 +690,35 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
         plt.show()
     return (I0, DI0), (tau, Dtau)
 
-def vega_std(bin: int | float | ArrayLike = 50, edges: None | Sequence[float] = None, diagn_plots: bool = False) -> tuple[tuple[ndarray, ndarray],tuple[ndarray,ndarray]]:
+def remove_balmer(lines: np.ndarray, spectrum: np.ndarray, wlen_width: float = 80, display_plots: bool = False) -> np.ndarray:
+    from scipy.interpolate import CubicSpline
+    from .data import BALMER
+    wlen = lines.copy()
+    spec = spectrum.copy()
+    bins = []
+    wlen_ends = []
+    for bal in BALMER:
+        pos = np.where((wlen >= bal - wlen_width) & (wlen <= bal + wlen_width))[0]
+        if len(pos) != 0:
+            bins += [pos]
+            wlen_ends += [[bal - wlen_width, bal + wlen_width]]
+            wlen = np.delete(wlen,pos)
+            spec  = np.delete(spec ,pos)
+    if display_plots:
+        plt.figure()
+        plt.plot(wlen,spec,'.-')
+    interpol = CubicSpline(wlen,spec)
+    spectrum = spectrum.copy()
+    for p in bins:
+        spectrum[p] = interpol(lines[p])
+    if display_plots:
+        plt.figure()
+        plt.plot(lines,spectrum,'.-')
+        plt.show()
+    return spectrum
+
+
+def vega_std(bin: int | float | ArrayLike = 50, edges: None | Sequence[float] = None, balmer_rem: bool = True, diagn_plots: bool = False) -> tuple[tuple[ndarray, ndarray],tuple[ndarray,ndarray]]:
     """To bin spectrum data
 
     Parameters
@@ -716,6 +744,7 @@ def vega_std(bin: int | float | ArrayLike = 50, edges: None | Sequence[float] = 
         and the relative uncertainty is the STD
     """
     wlen, data = get_standard(diagn_plots=diagn_plots)
+    if balmer_rem: data = remove_balmer(wlen,data,50)
     (bin_wlen, bin_Dwlen), (bin_spec, bin_Dspec), _ = binning(data,wlen,bin,edges)
     # import spectralpy.data as dt
     # file_name = dt.os.path.join(dt.CAL_DIR,'standards','Vega','vega_std.fit')
@@ -755,7 +784,7 @@ def vega_std(bin: int | float | ArrayLike = 50, edges: None | Sequence[float] = 
 
 
 
-def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen_ends: list[list[float]],  bin_width: float | int = 50, std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
+def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen_ends: tuple[float,float],  bin_width: float | int = 50, std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
     """To estimate instrument response function
 
     Parameters
@@ -792,14 +821,18 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen
     x  = 1/np.sin(alt*np.pi/180)
     Dx = Dalt * np.cos(alt*np.pi/180) * x**2 * np.pi/180 
     # ends of the wavelengths range
-    min_line = np.trunc(np.max(wlen_ends,axis=0)[0])
-    max_line = np.trunc(np.min(wlen_ends,axis=0)[1]) + 1
+    # min_line = np.trunc(np.max(wlen_ends,axis=0)[0])
+    # max_line = np.trunc(np.min(wlen_ends,axis=0)[1]) + 1
+    # min_line = 4500
+    # max_line = 7201
+    min_line, max_line = wlen_ends
     print('MINMAX',min_line,max_line)
     # define variables to collect values
     l_data = []     #: central values of binned wavelengths
     y_data = []     #: binned spectrum data
     a_bin  = []     #: bins values
     for obs in tg_obs:
+        obs = obs.copy()
         # normalize spectrum data by exposure time
         obs.spec = obs.spec / obs.get_exposure()
         # bin the data
