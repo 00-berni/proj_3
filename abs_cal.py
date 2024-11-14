@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import spectralpy as spc
+from scipy.interpolate import CubicSpline
 
 label = lambda i,arr,name : name if i==arr[0] else ''
 
@@ -72,34 +73,65 @@ def display_lines(minpos: float, edges: tuple[float, float], sel: str | list[str
     plt.legend()
 
 
+def remove_balmer(lines: np.ndarray, spectrum: np.ndarray, wlen_width: float = 80, display_plots: bool = False) -> np.ndarray:
+    wlen = lines.copy()
+    spec = spectrum.copy()
+    bins = []
+    wlen_ends = []
+    for bal in balmer:
+        pos = np.where((wlen >= bal - wlen_width) & (wlen <= bal + wlen_width))[0]
+        if len(pos) != 0:
+            bins += [pos]
+            wlen_ends += [[bal - wlen_width, bal + wlen_width]]
+            wlen = np.delete(wlen,pos)
+            spec  = np.delete(spec ,pos)
+    if display_plots:
+        plt.figure()
+        plt.plot(wlen,spec,'.-')
+    interpol = CubicSpline(wlen,spec)
+    spectrum = spectrum.copy()
+    for p in bins:
+        spectrum[p] = interpol(lines[p])
+    if display_plots:
+        plt.figure()
+        plt.plot(lines,spectrum,'.-')
+        plt.show()
+    return spectrum
+
 if __name__ == '__main__':
     ## Data
     night = '17-03-27'
     target_name = 'Vega'
     selection = 'mean'
-    alt  = np.array([21.57,34.68,43.90,59.06],dtype=float)
+    alt  = np.array([21.57,34.68,43.90,59.06])
     Dalt = np.full(alt.shape,0.03)
 
     ## Wavelength Calibration
     ord1 = 2
     ord2 = 3
-    display_plots = True
+    display_plots = False
     target, lamp = spc.calibration(night, target_name+'01', selection, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
-
+    tmp = target.copy()
+    tmp.spec = remove_balmer(tmp.lines,tmp.spec)
     ## Prepare Data
     bin_width = 50
-    vega = [target]
+    targets = [target]
+    vega = [tmp]
     wlen_ends = [[target.lines[0],target.lines[-1]]]
     for i in range(1,len(alt)):
         tmp, _ = spc.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, display_plots=False)
+        targets += [tmp]
+        tmp.spec = remove_balmer(tmp.lines, tmp.spec)
         vega += [tmp]
         wlen_ends += [[tmp.lines[0],tmp.lines[-1]]]
         # plt.figure()
         # plt.errorbar(*tmp.spectral_data(True),fmt='.-')
         # display_lines(tmp.spec.min(),(tmp.lines.min(),tmp.lines.max()))
         # plt.show()
-
+    
     ## Response Function
+    wlen_ends = (4500, 7201)
+
     wlen, rfunc, tau = spc.ccd_response((alt, Dalt), vega, wlen_ends, bin_width=bin_width,display_plots=True)
 
     # alt_reg = 58 + 9*60 + 33.6*3600
@@ -109,49 +141,111 @@ if __name__ == '__main__':
 
     # reg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() * rfunc[0]
     print(tau)
-    sel = 0
-    target = vega[sel]
-    airmass = 1/np.sin(alt[sel]*np.pi/180)
-    (veg_wlen,Dveg_wlen), (veg_spec,Dveg_spec), _  = target.binning(bin=wlen[-1])
-    veg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() / rfunc[0]
+    ratio = np.empty((0,len(rfunc[0])))
+    x = 1/np.sin(alt*np.pi/180)
+    for sel in range(len(alt)):
+        target = targets[sel]
+        airmass = x[sel]
+        (veg_wlen,Dveg_wlen), (veg_spec,Dveg_spec), _  = target.binning(bin=wlen[-1])
+        veg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() / rfunc[0]
 
-    (std_wlen, std_Dwlen), (std_spec, std_Dspec) = spc.vega_std(wlen[-1],diagn_plots=display_plots)
+        (std_wlen, std_Dwlen), (std_spec, std_Dspec) = spc.vega_std(wlen[-1],balmer_rem=True,diagn_plots=display_plots)
 
+        ratio = np.append(ratio,[veg_spec/std_spec],axis=0)
 
-    plt.figure()
-    plt.errorbar(std_wlen,std_spec,std_Dspec,std_Dwlen,'.-')
-    display_lines(std_spec.min(),(std_wlen.min(),std_wlen.max()))
+        # plt.figure()
+        # plt.errorbar(std_wlen,std_spec,std_Dspec,std_Dwlen,'.-')
+        # display_lines(std_spec.min(),(std_wlen.min(),std_wlen.max()))
+        # plt.show()
+
+        # (std_wlen,_), (std_spec,_), _ = std.binning(bin=wlen[-1])
+
+        plt.figure()
+        plt.subplot(2,1,1)
+        plt.title('Comparison')
+        (tar_wlen,_), (tar_spec,_), _ = target.binning(bin=wlen[-1])
+        plt.plot(tar_wlen,tar_spec,'.-')
+        plt.subplot(2,1,2)
+        plt.errorbar(veg_wlen,veg_spec,Dveg_spec,Dveg_wlen,'.-',label=f'data - {alt[sel]}')
+        # plt.plot(reg_wlen,reg_spec,'.-')
+        plt.plot(std_wlen,std_spec,'.-',label='std')
     plt.show()
 
-    # (std_wlen,_), (std_spec,_), _ = std.binning(bin=wlen[-1])
+    plt.figure()
+    plt.plot(np.mean(ratio,axis=1),'.-')
+
+    target, _ = spc.calibration(night,'Regolo',selection,other_lamp=lamp,display_plots=False)
+    (bin_wlen,_), (bin_reg,_), _ = target.binning(bin=wlen[-1])
+    alt_reg = 58 + 9/60 + 33.6/3600
+    airmass = 1/np.sin(alt_reg*np.pi/180)
+    print('AIRMASS',airmass)
+    print('AIRMASS',x)
+    texp = target.get_exposure()
+    pos = np.argsort(x)
+    factor = np.array([ CubicSpline(x[pos], ratio[pos,i])(airmass) for i in range(ratio.shape[1])])
+    # for i in range(ratio.shape[1]):
+    #     tmp = CubicSpline(x, ratio[:,i])
+    #     factor = (tmp(airmass))
+    abs_reg = bin_reg / texp / rfunc[0] / factor * np.exp(tau[0]*airmass)
+    plt.figure()
+    plt.title('Correction Factor')
+    for r in ratio:
+        plt.plot(bin_wlen,r,'.-')
+    plt.plot(bin_wlen,factor,'.-',label='Reg')
+    plt.legend()
+
+    print(len(bin_wlen),len(abs_reg))
+    plt.figure()
+    plt.subplot(2,1,1)
+    plt.title('Regolo')
+    plt.plot(bin_wlen, bin_reg, '.-')
+    plt.subplot(2,1,2)
+    plt.plot(bin_wlen, abs_reg, '.-')
+    plt.show()
+    exit()
+    fig, (ax1,ax2,ax3) = plt.subplots(3,1)
+    
+    ax1.plot(bin_wlen, factor,'.-',color='red')
+    ax2.plot(bin_wlen, rfunc[0],'.-',color='blue')
+    ax3.plot(bin_wlen, tau[0],'.-',color='violet')
+
+    factor = CubicSpline(bin_wlen, factor)(target.lines)
+    respon = CubicSpline(bin_wlen, rfunc[0])(target.lines)
+    tau_in = CubicSpline(bin_wlen, tau[0])(target.lines)
+    ax1.plot(target.lines,factor,'+--',color='red')
+    ax1.set_xlim(*wlen_ends)
+    ax2.plot(target.lines,respon,'+--',color='blue')
+    ax2.set_xlim(*wlen_ends)
+    ax3.plot(target.lines,tau_in,'+--',color='violet')
+    ax3.set_xlim(*wlen_ends)
+    
+    abs_reg = target.spec / texp / respon / factor * np.exp(tau_in*airmass)
 
     plt.figure()
     plt.subplot(2,1,1)
-    plt.title('Comparison')
-    (tar_wlen,_), (tar_spec,_), _ = target.binning(bin=wlen[-1])
-    plt.plot(tar_wlen,tar_spec,'.-')
+    plt.title('Regolo')
+    plt.plot(target.lines, target.spec, '.-')
+    plt.xlim(*wlen_ends)
     plt.subplot(2,1,2)
-    plt.errorbar(veg_wlen,veg_spec,Dveg_spec,Dveg_wlen,'.-')
-    # plt.plot(reg_wlen,reg_spec,'.-')
-    plt.plot(std_wlen,std_spec,'.-')
-
-    # plt.figure()
-    # plt.plot(wlen,std_spec-veg_spec)
-
-    from scipy.interpolate import CubicSpline
-    rfunc = CubicSpline(wlen[0],rfunc[0])
-    tau = CubicSpline(wlen[0],tau[0])
-
-    veg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
-    # reg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
-
-
-    plt.figure()
-    plt.subplot(2,1,1)
-    plt.title('Comparison Interpolating')
-    plt.plot(target.lines,target.spec,'.-')
-    plt.subplot(2,1,2)
-    plt.plot(target.lines,veg_spec,'.-')
-    # plt.plot(target.lines,reg_spec,'.-')
-    plt.plot(std_wlen,std_spec,'.-')
+    plt.plot(target.lines, abs_reg, '.-')
+    plt.xlim(*wlen_ends)
     plt.show()
+        # plt.figure()
+        # plt.plot(wlen,std_spec-veg_spec)
+
+        # rfunc = CubicSpline(wlen[0],rfunc[0])
+        # tau = CubicSpline(wlen[0],tau[0])
+
+        # veg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
+        # # reg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
+
+
+        # plt.figure()
+        # plt.subplot(2,1,1)
+        # plt.title('Comparison Interpolating')
+        # plt.plot(target.lines,target.spec,'.-')
+        # plt.subplot(2,1,2)
+        # plt.plot(target.lines,veg_spec,'.-')
+        # # plt.plot(target.lines,reg_spec,'.-')
+        # plt.plot(std_wlen,std_spec,'.-')
+        # plt.show()
