@@ -64,6 +64,10 @@ RESULT_DIR = os.path.join(PROJECT_DIR, 'results')           #: path of results d
 OBJ_FILE = os.path.join(DATA_DIR, 'objs_per_night.json')    #: path of file with objects collection
 DATA_ALL = data_extraction(OBJ_FILE)                        #: dictionary with the targets per night
 
+BALMER = [6562.79, 4861.350, 4340.472, 4101.734, 3970.075, 3889.064, 3835.397, 3797.909, 3770.633, 3750.151]
+BALERR = [0.03,0.05]+[0.006]*7
+
+
 def get_cal_lines(ch_obs: str, ch_obj: str) -> ndarray:
     """To load the edges of the image cut
 
