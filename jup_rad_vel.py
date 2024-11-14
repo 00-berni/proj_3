@@ -154,6 +154,8 @@ if __name__ == '__main__':
     # compute the mean and the STD
     cen, Dcen = spc.mean_n_std(c)
     rad, Drad = spc.mean_n_std(r) 
+    rad = 76
+    # rad = 48
     spc.print_measure(cen,Dcen,'Centre','pxs')
     spc.print_measure(rad,Drad,'Radius','pxs')
 
@@ -202,8 +204,10 @@ if __name__ == '__main__':
     if bottom > len(data): print('Oh no'); exit()
     
     # average over 3 pixels
-    j1 = np.mean(data[up-1:up+2],axis=0)
-    j2 = np.mean(data[bottom-1:bottom+2],axis=0)
+    j1 = data[up]
+    j2 = data[bottom]
+    # j1 = np.mean(data[up-1:up+2],axis=0)
+    # j2 = np.mean(data[bottom-1:bottom+2],axis=0)
 
     plt.figure()
     plt.imshow(data,cmap='gray_r',norm='log',origin='lower')
@@ -212,8 +216,10 @@ if __name__ == '__main__':
     plt.axhline(bottom,0,1,linestyle='dashed',color='black',alpha=0.7)
     plt.colorbar()
     plt.figure()
-    plt.plot(j1,'-',label=f'h = {up}')
-    plt.plot(j2,'-',label=f'h = {bottom}')
+    plt.plot(j1,'-',label=f'h = {up}',color='b')
+    plt.plot(j2,'-',label=f'h = {bottom}',color='orange')
+    plt.axhline(j1.mean(),0,1,linestyle='dashed',color='b')
+    plt.axhline(j2.mean(),0,1,linestyle='dashed',color='orange')
     plt.legend()
     plt.show()
 
@@ -231,12 +237,37 @@ if __name__ == '__main__':
     else:
         px_val = np.arange(start,data.shape[1]+stop)
 
+    print(j1.shape)
+
     # store the data
     j1_p = j1[slice(start,stop)].copy()
     j2_p = j2[slice(start,stop)].copy()
+    # j2_p = data[int(mid)]
     # remove the average
-    j1 = j1_p - data.mean(axis=0)[slice(start,stop)]
-    j2 = j2_p - data.mean(axis=0)[slice(start,stop)]
+    # j1 = j1_p - data.mean(axis=0)[slice(start,stop)]
+    # j2 = j2_p - data.mean(axis=0)[slice(start,stop)]
+    # j1 = j1_p - np.full(j1_p.shape,4000)
+    # j2 = j2_p - np.full(j1_p.shape,4000)
+    plt.figure()    
+    plt.axhline(j1.mean(),0,1,linestyle='dotted',color='b')
+    plt.axhline(j2.mean(),0,1,linestyle='dotted',color='orange')
+    j1 = j1_p - j1.mean()
+    j2 = j2_p - j2.mean()
+    # j1 = j1_p - np.full(j1_p.shape,4000)
+    # j2 = j2_p - np.full(j1_p.shape,4000)
+    # j1 = j1_p - data[int(mid)-1:int(mid)+2,slice(start,stop)].mean(axis=0)
+    # j2 = j2_p - data[int(mid)-1:int(mid)+2,slice(start,stop)].mean(axis=0)
+    plt.plot(j1_p,'-',label=f'h = {up}',color='b')
+    plt.plot(j2_p,'-',label=f'h = {bottom}',color='orange')
+    plt.axhline(j1_p.mean(),0,1,linestyle='dashed',color='b')
+    plt.axhline(j2_p.mean(),0,1,linestyle='dashed',color='orange')
+    plt.show()
+    plt.figure()
+    plt.plot(j1)
+    plt.plot(j2)
+    plt.show()
+    # j1 = j1_p - j1_p.mean()
+    # j2 = j2_p - j2_p.mean()
 
     plt.figure()
     plt.imshow(data[:,slice(start,stop)],cmap='gray_r',norm='log',origin='lower')
@@ -275,18 +306,20 @@ if __name__ == '__main__':
     plt.plot(px_val,j1)
     plt.plot(px_val,j2)
     plt.grid()
-    plt.subplot(3,1,2)
-    plt.title(f'shift: {shift1}')
-    plt.plot(px_val,j1,label=f'h = {up}')
-    plt.plot(px_val[:shift1],j2[-shift1:],label=f'h = {bottom}')
-    plt.grid()
-    plt.legend()
-    plt.subplot(3,1,3)
-    plt.title(f'shift: {shift2}')
-    plt.plot(px_val,j1,label=f'h = {up}')
-    plt.plot(px_val[shift2:],j2[:-shift2],label=f'h = {bottom}')
-    plt.grid()
-    plt.legend()
+    if shift1 != 0:
+        plt.subplot(3,1,2)
+        plt.title(f'shift: {shift1}')
+        plt.plot(px_val,j1,label=f'h = {up}')
+        plt.plot(px_val[:shift1],j2[-shift1:],label=f'h = {bottom}')
+        plt.grid()
+        plt.legend()
+    if shift2 != 0:
+        plt.subplot(3,1,3)
+        plt.title(f'shift: {shift2}')
+        plt.plot(px_val,j1,label=f'h = {up}')
+        plt.plot(px_val[shift2:],j2[:-shift2],label=f'h = {bottom}')
+        plt.grid()
+        plt.legend()
     plt.show()
 
     ## Wavelength Calibration
@@ -309,11 +342,14 @@ if __name__ == '__main__':
     px_arm  = fit.fit_par[0]
     Dpx_arm = fit.fit_err[0]
 
+    # px_arm = 0.115
     ## Period
     def period(delta, index):
         print('\nShift'+index+' :',delta)
         delta  = px_arm * abs(delta)
         Ddelta = Dpx_arm * abs(delta)
+        t0 = (8*np.pi * (R/C) * (BALMER/delta)).to(u.h)
+        print(t0)
         t  = (8*np.pi * (R/C) * (BALMER/delta) * (h/rad)).to(u.h)
         Dt = t * np.sqrt( (DR/R)**2 + (ERRBAL/BALMER)**2 + (Ddelta/delta)**2 + (Drad/rad)**2 + (Dh/h)**2)
         w  = (2*np.pi / t).to(1 / u.s)
@@ -326,19 +362,20 @@ if __name__ == '__main__':
         spc.print_measure(v,Dv,'v_tan'+str(index))
         print(f'period = {PERIOD} -->', 'OK' if t-Dt <= PERIOD <= t+Dt else 'NO') 
         return t, Dt
+    if shift1 != 0:
+        p1 = period(shift1,'1')
+    if shift2 != 0:
+        p2 = period(shift2,'2')
+    if shift1 != 0 and shift2 != 0:
+        p = np.mean([p1[0].value,p2[0].value]) * u.h
+        Dp = np.sqrt((p1[1].value)**2 + (p2[1].value)**2) * u.h
+        w  = (2*np.pi / p).to(1 / u.s)
+        Dw = w * Dp/p
+        v  = (w*R).to(u.km/u.s)
+        Dv = v * np.sqrt((Dw/w)**2 + (DR/R)**2)
+        print('\nResults:')
+        spc.print_measure(p,Dp,'T')
+        spc.print_measure(w,Dw,'omega')
+        spc.print_measure(v,Dv,'v_tan')
 
-    p1 = period(shift1,'1')
-    p2 = period(shift2,'2')
-
-    p = np.mean([p1[0].value,p2[0].value]) * u.h
-    Dp = np.sqrt((p1[1].value)**2 + (p2[1].value)**2) * u.h
-    w  = (2*np.pi / p).to(1 / u.s)
-    Dw = w * Dp/p
-    v  = (w*R).to(u.km/u.s)
-    Dv = v * np.sqrt((Dw/w)**2 + (DR/R)**2)
-    print('\nResults:')
-    spc.print_measure(p,Dp,'T')
-    spc.print_measure(w,Dw,'omega')
-    spc.print_measure(v,Dv,'v_tan')
-
-    print(f'period = {PERIOD} -->', 'OK' if p-Dp <= PERIOD <= p+Dp else 'NO') 
+        print(f'period = {PERIOD} -->', 'OK' if p-Dp <= PERIOD <= p+Dp else 'NO') 
