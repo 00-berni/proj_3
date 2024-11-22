@@ -93,6 +93,8 @@ def fits_image(fig: Figure, ax: Axes, data: Spectrum, v: int = -1, subtitle: str
     if v == 1 : color = 'viridis'
     elif v == 0 : color = 'gray'
     else : color = 'gray_r'
+    if 'aspect' not in figargs.keys():
+        figargs['aspect'] = 'auto'
     image = ax.imshow(data.data, cmap=color,**figargs)
     cbar = fig.colorbar(image, ax=ax, cmap=color, orientation='horizontal')
     cbar.set_label('intensity [a.u.]')
