@@ -213,7 +213,8 @@ class Spectrum():
             lims = target.cut       #: cut image edges to correct inclination 
             ylim = lims[:2]
             xlim = lims[2:]
-            data = target.data[slice(*ylim), slice(*xlim)].copy()
+            data  = target.data[slice(*ylim), slice(*xlim)].copy()
+            Ddata = target.sigma[slice(*ylim), slice(*xlim)].copy() if target.sigma is not None else None 
             if not gauss_corr:
                 if lim_width is None:
                     print('CUT',lims)
@@ -277,12 +278,12 @@ class Spectrum():
                 print('\nGAUSSIAN CORRECTION')
                 if diagn_plots: fig, ax = plt.subplots(1,1)
                 # prepare data 
-                x_pos = x_pos#[::50]
+                x_pos = x_pos[::10]
                 y_pos, Dy = np.array([]), np.array([])
                 # fit colums with a gaussian
                 for i in x_pos:
                     values = data[:,i]
-                    Dvalues = target.sigma[:,i].copy() if target.sigma is not None else None
+                    Dvalues = Ddata[:,i].copy() if Ddata is not None else None
                     y = np.arange(len(values))
                     # estimate HWHM for the initial value of the sigma
                     hwhm = abs(np.argmax(values) - np.argmin(abs(values - max(values)/2)))
@@ -291,6 +292,7 @@ class Spectrum():
                     pos = np.where(values > np.mean(values)*2)
                     if len(pos[0]) <= 3: pos = np.where(values > np.mean(values))
                     values = values[pos]
+                    Dvalues = Dvalues[pos]
                     y = y[pos]
                     # compute the fit
                     fit = FuncFit(xdata=y, ydata=values,xerr=0.5,yerr=Dvalues)
@@ -484,6 +486,49 @@ class Spectrum():
     #     self.data[index] = value
 
 
+# class PolyMod():
+#     @staticmethod
+#     def func(xdata: ArrayLike, *pars) -> ArrayLike:
+#         ord = len(pars)-1
+#         poly = [ pars[i] * xdata**(ord - i) for i in range(ord+1)]
+#         return np.sum(poly,axis=0)
+
+#     def error(self, xdata: ArrayLike, Dxdata: ArrayLike | None, par: ArrayLike, cov: ArrayLike | None = None) -> ArrayLike:
+#         ord = self.ord
+#         if self.par is None: self.par = np.copy(par)
+#         err = 0
+#         if Dxdata is not None:
+#             err += (np.sum([ par[i] * (ord-i) * xdata**(ord-i-1) for i in range(ord)],axis=0) * Dxdata)**2
+#         if cov is not None:
+#             der = lambda i : xdata**(ord-i)
+#             err += np.sum([ der(i)*der(j) * cov[i,j] for i in range(ord+1) for j in range(ord+1)],axis=0)
+#         if len(np.where(err<0)[0]) != 0: 
+#             print(err[err<0])
+#             raise ValueError("Negative value(s) in uncertainty estimation")
+#         err = np.sqrt(err)
+#         return err
+
+#     def __init__(self, par: ArrayLike, cov: ArrayLike) -> None:
+#         self.ord = len(par) - 1 
+#         self.par = np.copy(par)
+#         self.cov = np.copy(cov)
+    
+
+        
+
+#     def value(self, xdata: ArrayLike) -> ArrayLike:
+#         return self.func(xdata,*self.par)
+
+#     def uncert(self, xdata: ArrayLike, Dxdata: ArrayLike | None = None) -> ArrayLike:
+#         return self.error(xdata,Dxdata,self.par,self.cov)
+
+# class GaussMod():
+#     def __init__(self):
+#         self.par = None
+#         self.cov = None
+
+#     def func(self,)
+
 class FuncFit():
     """To compute the fit procedure of some data
 
@@ -521,6 +566,56 @@ class FuncFit():
         sigma = 0.20 +- 0.01
         red_chi = 72 +- 15 %
     """
+    @staticmethod
+    def poly_func(xdata: ArrayLike, *pars) -> ArrayLike:
+        ord = len(pars)-1
+        poly = [ pars[i] * xdata**(ord - i) for i in range(ord+1)]
+        return np.sum(poly,axis=0)
+
+    @staticmethod
+    def poly_error(xdata: ArrayLike, Dxdata: ArrayLike | None, par: ArrayLike, cov: ArrayLike | None = None) -> ArrayLike:
+        ord = len(par)-1
+        err = 0
+        if Dxdata is not None:
+            err += (np.sum([ par[i] * (ord-i) * xdata**(ord-i-1) for i in range(ord)],axis=0) * Dxdata)**2
+        if cov is not None:
+            der = lambda i : xdata**(ord-i)
+            plt.figure()
+            plt.plot(np.sum([ xdata**(2*ord-i-j) * cov[i,j] for i in range(ord+1) for j in range(ord+1)],axis=0))
+            plt.figure()
+            plt.imshow([ xdata**(2*ord-i-j) * cov[i,j] for i in range(ord+1) for j in range(ord+1)],aspect='auto')
+            plt.colorbar()
+            plt.yticks(np.arange((ord+1)**2), [f'{i}{j}' for i in range(ord+1) for j in range(ord+1)])
+            plt.show()
+            err += np.sum([ xdata**(2*ord-i-j) * cov[i,j] for i in range(ord+1) for j in range(ord+1)],axis=0)
+        if len(np.where(err<0)[0]) != 0: 
+            print(err[err<0])
+            raise ValueError("Negative value(s) in uncertainty estimation")
+        err = np.sqrt(err)
+        return err
+
+    @staticmethod
+    def gauss_func(xdata: ArrayLike, *args) -> ArrayLike:
+        k, mu, sigma = args
+        z = (xdata - mu) / sigma
+        return k * np.exp(-z**2/2)
+
+    @staticmethod
+    def err_func(xdata: ArrayLike, Dxdata: ArrayLike | None, par: ArrayLike, cov: ArrayLike | None = None) -> ArrayLike:
+        coeff = FuncFit.gauss_func(xdata,*par) 
+        err = 0
+        if Dxdata is not None:
+            err += (coeff * (xdata-par[1]) / par[2]**2 * Dxdata)**2
+        if cov is not None:
+            der = np.array([np.ones(xdata.shape)/par[0],
+                            (xdata-par[1])/par[2]**2,
+                            (xdata-par[1])**2/par[2]**3])
+            der *= coeff
+            err += np.sum([ der[i]*der[j] * cov[i,j] for i in range(3) for j in range(3)],axis=0)
+        err = np.sqrt(err)
+        return err
+
+
     def __init__(self, xdata: ArrayLike, ydata: ArrayLike, yerr: ArrayLike | None = None, xerr: ArrayLike | None = None) -> None:
         """Constructor of the class
 
@@ -577,6 +672,7 @@ class FuncFit():
         from scipy.optimize import curve_fit
         if yerr is None: 
             chiargs['absolute_sigma'] = False
+        print(yerr)
         pop, pcov = curve_fit(method, xdata, ydata, initial_values, sigma=yerr, **chiargs)
         sigma = yerr
         print('XERR',xerr)
@@ -620,7 +716,7 @@ class FuncFit():
             self.chi_routine(**fitargs)
         elif mode == 'odr':
             self.odr_routine(**fitargs)
-        else: return ValueError(f'mode = `{mode}` is not accepted')
+        else: raise ValueError(f'mode = `{mode}` is not accepted')
 
 
     def infos(self, names: Sequence[str] | None = None) -> None:
@@ -691,31 +787,12 @@ class FuncFit():
         names : list[str] | None, optional
             names, by default None
         """
-        def gauss_func(data: ArrayLike, *args) -> ArrayLike:
-            k, mu, sigma = args
-            z = (data - mu) / sigma
-            return k * np.exp(-z**2/2)
-        
-        def err_der(x: ArrayLike, Dx: ArrayLike, par: ArrayLike) -> ArrayLike:
-            coeff = gauss_func(x,*par) 
-            return np.abs(coeff * (x-par[1]) / par[2]**2 * Dx)
-
         if mode == 'curve_fit': 
-            fitargs['err_func'] = err_der
-        self.pipeline(method=gauss_func,initial_values=initial_values,names=names,mode=mode,**fitargs)
+            fitargs['err_func'] = FuncFit.err_func
+        self.pipeline(method=FuncFit.gauss_func,initial_values=initial_values,names=names,mode=mode,**fitargs)
         
-        def err_func(xdata: ArrayLike, Dx: ArrayLike | None, par: ArrayLike, cov: ArrayLike) -> ArrayLike:
-            coeff = gauss_func(xdata,*par) 
-            der = np.array([np.ones(xdata.shape)/par[0],
-                            (xdata-par[1])/par[2]**2,
-                            (xdata-par[1])**2/par[2]**3])
-            der *= coeff
-            err = np.sum([ der[i]*der[j] * cov[i,j] for i in range(3) for j in range(3)],axis=0)
-            if Dx is not None:
-                err += ( err_der(xdata, Dx, par))**2
-            err = np.sqrt(err)
-            return err
-        error_function = lambda x, Dx : err_func(x,Dx,self.fit_par,self.res['cov'])
+        # error_function = lambda x, Dx : FuncFit.err_func(x,Dx,self.fit_par,self.res['cov'])
+        error_function = lambda x, Dx : FuncFit.err_func(x,Dx,self.fit_par)
         self.res['errfunc'] = error_function
 
     def voigt_fit(self, initial_values: Sequence[float], names: Sequence[str] = ['sigma','gamma','k','median'], mode: Literal['odr','curve_fit'] = 'odr',**fitargs):
@@ -734,28 +811,12 @@ class FuncFit():
 
 
     def pol_fit(self, ord: int, initial_values: Sequence[float], names: Sequence[str] | None = None, mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
-        def pol_func(x: ArrayLike, *args) -> ArrayLike:
-            poly = [ args[i] * x**(ord - i) for i in range(ord+1)]
-            return np.sum(poly,axis=0)
-        
-        def err_der(x: ArrayLike, Dx: ArrayLike, par: ArrayLike) -> ArrayLike:
-            return np.abs(np.sum([ par[i] * (ord-i) * x**(ord-i-1) for i in range(ord)],axis=0) * Dx)
-
         if mode == 'curve_fit': 
-            fitargs['err_func'] = err_der
-        self.pipeline(pol_func,initial_values=initial_values,names=names, mode=mode, **fitargs)
-        
-        def err_func(xdata: ArrayLike, Dx: ArrayLike | None, par: ArrayLike, cov: ArrayLike) -> ArrayLike:
-            der = lambda i : xdata**(ord-i)
-            err = np.sum([ der(i)*der(j) * cov[i,j] for i in range(ord+1) for j in range(ord+1)],axis=0)
-            if Dx is not None:
-                err += (err_der(xdata,Dx,par))**2
-            print(err[err<0])
-            if len(np.where(err<0)[0]) != 0: exit()
-            err = np.sqrt(err)
-            return err
-        error_function = lambda x, Dx : err_func(x, Dx, self.fit_par, self.res['cov'])
-        self.res['errfunc'] = error_function
+            fitargs['err_func'] = FuncFit.poly_error
+        self.pipeline(FuncFit.poly_func,initial_values=initial_values,names=names, mode=mode, **fitargs)
+        print(self.res['cov'])
+        # self.res['errfunc'] = lambda x,Dx: FuncFit.poly_error(x,Dx,self.fit_par,self.res['cov'])
+        self.res['errfunc'] = lambda x,Dx: FuncFit.poly_error(x,Dx,self.fit_par)
 
     def linear_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('m','q'), mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
         self.pol_fit(ord=1, initial_values=initial_values, names=names, mode=mode, **fitargs)
