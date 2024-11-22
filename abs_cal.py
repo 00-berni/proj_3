@@ -100,6 +100,7 @@ def remove_balmer(lines: np.ndarray, spectrum: np.ndarray, wlen_width: float = 8
 
 if __name__ == '__main__':
     ## Data
+    print('-- DATA --')
     night = '17-03-27'
     target_name = 'Vega'
     selection = 'mean'
@@ -107,13 +108,16 @@ if __name__ == '__main__':
     Dalt = np.full(alt.shape,0.03)
 
     ## Wavelength Calibration
+    print('-- WAVELENGTH CALIBRATION --')
     ord1 = 2
     ord2 = 3
     display_plots = False
     target, lamp = spc.calibration(night, target_name+'01', selection, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
     tmp = target.copy()
     tmp.spec = remove_balmer(tmp.lines,tmp.spec)
+    
     ## Prepare Data
+    print('-- PREPARE DATA --')
     bin_width = 50
     targets = [target]
     vega = [tmp]
@@ -130,6 +134,7 @@ if __name__ == '__main__':
         # plt.show()
     
     ## Response Function
+    print('-- RESPONSE FUNCTION --')
     wlen_ends = (4500, 7201)
 
     wlen, rfunc, tau = spc.ccd_response((alt, Dalt), vega, wlen_ends, bin_width=bin_width,display_plots=True)

@@ -104,7 +104,7 @@ if __name__ == '__main__':
     ord1 = 2
     ord2 = 3
     display_plots = True
-    target, lamp = spc.calibration(night, target_name, selection, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
+    target, lamp = spc.calibration(night, target_name, selection,angle_fitargs={'mode':'curve_fit'},lamp_fitargs={'mode': 'curve_fit'}, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
 
     # ## Lines
     # data = target.spectral_data(plot_format=True)
