@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 from astropy.units import Quantity
+from statistics import pvariance
 
 class Spectrum():
     """To store spectrum information
@@ -238,6 +239,17 @@ class Spectrum():
             # compute maxima coordinates
             x_pos = np.arange(0,data.shape[1],lag)
             y_pos = np.argmax(data[:,x_pos], axis=0)
+            hwhm = []
+            for x,y in zip(x_pos,y_pos):
+                hm = data[y,x]/2
+                up_data = data[y+1:,x].copy()
+                down_data = data[:y,x].copy()
+                up_hwhm = np.argmin(abs(up_data-hm))/2
+                down_hwhm = (y-np.argmin(abs(down_data-hm)))/2
+                m_hwhm = (up_hwhm+down_hwhm)/2
+                hwhm += [m_hwhm]
+            Dx = 0
+            Dy = hwhm
             if not gauss_corr:
                 pos = np.where((y_pos <= x_pos*m12[0] + yc[0] - mean_width) | (y_pos >= x_pos*m12[0] + yc[0] + mean_width))[0]
                 if diagn_plots:
@@ -256,9 +268,13 @@ class Spectrum():
                 r_p = (x_pos[pos],y_pos[pos])
                 x_pos = np.delete(x_pos,pos) 
                 y_pos = np.delete(y_pos,pos) 
+                Dy = np.delete(Dy,pos) 
 
-            Dx = 0
-            Dy = 3
+            if diagn_plots:
+                plt.figure()
+                plt.imshow(data,cmap='gray_r',aspect='auto')
+                plt.errorbar(x_pos,y_pos,Dy,fmt='.')
+                plt.show()
 
             if init is None: init = [np.mean([m1,m2,m12]),0.] if not gauss_corr else [0.9,ylim[0]]
             fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy, xerr=Dx)
@@ -278,7 +294,7 @@ class Spectrum():
                 print('\nGAUSSIAN CORRECTION')
                 if diagn_plots: fig, ax = plt.subplots(1,1)
                 # prepare data 
-                x_pos = x_pos[::10]
+                # x_pos = x_pos[::10]
                 y_pos, Dy = np.array([]), np.array([])
                 # fit colums with a gaussian
                 for i in x_pos:
@@ -573,24 +589,13 @@ class FuncFit():
         return np.sum(poly,axis=0)
 
     @staticmethod
-    def poly_error(xdata: ArrayLike, Dxdata: ArrayLike | None, par: ArrayLike, cov: ArrayLike | None = None) -> ArrayLike:
+    def poly_error(xdata: ArrayLike, Dxdata: ArrayLike | None, par: ArrayLike, *errargs) -> ArrayLike:
         ord = len(par)-1
         err = 0
         if Dxdata is not None:
             err += (np.sum([ par[i] * (ord-i) * xdata**(ord-i-1) for i in range(ord)],axis=0) * Dxdata)**2
-        if cov is not None:
-            der = lambda i : xdata**(ord-i)
-            plt.figure()
-            plt.plot(np.sum([ xdata**(2*ord-i-j) * cov[i,j] for i in range(ord+1) for j in range(ord+1)],axis=0))
-            plt.figure()
-            plt.imshow([ xdata**(2*ord-i-j) * cov[i,j] for i in range(ord+1) for j in range(ord+1)],aspect='auto')
-            plt.colorbar()
-            plt.yticks(np.arange((ord+1)**2), [f'{i}{j}' for i in range(ord+1) for j in range(ord+1)])
-            plt.show()
-            err += np.sum([ xdata**(2*ord-i-j) * cov[i,j] for i in range(ord+1) for j in range(ord+1)],axis=0)
-        if len(np.where(err<0)[0]) != 0: 
-            print(err[err<0])
-            raise ValueError("Negative value(s) in uncertainty estimation")
+        if len(errargs) != 0:
+            err += np.sum(np.square(errargs))
         err = np.sqrt(err)
         return err
 
@@ -601,17 +606,13 @@ class FuncFit():
         return k * np.exp(-z**2/2)
 
     @staticmethod
-    def err_func(xdata: ArrayLike, Dxdata: ArrayLike | None, par: ArrayLike, cov: ArrayLike | None = None) -> ArrayLike:
+    def err_func(xdata: ArrayLike, Dxdata: ArrayLike | None, par: ArrayLike, *errargs) -> ArrayLike:
         coeff = FuncFit.gauss_func(xdata,*par) 
         err = 0
         if Dxdata is not None:
             err += (coeff * (xdata-par[1]) / par[2]**2 * Dxdata)**2
-        if cov is not None:
-            der = np.array([np.ones(xdata.shape)/par[0],
-                            (xdata-par[1])/par[2]**2,
-                            (xdata-par[1])**2/par[2]**3])
-            der *= coeff
-            err += np.sum([ der[i]*der[j] * cov[i,j] for i in range(3) for j in range(3)],axis=0)
+        if len(errargs) != 0:
+            err += np.sum(np.square(errargs))
         err = np.sqrt(err)
         return err
 
@@ -641,7 +642,8 @@ class FuncFit():
         self.data = [xdata, ydata, yerr, xerr]
         self.fit_par: ndarray | None = None
         self.fit_err: ndarray | None = None
-        self.res = {}
+        self.errvar: float | None = None
+        self.res: dict = {}
 
     def odr_routine(self, **odrargs) -> None:
         xdata, ydata, yerr, xerr = self.data
@@ -672,7 +674,6 @@ class FuncFit():
         from scipy.optimize import curve_fit
         if yerr is None: 
             chiargs['absolute_sigma'] = False
-        print(yerr)
         pop, pcov = curve_fit(method, xdata, ydata, initial_values, sigma=yerr, **chiargs)
         sigma = yerr
         print('XERR',xerr)
@@ -717,6 +718,7 @@ class FuncFit():
         elif mode == 'odr':
             self.odr_routine(**fitargs)
         else: raise ValueError(f'mode = `{mode}` is not accepted')
+        self.errvar = np.sqrt(pvariance(self.residuals()))
 
 
     def infos(self, names: Sequence[str] | None = None) -> None:
@@ -792,7 +794,7 @@ class FuncFit():
         self.pipeline(method=FuncFit.gauss_func,initial_values=initial_values,names=names,mode=mode,**fitargs)
         
         # error_function = lambda x, Dx : FuncFit.err_func(x,Dx,self.fit_par,self.res['cov'])
-        error_function = lambda x, Dx : FuncFit.err_func(x,Dx,self.fit_par)
+        error_function = lambda x, Dx : FuncFit.err_func(x,Dx,self.fit_par,self.errvar)
         self.res['errfunc'] = error_function
 
     def voigt_fit(self, initial_values: Sequence[float], names: Sequence[str] = ['sigma','gamma','k','median'], mode: Literal['odr','curve_fit'] = 'odr',**fitargs):
@@ -815,8 +817,8 @@ class FuncFit():
             fitargs['err_func'] = FuncFit.poly_error
         self.pipeline(FuncFit.poly_func,initial_values=initial_values,names=names, mode=mode, **fitargs)
         print(self.res['cov'])
-        # self.res['errfunc'] = lambda x,Dx: FuncFit.poly_error(x,Dx,self.fit_par,self.res['cov'])
-        self.res['errfunc'] = lambda x,Dx: FuncFit.poly_error(x,Dx,self.fit_par)
+        self.res['errfunc'] = lambda x,Dx: FuncFit.poly_error(x,Dx,self.fit_par,self.errvar)
+        # self.res['errfunc'] = lambda x,Dx: FuncFit.poly_error(x,Dx,self.fit_par)
 
     def linear_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('m','q'), mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
         self.pol_fit(ord=1, initial_values=initial_values, names=names, mode=mode, **fitargs)
@@ -1058,3 +1060,4 @@ def argmin(arr: ndarray, out: Literal['ndarray','tuple'] = 'tuple', **minkw) -> 
         return minpos
     elif out == 'ndarray':
         return np.array([*minpos])
+    
