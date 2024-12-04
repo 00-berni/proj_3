@@ -5,16 +5,18 @@ from spectralpy import TARGETS
 
 label = lambda i,arr,name : name if i==arr[0] else ''
 
-def plot_line(lines: list[float], name: str, color: str, minpos: float) -> None:
+def plot_line(lines: list[float], name: str, color: str, minpos: float,**figargs) -> None:
+    if 'linestyle' not in figargs.keys():
+        figargs['linestyle'] = '--'
     for line in lines:
-        plt.axvline(line,0,1,color=color,label=label(line,lines,name))
-        plt.annotate(name,(line,minpos),(line+10,minpos))
+        plt.axvline(line,0,1,color=color,label=label(line,lines,name),**figargs)
+        # plt.annotate(name,(line,minpos),(line+10,minpos))
 
 
 b_name = ['H$\\alpha$', 'H$\\beta$', 'H$\\gamma$', 'H$\\delta$', 'H$\\epsilon$', 'H$\\xi$', 'H$\\eta$','H$\\theta$','H$\\iota$','H$\\kappa$']
 balmer = [6562.79, 4861.350, 4340.472, 4101.734, 3970.075, 3889.064, 3835.397, 3797.909, 3770.633, 3750.151]
 bal_err = [0.03,0.05]+[0.006]*7
-feI  = [7610.2676,  7635.8482,  5896.7357, 5274.9807, 4300.2036, 4384.6718, 4401.4425,  4459.3521, 4351.5437]
+feI  = [3021.0725, 3581.1928, 3820.4249, 4307.9020, 4383.5447,  4668.1341,  4957.5965, 5168.8978, 5269.5370 ] #[7610.2676,  7635.8482,  5896.7357, 5274.9807, 4300.2036, 4384.6718, 4401.4425,  4459.3521, 4351.5437]
 feII = [7636.2373, 7611.2601, 6871.6994, 6496.9415, 6497.2764, 6497.4985,  5175.3973, 5274.5277, 4384.31313, 4459.67779, 4351.76199, 4336.30962]
 tiI  = [6497.683, 4300.4848, 4300.5538, 4301.0787, 4322.1141, 4321.7709 ]
 tiII = [4300.0424,  4301.29545, 4350.83776  ]
@@ -22,11 +24,16 @@ neI  = [ 5274.0406, 4402.380, 4460.1758, 4336.2251 ]
 neII = [4384.1063, 4384.2194, 4322.372]
 oI  = [5274.967,5275.123]
 oII = [4384.446, 4351.260, 4336.859, 4322.4477]
-mgI  = [4351.9057]
+mgI  = [4351.9057,5167.3216,5172.6843,5183.6042]
 mgII = [4384.637]
 arI  = []
 arII = [4401.75478] 
+caI  = [4226.73,4302.53 , 4307.74 ]
 caII = [3968.47,3933.66]
+naI = [5889.95095,5895.92424]
+o2 = [6867.19,7593.70,8226.96  ]
+tio = [6174.86585693, 6320.74407898]
+#tio = [5160, 5450, 5850, 6160]
 
 def display_lines(minpos: float, edges: tuple[float, float], sel: str | list[str] = 'HI') -> None:
     if 'HI' in sel:
@@ -70,103 +77,158 @@ def display_lines(minpos: float, edges: tuple[float, float], sel: str | list[str
         plot_line(arII,'Ar II','cyan',minpos)
     if 'Ca' in sel or 'CaII' in sel:
         plot_line(caII,'Ca II','cyan',minpos)
+    if 'Na' in sel or 'NaI' in sel:
+        plot_line(naI,'Na I','green',minpos)
     plt.legend()
 
+def A_class(minpos: float):
+    plot_line(balmer,'Balmer','b',minpos)
+    plot_line(o2[0:1],'O$_2$','purple',minpos)
+    plt.legend()
 
+def K_class(minpos: float):
+    plot_line(balmer[0:1],'H$\\alpha$','b',minpos)
+    plot_line(balmer[1:2],'H$\\beta$','b',minpos)
+    plot_line(balmer[2:3],'H$\\gamma$','b',minpos)
+    plot_line(balmer[3:4],'H$\\delta$','b',minpos)
+    plot_line(caII[1:2],'CaII K','pink',minpos)
+    plot_line(caII[0:1],'CaII H','pink',minpos)
+    # plot_line(naI[0:2],'Na I D','green',minpos)
+    plot_line([np.mean(naI[0:2])],'NaI D mean','green',minpos)
+    plot_line([np.mean(mgI[1:3])],'MgI mean','orange',minpos)
+    plot_line(mgI[3:4],'MgI','orange',minpos)
+    plot_line(o2[0:],'O$_2$','purple',minpos)
+    plt.legend()
+
+def G_class(minpos: float):
+    plot_line(balmer[0:1],'H$\\alpha$','b',minpos)
+    plot_line(balmer[1:2],'H$\\beta$','b',minpos)
+    plot_line(balmer[2:3],'H$\\gamma$','b',minpos)
+    plot_line(balmer[3:4],'H$\\delta$','b',minpos)    
+    plot_line(caII[1:2],'CaII K','pink',minpos)
+    plot_line(caII[0:1],'CaII H','pink',minpos)
+    # plot_line(naI[0:2],'Na I D','green',minpos)
+    plot_line([np.mean(naI[0:2])],'NaI D mean','green',minpos)
+    plot_line([np.mean(mgI[1:3])],'MgI mean','orange',minpos)
+    # plot_line(mgI[3:4],'MgI','orange',minpos)
+    plot_line(feI[1:2],'FeI','violet',minpos)
+    # plot_line(feI[6:7],'FeI','violet',minpos)
+    plot_line(o2[0:],'O$_2$','purple',minpos)
+    plot_line(caI[1:2],'CaI','lime',minpos)
+    plt.legend()
+
+def M_class(minpos: float):
+    plot_line(balmer[0:1],'H$\\alpha$','b',minpos)
+    plot_line([np.mean(naI[0:2])],'NaI D mean','green',minpos)
+    plot_line(o2[0:],'O$_2$','purple',minpos)
+    # plot_line(caI[:],'CaI','lime',minpos)
+    plot_line(tio[:],'TiO','pink',minpos)
+    plt.legend()
 
 if __name__ == '__main__':
-    ## Get data
-    """
-    0  - 17-03-27      : Vega01
-    1  - 17-03-27      : Polluce
-    2  - 17-03-27      : Regolo
-    3  - 17-03-27      : WR140
-    4  - 22-07-26_ohp  : vega
-    5  - 22-07-26_ohp  : giove
-    6  - 22-07-26_ohp  : luna0
-    7  - 22-07-26_ohp  : luna1
-    8  - 22-07-26_ohp  : pCygni
-    9  - 22-07-26_ohp  : m57
-    10 - 23-03-28      : Aldebaran
-    11 - 23-03-28      : Sirius2
-    """    
-
-
-#    ## 17-03-27 night
+    ### 17-03-27 night
     """
     0  - Vega01     : A0Va
     1  - Arturo     : K1.5III
     2  - Muceps     : M2-Ia
     3  - Rastaban   : G2Ib-IIa
-    """    
+    """
+    ## Vega    
     night, target_name, selection = TARGETS[0]
 
     ord1 = 2
     ord2 = 3
     display_plots = True
     target, lamp = spc.calibration(night, target_name, selection,angle_fitargs={'mode':'curve_fit'},lamp_fitargs={'mode': 'curve_fit'}, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
+    ## Lines
+    data = target.spectral_data(plot_format=True)
+    minpos = data[1].min()
+    l = data[0]
+    plt.figure()
+    plt.title(target.name+': A type star')
+    plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    plt.xlim(3600,7800)
+    A_class(minpos)
+    plt.show()
+    # - - #
 
-    # ## Lines
-    # data = target.spectral_data(plot_format=True)
-    # minpos = data[1].min()
-    # l = data[0]
+    ## Arturo
+    night, target_name, selection = TARGETS[1]
+
+    target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
+
+    ## Lines
+    data = target.spectral_data(plot_format=True)
+    minpos = data[1].min()
+    l = data[0]
+    plt.figure()
+    plt.title(target.name+': K type star')
+    plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    plt.xlim(3600,7800)
+    K_class(minpos)
+    plt.figure()
+    plt.plot(data[1],'.-')
+    plt.show()
+
+    # px = [22,32,285,579,775,867.5]
+    # Dpx = [1,0.5,1.5,2,2,2]
+    # lines = [*caII,np.mean(naI[0:2]),balmer[1],balmer[0],o2[0]]
+
+    # fit = spc.FuncFit(px,lines,xerr=Dpx)
+    # fit.pol_fit(2,[1,5000],mode='curve_fit')
+    # fit.plot()
+
     # plt.figure()
-    # plt.title(target.name)
-    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    # plt.plot(fit.method(np.arange(len(data[1]))),data[1],'.-',color='k')
+    # K_class(minpos)
     # plt.xlim(3600,7800)
-    # display_lines(minpos,(l.min(),l.max()))
     # plt.show()
 
-    # # - - #
+    # - - #
 
-    # night, target_name, selection = TARGETS[1]
+    ## Muceps
+    night, target_name, selection = TARGETS[2]
 
-    # target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
+    target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
 
-    # ## Lines
-    # data = target.spectral_data(plot_format=True)
-    # minpos = data[1].min()
-    # l = data[0]
-    # plt.figure()
-    # plt.title(target.name)
-    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    # plt.xlim(3600,7800)
-    # display_lines(minpos,(l.min(),l.max()),sel=['CaI','CaII','BHa','BHb'])
-    # plt.show()
+    ## Lines
+    data = target.spectral_data(plot_format=True)
+    minpos = data[1].min()
+    l = data[0]
+    plt.figure()
+    plt.title(target.name+': M type star')
+    plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    plt.xlim(3600,7800)
+    M_class(minpos)
+    plt.figure()
+    plt.plot(data[1],'.-')
+    plt.show()
 
-    # # - - #
+    px = []
+    lines = []
 
-    # night, target_name, selection = TARGETS[2]
+    # - - #
 
-    # target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
+    ## Rastaban
+    night, target_name, selection = TARGETS[3]
 
-    # ## Lines
-    # data = target.spectral_data(plot_format=True)
-    # minpos = data[1].min()
-    # l = data[0]
-    # plt.figure()
-    # plt.title(target.name)
-    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    # plt.xlim(3600,7800)
-    # display_lines(minpos,(l.min(),l.max()),sel=['CaI'])
-    # plt.show()
+    target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
 
-    # # - - #
+    ## Lines
+    data = target.spectral_data(plot_format=True)
+    minpos = data[1].min()
+    l = data[0]
+    plt.figure()
+    plt.title(target.name+': G type star')
+    plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    plt.xlim(3600,7800)
+    G_class(minpos)
+    plt.figure()
+    plt.plot(data[1],'.-')
+    plt.show()
 
-    # night, target_name, selection = TARGETS[3]
-
-    # target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
-
-    # ## Lines
-    # data = target.spectral_data(plot_format=True)
-    # minpos = data[1].min()
-    # l = data[0]
-    # plt.figure()
-    # plt.title(target.name)
-    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    # plt.xlim(3600,7800)
-    # display_lines(minpos,(l.min(),l.max()),sel=['O','CaII','FeI','Na','ArI','BHa','BHb','Mg'])
-    # plt.show()
+    px = []
+    lines = []
 
 #    ## 22-07-26_ohp night
     """
