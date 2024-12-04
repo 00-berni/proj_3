@@ -24,7 +24,7 @@ if __name__ == '__main__':
     lim_width = [[0,1391],[[0,112],[108,221]]]  #: coordinates of the ends of the spectrum
     lag = 15                                    #: step length to collect xdata
     # open and extract the fit file 
-    jupiter, lamp = spc.get_target_data(obs_night,target_name,selection,angle=None,lim_width=lim_width,lag=lag,gauss_corr=False,lamp_incl=False, fit_args=fit_args, diagn_plots=False,norm='log')
+    jupiter, lamp = spc.get_target_data(obs_night,target_name,selection,angle=None,lim_width=lim_width,lag=lag,gauss_corr=False,lamp_incl=False, fit_args=fit_args, diagn_plots=True,norm='log')
 
     data = jupiter.data.copy()
 
