@@ -339,6 +339,28 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: 
         plt.errorbar(pxs,(lines-px_to_arm(pxs)),sigma,fmt='.',color='orange')
         plt.axhline(0,0,1)
         plt.show()
+
+    from statistics import pvariance
+    pp = lines-px_to_arm(pxs)
+    print('Var',np.sqrt(pvariance(pp)))
+    # plt.figure()
+    # yval, bins,_ = plt.hist(pp,20)
+    # xval = (bins[1:] + bins[:-1])/2
+    # maxval = xval[yval.argmax()]
+    # plt.plot(maxval,yval.max(),'.',color='red')
+    # hm = yval.max()/2
+    # hmpos = np.argmin(abs(yval-hm))
+    # hwhm = abs(maxval-xval[hmpos])
+    # sigma = hwhm/np.sqrt(2*np.log(2))
+    # z = (xval - maxval)/sigma
+    # g = np.exp(-z**2/2)
+    # g = yval.max()*g/g.max()
+    # print('hwhm',hwhm)
+    # print('sigma',sigma)
+    # plt.plot(xval,g,'.--')
+    # plt.show()
+    # exit()
+    
     return px_to_arm, err_func
 
 def balmer_calibration(ch_obs: str, ch_obj: str, target: Spectrum, lamp_cal: tuple[Callable, Callable], ord: int = 3, initial_values: Sequence[float] | None = None, fit_arg: dict = {}, display_plots: bool = True) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
@@ -462,6 +484,53 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
     # exit()
     return shift
 
+def spectrum_average(data: ndarray, step: int = 20):
+    xpos = np.arange(0,data.shape[1],step)
+    step_data = data[:,xpos].copy()
+    ypos = np.argmax(step_data,axis=0)
+    hwhm = []
+    for x,y in zip(xpos,ypos):
+        hm = data[y,x]/2
+        up_data = data[y+1:,x].copy()
+        down_data = data[:y,x].copy()
+        up_hwhm = np.argmin(abs(up_data-hm))/2
+        down_hwhm = (y-np.argmin(abs(down_data-hm)))/2
+        m_hwhm = (up_hwhm+down_hwhm)/2
+        hwhm += [m_hwhm]
+
+    plt.figure()
+    plt.imshow(data,cmap='gray_r',origin='lower',aspect='auto',norm='log')
+    plt.errorbar(xpos,ypos,hwhm,fmt='.')
+    hwhm = np.mean(hwhm).astype(int)
+    cen = np.mean(ypos).astype(int)
+    up = int(cen+hwhm)
+    down = int(cen-hwhm)
+    print(cen,up,down)
+    # plt.figure()
+    # plt.imshow(data,cmap='gray_r',origin='lower',aspect='auto',norm='log')
+    # plt.axhline(cen)
+    # plt.axhline(up)
+    # plt.axhline(down)
+    spec0, Dspec0 = mean_n_std(data[down:up+1],axis=0)
+
+    # normalize along the x axis
+    data = data[down:up+1].copy()
+    data_m = data.mean(axis=1)
+    data = np.array([ data[i,:] / data_m[i] for i in range(len(data_m)) ])
+    spec, Dspec = mean_n_std(data,axis=0)
+    Dspec0 /= spec0.mean()
+    spec0 /= spec0.mean()
+    # plt.figure()
+    # xx = np.arange(len(spec))
+    # plt.errorbar(xx,spec0,Dspec0,fmt='x',label='No norm')
+    # plt.errorbar(xx,spec,Dspec,fmt='.',label='Norm')
+    # plt.legend()
+    # plt.figure()
+    # plt.errorbar(xx,spec-spec0,fmt='.--')
+    # plt.axhline(0,0,1,color='k')
+    # plt.show()
+    return spec, Dspec
+
 def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, gauss_corr: bool = True, angle_fitargs: dict = {}, height: ArrayLike | None = None, row_num: int = 3, lag: int = 10, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, lamp_fitargs: dict = {}, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, balmer_fitargs: dict = {}, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
     """To open and calibrate data
 
@@ -510,10 +579,15 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     # extract data
     target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, gauss_corr=gauss_corr, fit_args=angle_fitargs, display_plots=display_plots, diagn_plots=diagn_plots,**figargs)
     # normalize along the x axis
-    data = target.data.mean(axis=1)
-    data = np.array([ target.data[i,:] / data[i] for i in range(len(data)) ])
+    # data = target.data.mean(axis=1)
+    # data = np.array([ target.data[i,:] / data[i] for i in range(len(data)) ])
     # average along the y axis
-    target.spec, target.std = mean_n_std(data, axis=0)
+    target.spec, target.std = spectrum_average(target.data) #mean_n_std(data, axis=0)
+    # plt.figure()
+    # plt.plot(target.spec,'.--')
+    # plt.figure()
+    # plt.plot(target.spec-bkg,'.--')
+    # plt.show()
     # compute the height for the lamp
     if height is None: 
         mid_h = int(len(lamp.data)/2)
@@ -548,7 +622,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     if other_lamp is not None :      
         # compute the lag between the two lamps
         shift = lamp_correlation(lamp, other_lamp, display_plots=display_plots, **pltargs)
-        shift=0
+        # shift=0
         # store the functions
         lamp.func = [*other_lamp.func]
         target.func = [*other_lamp.func]
