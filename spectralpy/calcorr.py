@@ -484,51 +484,61 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
     # exit()
     return shift
 
-def spectrum_average(data: ndarray, step: int = 20):
-    xpos = np.arange(0,data.shape[1],step)
-    step_data = data[:,xpos].copy()
-    ypos = np.argmax(step_data,axis=0)
+def spectrum_average(data: ndarray, step: int | None = 20) -> tuple[ndarray,ndarray]:
+    """To extact the spectrum from data image
+
+    Parameters
+    ----------
+    data : ndarray
+        data image
+    step : int | None, optional
+        only columns spaced by `step` are 
+        taken into account, by default 20
+
+    Returns
+    -------
+    spec : ndarray
+        averaged spectrum
+    Dspec : ndarray
+        the relative STD
+    
+    Notes
+    -----
+    The function computes the position of the max value for each selected
+    column and the best estimation of the relative HWHM
+    Then it averages to get a centroid and a mean HWHM and averages the
+    spectra inside [centroid - HWHM, centroid + HWHM]
+    """
+    xpos = np.arange(0,data.shape[1],step)          #: columns positions
+    ypos = np.argmax(data[:,xpos].copy(),axis=0)    #: max value positions
+    # compute the estimation of hwhm for each column
     hwhm = []
     for x,y in zip(xpos,ypos):
         hm = data[y,x]/2
+        # compute hwhm over and below `y`
         up_data = data[y+1:,x].copy()
         down_data = data[:y,x].copy()
         up_hwhm = np.argmin(abs(up_data-hm))/2
         down_hwhm = (y-np.argmin(abs(down_data-hm)))/2
+        # average the values
         m_hwhm = (up_hwhm+down_hwhm)/2
         hwhm += [m_hwhm]
-
-    plt.figure()
-    plt.imshow(data,cmap='gray_r',origin='lower',aspect='auto',norm='log')
-    plt.errorbar(xpos,ypos,hwhm,fmt='.')
+    # compute mean quantities
     hwhm = np.mean(hwhm).astype(int)
     cen = np.mean(ypos).astype(int)
+    # compute the edgies of the selected area  
     up = int(cen+hwhm)
     down = int(cen-hwhm)
     print(cen,up,down)
-    # plt.figure()
-    # plt.imshow(data,cmap='gray_r',origin='lower',aspect='auto',norm='log')
-    # plt.axhline(cen)
-    # plt.axhline(up)
-    # plt.axhline(down)
     spec0, Dspec0 = mean_n_std(data[down:up+1],axis=0)
-
-    # normalize along the x axis
+    # normalize spectra along the x axis
     data = data[down:up+1].copy()
     data_m = data.mean(axis=1)
     data = np.array([ data[i,:] / data_m[i] for i in range(len(data_m)) ])
+    # average spectra in the selected area
     spec, Dspec = mean_n_std(data,axis=0)
     Dspec0 /= spec0.mean()
     spec0 /= spec0.mean()
-    # plt.figure()
-    # xx = np.arange(len(spec))
-    # plt.errorbar(xx,spec0,Dspec0,fmt='x',label='No norm')
-    # plt.errorbar(xx,spec,Dspec,fmt='.',label='Norm')
-    # plt.legend()
-    # plt.figure()
-    # plt.errorbar(xx,spec-spec0,fmt='.--')
-    # plt.axhline(0,0,1,color='k')
-    # plt.show()
     return spec, Dspec
 
 def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, gauss_corr: bool = True, angle_fitargs: dict = {}, height: ArrayLike | None = None, row_num: int = 3, lag: int = 10, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, lamp_fitargs: dict = {}, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, balmer_fitargs: dict = {}, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
