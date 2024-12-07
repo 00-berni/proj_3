@@ -1,7 +1,7 @@
 # NIST Lines
 # L_nist	 DL_nist L_script  DL_script
-6562.790	 0.030	6.563e+03	3e+00	#	H_alpha
-4861.350	 0.050	4.863e+03	3e+00	#	H_beta
+6562.790	 0.030	6.563e+03	4e+00	#	H_alpha
+4861.350	 0.050	4.863e+03	4e+00	#	H_beta
 4340.472	 0.006	4.334e+03	4e+00	#	H_gamma
 4101.734	 0.006	4.085e+03	4e+00	#	H_delta
 3970.075	 0.006	3.948e+03	4e+00	#	H_epsilon
