@@ -340,6 +340,8 @@ class Spectrum():
                 angle  = angle1
                 Dangle = Dangle1
                 if diagn_plots:
+                    fig,ax = plt.subplots(1,1)
+                    fit.data_plot(ax)
                     plt.figure()
                     plt.imshow(data,cmap='gray_r',origin='lower')
                     plt.plot(x_pos, y_pos,'.')
@@ -496,7 +498,11 @@ class Spectrum():
             return self.data * spec
     
     def __getitem__(self, index: int | Sequence[int | slice] | slice) -> ndarray:
+        print(type(index))
         return self.data[index]
+
+    def __getslice__(self, pr: int , af: int ) -> ndarray:
+        return self.data[pr:af]
 
     # def __setitem__(self, index: int | Sequence[int | slice] | slice, value: ArrayLike) -> None:
     #     self.data[index] = value
@@ -812,7 +818,21 @@ class FuncFit():
         self.pipeline(method=voigt_func,initial_values=initial_values,names=names,mode=mode, **fitargs)
 
 
-    def pol_fit(self, ord: int, initial_values: Sequence[float], names: Sequence[str] | None = None, mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
+    def pol_fit(self, ord: int | None = None, initial_values: Sequence[float] | None = None, names: Sequence[str] | None = None, mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
+        if initial_values is None:
+            if ord is None: raise ValueError('You have to set the grade of the polynomial')
+            xdata, ydata = self.data[0:2]
+            xtmp = np.copy(xdata)
+            ytmp = np.copy(ydata)
+            initial_values = [0]
+            for _ in range(1,ord+1):
+                ytmp = np.diff(ytmp)/np.diff(xtmp)
+                initial_values += [np.mean(ytmp)]
+                xtmp = (xtmp[1:] + xtmp[:-1])/2
+            initial_values = initial_values[::-1] 
+            initial_values[-1] = ydata[0] - FuncFit.poly_func(xdata[0],*initial_values)
+            del xtmp,ytmp
+
         if mode == 'curve_fit': 
             fitargs['err_func'] = FuncFit.poly_error
         self.pipeline(FuncFit.poly_func,initial_values=initial_values,names=names, mode=mode, **fitargs)
@@ -843,7 +863,11 @@ class FuncFit():
     def residuals_plot(self, ax: Axes, grid: bool = True, **pltargs) -> None:
         xdata = self.data[0]
         if 'fmt' not in pltargs.keys():
-            pltargs['fmt'] = '.'
+            pltargs['fmt'] = 'o'
+        if 'linestyle' not in pltargs.keys():
+            pltargs['linestyle'] = 'dashed'
+        if 'capsize' not in pltargs.keys():
+            pltargs['capsize'] = 3
         ax.errorbar(xdata,self.residuals(),self.sigma(),**pltargs)
         ax.axhline(0,0,1,color='black')
         if grid: ax.grid(color='lightgray', ls='dashed')
