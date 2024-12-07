@@ -306,38 +306,60 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: 
         plt.plot(lamp.spec,'.-')
         plt.show()
         exit()
+    plt.figure()
+    plt.plot(lamp.spec)
+    for px,w in zip(pxs,errs):
+        plt.axvline(px,color='red')
+        plt.axvspan(px-w,px+w,facecolor='orange')
+    plt.show()
+
+    for i in range(len(pxs)):
+        px = pxs[i]
+        width = errs[i]
+        lf, rg = int(px-width),int(px+width)
+        xtmp = np.arange(lf,rg+1)
+        valtmp = lamp.spec[lf:rg+1].copy()
+        pxs[i], errs[i] = mean_n_std(xtmp,weights=valtmp)
+        maxpos = np.argmax(valtmp)
+        hm = valtmp[maxpos]/2
+        pl_hm = np.argmin(abs(hm-valtmp[:maxpos]))
+        pr_hm = np.argmin(abs(hm-valtmp[maxpos+1:])) + maxpos
+        pos = [pl_hm,pr_hm]
+        pos = pos[np.argmin([abs(valtmp[pl_hm]-hm),abs(valtmp[pr_hm]-hm)])]
+        hwhm = abs(pxs[i]-lf-pos)
+        errs[i] = hwhm
+
+
+    if display_plots:
+        plt.figure()
+        plt.plot(np.arange(lamp.spec.shape[0]),lamp.spec)
+        for px,err in zip(pxs,errs):
+            plt.axvline(px,color='red',linestyle='--')
+            plt.axvspan(px-err,px+err,facecolor='orange',alpha=0.8)
+        plt.show()
+
     # shift the pixels
     pxs += trsl
     Dlines = np.full(lines.shape,lines_err)      #: uncertainties of the lines in armstrong
-    if initial_values is None:
-        initial_values = [0] + [1]*(ord-1) + [np.mean(pxs)]
     
     ## Fit
     fit = FuncFit(xdata=pxs,ydata=lines,xerr=errs,yerr=Dlines)
     fit.pol_fit(ord=ord,initial_values=initial_values,**fit_args)
-    pop = fit.fit_par.copy()
-    cov = fit.res['cov']
-
+    
     ## Functions 
     # px_to_arm = fit.method
     def px_to_arm(x: ArrayLike) -> ArrayLike:     #: function to pass from px to A
         return fit.method(x)     
     # compute the function to evaluate the uncertainty associated with `px_to_arm`
-    # err_func = fit.res['errfunc']
     def err_func(x: ArrayLike, Dx: ArrayLike) -> ArrayLike:
         errfunc = fit.res['errfunc']
         return errfunc(x,Dx)
 
     ## Plot
     if display_plots:
+        fit.plot(mode='subplots')
         plt.figure()
-        pp = np.linspace(pxs.min(),pxs.max(),200)
-        plt.errorbar(pxs,lines,Dlines,errs,'.',color='orange')
-        plt.plot(pp,px_to_arm(pp))
-        plt.figure()
-        sigma = np.sqrt(Dlines**2 + err_func(pxs,errs)**2)
-        plt.errorbar(pxs,(lines-px_to_arm(pxs)),sigma,fmt='.',color='orange')
-        plt.axhline(0,0,1)
+        plt.hist(fit.residuals(),13)
         plt.show()
 
     from statistics import pvariance
@@ -390,23 +412,11 @@ def balmer_calibration(ch_obs: str, ch_obj: str, target: Spectrum, lamp_cal: tup
         plt.show()
         exit()
 
-    fit = FuncFit(xdata=lines, xerr=errs, ydata=balm, yerr=balmerr)
-    if initial_values is None:
-        initial_values = [0] + [1]*(ord-1) + [np.mean(lines)]
+    fit = FuncFit(xdata=lines, ydata=balm, xerr=errs, yerr=balmerr)
     fit.pol_fit(ord, initial_values=initial_values,**fit_arg)
-    pop = fit.fit_par.copy()
-    cov = fit.res['cov']
-
-    # balm_calfunc = fit.method
-    def balm_calfunc(x: ArrayLike) -> ArrayLike:
-        return fit.method(x)
-    # balm_errfunc = fit.res['errfunc']
-    def balm_errfunc(x: ArrayLike, Dx: ArrayLike) -> ArrayLike:
-        errfunc = fit.res['errfunc']
-        return errfunc(x,Dx)
     
     lamp_calfunc, lamp_errfunc = lamp_cal
-    print(fit.method(1))
+
     def px_to_arm(x: ArrayLike) -> ArrayLike: 
         return fit.method(lamp_calfunc(x))
     def err_func(x: ArrayLike, Dx: ArrayLike = 1): 
@@ -415,14 +425,10 @@ def balmer_calibration(ch_obs: str, ch_obj: str, target: Spectrum, lamp_cal: tup
 
     ## Plot
     if display_plots:
+        fit.plot(mode='subplots')
         plt.figure()
-        ll = np.linspace(lines.min(),lines.max(),200)
-        plt.errorbar(lines,balm,balmerr,errs,'.',color='orange')
-        plt.plot(ll,balm_calfunc(ll))
-        plt.figure()
-        sigma = np.sqrt(balm_errfunc(lines,errs)**2 + balmerr**2 )
-        plt.errorbar(lines,balm-balm_calfunc(lines),sigma,fmt='.',color='orange')
-        plt.axhline(0,0,1)
+        plt.hist(fit.residuals(),5)
+        plt.show()        
     return px_to_arm, err_func
 
 
@@ -541,7 +547,7 @@ def spectrum_average(data: ndarray, step: int | None = 20) -> tuple[ndarray,ndar
     spec0 /= spec0.mean()
     return spec, Dspec
 
-def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, gauss_corr: bool = True, angle_fitargs: dict = {}, height: ArrayLike | None = None, row_num: int = 3, lag: int = 10, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, lamp_fitargs: dict = {}, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, balmer_fitargs: dict = {}, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
+def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, gauss_corr: bool = True, angle_fitargs: dict = {}, height: ArrayLike | None = None, row_num: int = 3, lag: int = 1, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, lamp_fitargs: dict = {}, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, balmer_fitargs: dict = {}, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
     """To open and calibrate data
 
     Parameters
@@ -609,10 +615,13 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         fn = 10
         fig, ax = plt.subplots(1,1)
         fits_image(fig,ax,lamp)
-        for h in height:
-            color = (h/height.max()/2+h%3/10, 1-h/height.max()/2+h%2/10, h/height.max())
-            ax.axhline(h,0,1,color=color)
-            quickplot(lamp.data[h],numfig=fn,color=color)
+        if lag == 1:
+            ax.axhspan(mid_h-row_num,mid_h+row_num,facecolor='orange',alpha=0.6)
+        else:
+            for h in height:
+                color = (h/height.max()/2+h%3/10, 1-h/height.max()/2+h%2/10, h/height.max())
+                ax.axhline(h,0,1,color=color)
+                quickplot(lamp.data[h],numfig=fn,color=color)
         plt.show()
     # if lamp.sigma is not None: 
     #     lamp.std = lamp.sigma[height]
