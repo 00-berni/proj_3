@@ -139,17 +139,100 @@ if __name__ == '__main__':
     ord1 = 2
     ord2 = 3
     display_plots = True
-    target, lamp = spc.calibration(night, target_name, selection,angle_fitargs={'mode':'curve_fit'},lamp_fitargs={'mode': 'curve_fit'}, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
+    target, lamp = spc.calibration(night, target_name, selection,angle_fitargs={'mode':'curve_fit'},lamp_fitargs={'mode': 'curve_fit'}, ord_lamp=ord1,balmer_cal=False, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
     ## Lines
     data = target.spectral_data(plot_format=True)
     minpos = data[1].min()
     l = data[0]
+    # plt.figure()
+    # plt.title(target.name+': A type star')
+    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    # plt.xlim(3600,7800)
+    # A_class(minpos)
+
+    bal_lines = [
+        6562.790,
+        4861.350,
+        4340.472,
+        4101.734,
+        3970.075,
+        3889.064,
+        3835.397
+    ]
+    bal_errs = [
+        0.030,
+        0.050,
+        0.006,
+        0.006,
+        0.006,
+        0.006,
+        0.006    
+    ]
+
+    cen = [
+        837.5,
+        347,
+        200,
+        132,
+        94,
+        71,
+        55.5  
+    ]
+
+    width = [
+        7.5,
+        7,
+        10,
+        12,
+        8,
+        6,
+        4.5
+    ]
+    data = target.spec.copy()
+    data = data.max()-data
     plt.figure()
-    plt.title(target.name+': A type star')
-    plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    plt.xlim(3600,7800)
+    plt.plot(data,'.--')
+    for c,w in zip(cen,width):
+        plt.axvline(c,0,1,color='red')
+        plt.axvspan(c-w,c+w,facecolor='orange')
+    plt.show()
+
+    for i in range(len(cen)):
+        c = cen[i]
+        w = width[i]
+        lf, rg = int(c-w),int(c+w)
+        xtmp = np.arange(lf,rg+1)
+        valtmp = data[lf:rg+1].copy()
+        cen[i], width[i] = spc.mean_n_std(xtmp,weights=valtmp)
+        maxpos = np.argmax(valtmp)
+        hm = valtmp[maxpos]/2
+        pl_hm = np.argmin(abs(hm-valtmp[:maxpos]))
+        pr_hm = np.argmin(abs(hm-valtmp[maxpos+1:])) + maxpos
+        pos = [pl_hm,pr_hm]
+        pos = pos[np.argmin([abs(valtmp[pl_hm]-hm),abs(valtmp[pr_hm]-hm)])]
+        hwhm = abs(cen[i]-lf-pos)
+        width[i] = hwhm
+
+    plt.figure()
+    plt.plot(target.spec,'.--')
+    for c,w in zip(cen,width):
+        plt.axvline(c,0,1,color='red')
+        plt.axvspan(c-w,c+w,facecolor='orange')
+    plt.show()
+    print(len(cen),len(width),len(bal_lines),len(bal_errs))
+    fit = spc.FuncFit(xdata=np.array(cen)+target.lims[0],ydata=bal_lines,xerr=width,yerr=bal_errs)
+    fit.pol_fit(3,mode='curve_fit')
+    fit.plot(mode='subplots')
+    plt.figure()
+    plt.hist(fit.residuals(),6)
+    plt.figure()
+    x = np.arange(len(target.spec))
+    plt.errorbar(fit.method(x+target.lims[0]),target.spec,target.std,fit.errvar,'.--k')
     A_class(minpos)
     plt.show()
+
+
+    exit()
     # - - #
 
     ## Arturo
