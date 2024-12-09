@@ -240,6 +240,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
             if lamp.name != 'empty':
                 if lamp_incl: 
                     lamp, _ = lamp.angle_correction(*target.angle, gauss_corr=gauss_corr,lim_width=lim_width, lag=lag, diagn_plots=diagn_plots, fit_args=fit_args)      
+                lamp.lims[:2] = np.copy(target.lims[:2]) 
                 lamp.cut_image()
     else:
         exit_cond = True  
@@ -313,22 +314,23 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: 
         plt.axvspan(px-w,px+w,facecolor='orange')
     plt.show()
 
-    for i in range(len(pxs)):
-        px = pxs[i]
-        width = errs[i]
-        lf, rg = int(px-width),int(px+width)
-        xtmp = np.arange(lf,rg+1)
-        valtmp = lamp.spec[lf:rg+1].copy()
-        pxs[i], errs[i] = mean_n_std(xtmp,weights=valtmp)
-        maxpos = np.argmax(valtmp)
-        hm = valtmp[maxpos]/2
-        pl_hm = np.argmin(abs(hm-valtmp[:maxpos]))
-        pr_hm = np.argmin(abs(hm-valtmp[maxpos+1:])) + maxpos
-        pos = [pl_hm,pr_hm]
-        pos = pos[np.argmin([abs(valtmp[pl_hm]-hm),abs(valtmp[pr_hm]-hm)])]
-        hwhm = abs(pxs[i]-lf-pos)
-        errs[i] = hwhm
+    # for i in range(len(pxs)):
+    #     px = pxs[i]
+    #     width = errs[i]
+    #     lf, rg = int(px-width),int(px+width)
+    #     xtmp = np.arange(lf,rg+1)
+    #     valtmp = lamp.spec[lf:rg+1].copy()
+    #     pxs[i], errs[i] = mean_n_std(xtmp,weights=valtmp)
+    #     maxpos = np.argmax(valtmp)
+    #     hm = valtmp[maxpos]/2
+    #     pl_hm = np.argmin(abs(hm-valtmp[:maxpos]))
+    #     pr_hm = np.argmin(abs(hm-valtmp[maxpos+1:])) + maxpos
+    #     pos = [pl_hm,pr_hm]
+    #     pos = pos[np.argmin([abs(valtmp[pl_hm]-hm),abs(valtmp[pr_hm]-hm)])]
+    #     hwhm = abs(pxs[i]-lf-pos)
+    #     errs[i] = hwhm
 
+    # errs = [0.5]*len(pxs)
 
     if display_plots:
         plt.figure()
@@ -609,8 +611,10 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         mid_h = int(len(lamp.data)/2)
         height = np.sort([ mid_h + i*lag for i in range(-row_num,row_num+1) ])
         print('LAMP HEIGHT: ', height)
+
     # take lamp spectrum at `height` 
-    lamp.spec, lamp.std = mean_n_std(lamp.data[height], axis=0)
+    lamp.spec, lamp.std = mean_n_std(lamp.data, axis=0)
+    # lamp.spec, lamp.std = mean_n_std(lamp.data[height], axis=0)
     if diagn_plots:
         fn = 10
         fig, ax = plt.subplots(1,1)
