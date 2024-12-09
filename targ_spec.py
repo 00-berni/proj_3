@@ -140,15 +140,16 @@ if __name__ == '__main__':
     ord2 = 3
     display_plots = True
     target, lamp = spc.calibration(night, target_name, selection,angle_fitargs={'mode':'curve_fit'},lamp_fitargs={'mode': 'curve_fit'}, ord_lamp=ord1,balmer_cal=False, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
+    # exit()
     ## Lines
     data = target.spectral_data(plot_format=True)
     minpos = data[1].min()
     l = data[0]
-    # plt.figure()
-    # plt.title(target.name+': A type star')
-    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    # plt.xlim(3600,7800)
-    # A_class(minpos)
+    plt.figure()
+    plt.title(target.name+': A type star')
+    plt.errorbar(*data,'.-', color='black',alpha=0.5)
+    plt.xlim(3600,7800)
+    A_class(minpos)
 
     bal_lines = [
         6562.790,
@@ -157,11 +158,13 @@ if __name__ == '__main__':
         4101.734,
         3970.075,
         3889.064,
-        3835.397
+        3835.397,
+        3797.909
     ]
     bal_errs = [
         0.030,
         0.050,
+        0.006,
         0.006,
         0.006,
         0.006,
@@ -176,7 +179,8 @@ if __name__ == '__main__':
         132,
         94,
         71,
-        55.5  
+        55.5,
+        45  
     ]
 
     width = [
@@ -186,7 +190,8 @@ if __name__ == '__main__':
         12,
         8,
         6,
-        4.5
+        4.5,
+        3
     ]
     data = target.spec.copy()
     data = data.max()-data
@@ -213,26 +218,28 @@ if __name__ == '__main__':
         hwhm = abs(cen[i]-lf-pos)
         width[i] = hwhm
 
+    width = [1]*len(cen)
+
     plt.figure()
     plt.plot(target.spec,'.--')
     for c,w in zip(cen,width):
         plt.axvline(c,0,1,color='red')
         plt.axvspan(c-w,c+w,facecolor='orange')
     plt.show()
-    print(len(cen),len(width),len(bal_lines),len(bal_errs))
-    fit = spc.FuncFit(xdata=np.array(cen)+target.lims[0],ydata=bal_lines,xerr=width,yerr=bal_errs)
-    fit.pol_fit(3,mode='curve_fit')
+    # print(len(cen),len(width),len(bal_lines),len(bal_errs))
+    fit = spc.FuncFit(xdata=np.array(cen)+target.lims[2],ydata=bal_lines,xerr=width,yerr=bal_errs)
+    fit.pol_fit(2,mode='curve_fit')
     fit.plot(mode='subplots')
     plt.figure()
-    plt.hist(fit.residuals(),6)
+    plt.hist(fit.residuals(),5)
     plt.figure()
-    x = np.arange(len(target.spec))
-    plt.errorbar(fit.method(x+target.lims[0]),target.spec,target.std,fit.errvar,'.--k')
-    A_class(minpos)
-    plt.show()
+    # x = np.arange(len(target.spec))
+    # plt.errorbar(fit.method(x+target.lims[2]),target.spec,target.std,fit.errvar,'.--k')
+    # A_class(minpos)
+    # plt.show()
 
 
-    exit()
+    # exit()
     # - - #
 
     ## Arturo
@@ -247,12 +254,13 @@ if __name__ == '__main__':
     plt.figure()
     plt.title(target.name+': K type star')
     plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    plt.xlim(3600,7800)
+    plt.xlim(4500,7800)
     K_class(minpos)
-    plt.figure()
-    plt.plot(data[1],'.-')
+    # plt.figure()
+    # plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
+    # K_class(minpos)
+    # plt.xlim(3600,7800)
     plt.show()
-
     # px = [22,32,285,579,775,867.5]
     # Dpx = [1,0.5,1.5,2,2,2]
     # lines = [*caII,np.mean(naI[0:2]),balmer[1],balmer[0],o2[0]]
@@ -281,10 +289,12 @@ if __name__ == '__main__':
     plt.figure()
     plt.title(target.name+': M type star')
     plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    plt.xlim(3600,7800)
+    plt.xlim(4500,7800)
     M_class(minpos)
-    plt.figure()
-    plt.plot(data[1],'.-')
+    # plt.figure()
+    # plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
+    # M_class(minpos)
+    # plt.xlim(3600,7800)
     plt.show()
 
     px = []
@@ -304,10 +314,12 @@ if __name__ == '__main__':
     plt.figure()
     plt.title(target.name+': G type star')
     plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    plt.xlim(3600,7800)
+    plt.xlim(4500,7800)
     G_class(minpos)
     plt.figure()
-    plt.plot(data[1],'.-')
+    plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
+    G_class(minpos)
+    plt.xlim(3600,7800)
     plt.show()
 
     px = []
