@@ -832,7 +832,11 @@ class FuncFit():
             initial_values = initial_values[::-1] 
             initial_values[-1] = ydata[0] - FuncFit.poly_func(xdata[0],*initial_values)
             del xtmp,ytmp
-
+        elif ord is None: ord = len(initial_values)-1
+        if names is None:
+            names = []
+            for i in range(ord+1):
+                names += [f'par_{ord-i}']
         if mode == 'curve_fit': 
             fitargs['err_func'] = FuncFit.poly_error
         self.pipeline(FuncFit.poly_func,initial_values=initial_values,names=names, mode=mode, **fitargs)
