@@ -31,7 +31,7 @@ arII = [4401.75478]
 caI  = [4226.73,4302.53 , 4307.74 ]
 caII = [3968.47,3933.66]
 naI = [5889.95095,5895.92424]
-o2 = [6867.19,7593.70,8226.96  ]
+o2 = [6276.61, 6867.19,7593.70,8226.96  ]
 tio = [6174.86585693, 6320.74407898]
 #tio = [5160, 5450, 5850, 6160]
 
@@ -83,7 +83,7 @@ def display_lines(minpos: float, edges: tuple[float, float], sel: str | list[str
 
 def A_class(minpos: float):
     plot_line(balmer,'Balmer','b',minpos)
-    plot_line(o2[0:1],'O$_2$','purple',minpos)
+    # plot_line(o2[0:1],'O$_2$','purple',minpos)
     plt.legend()
 
 def K_class(minpos: float):
@@ -97,7 +97,7 @@ def K_class(minpos: float):
     plot_line([np.mean(naI[0:2])],'NaI D mean','green',minpos)
     plot_line([np.mean(mgI[1:3])],'MgI mean','orange',minpos)
     plot_line(mgI[3:4],'MgI','orange',minpos)
-    plot_line(o2[0:],'O$_2$','purple',minpos)
+    # plot_line(o2[0:],'O$_2$','purple',minpos)
     plt.legend()
 
 def G_class(minpos: float):
@@ -113,14 +113,14 @@ def G_class(minpos: float):
     # plot_line(mgI[3:4],'MgI','orange',minpos)
     plot_line(feI[1:2],'FeI','violet',minpos)
     # plot_line(feI[6:7],'FeI','violet',minpos)
-    plot_line(o2[0:],'O$_2$','purple',minpos)
+    # plot_line(o2[0:],'O$_2$','purple',minpos)
     plot_line(caI[1:2],'CaI','lime',minpos)
     plt.legend()
 
 def M_class(minpos: float):
     plot_line(balmer[0:1],'H$\\alpha$','b',minpos)
     plot_line([np.mean(naI[0:2])],'NaI D mean','green',minpos)
-    plot_line(o2[0:],'O$_2$','purple',minpos)
+    # plot_line(o2[0:],'O$_2$','purple',minpos)
     # plot_line(caI[:],'CaI','lime',minpos)
     plot_line(tio[:],'TiO','pink',minpos)
     plt.legend()
@@ -128,202 +128,208 @@ def M_class(minpos: float):
 if __name__ == '__main__':
     ### 17-03-27 night
     """
-    0  - Vega01     : A0Va
-    1  - Arturo     : K1.5III
-    2  - Muceps     : M2-Ia
-    3  - Rastaban   : G2Ib-IIa
+    0  - alf Lyr > Vega01     : A0Va
+    1  - alf Boo > Arturo     : K1.5III
+    2  - mu. Cep > Muceps     : M2-Ia
+    3  - bet Dra > Rastaban   : G2Ib-IIa
     """
-    ## Vega    
-    night, target_name, selection = TARGETS[0]
+    SEL_OBJ = ['alflyr','alfboo','betdra']
+    display_plots = False
 
-    ord1 = 2
-    ord2 = 3
-    display_plots = True
-    target, lamp = spc.calibration(night, target_name, selection,angle_fitargs={'mode':'curve_fit'},lamp_fitargs={'mode': 'curve_fit'}, ord_lamp=ord1,balmer_cal=False, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
+    # atmfig, atmax = plt.subplots(1,3)
+
+    if 'alflyr' in SEL_OBJ or SEL_OBJ == 'all':
+        ## Vega    
+        night, target_file, selection, target_name = TARGETS[0]
+
+        ord1 = 2
+        ord2 = 3
+        target, lamp = spc.calibration(night, target_file, selection, target_name=target_name, angle_fitargs={'mode':'curve_fit'},lamp_fitargs={'mode': 'curve_fit'}, ord_lamp=ord1,balmer_cal=False, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
+
+        ## Lines
+        data = target.spectral_data(plot_format=True)
+        minpos = data[1].min()
+        l = data[0]
+        spc.quickplot([*data],fmt='-',title= 'calibrated spectrum of ' + target.name, grid=True,labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),capsize=3)
+        spc.quickplot([*data],fmt='-',title= 'A type Star', grid=True,labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),capsize=3,color='black',alpha=0.6)
+        plt.suptitle(target_name,fontsize=20)
+        plt.xlim(4500,7700)
+        A_class(minpos)
+        plt.show()
+        # bal_lines = [
+        #     6562.790,
+        #     4861.350,
+        #     4340.472,
+        #     4101.734,
+        #     3970.075,
+        #     3889.064,
+        #     3835.397,
+        #     3797.909
+        # ]
+        # bal_errs = [
+        #     0.030,
+        #     0.050,
+        #     0.006,
+        #     0.006,
+        #     0.006,
+        #     0.006,
+        #     0.006,
+        #     0.006    
+        # ]
+
+        # cen = [
+        #     837.5,
+        #     347,
+        #     200,
+        #     132,
+        #     94,
+        #     71,
+        #     55.5,
+        #     45  
+        # ]
+
+        # width = [
+        #     7.5,
+        #     7,
+        #     10,
+        #     12,
+        #     8,
+        #     6,
+        #     4.5,
+        #     3
+        # ]
+        # data = target.spec.copy()
+        # data = data.max()-data
+        # plt.figure()
+        # plt.plot(data,'.--')
+        # for c,w in zip(cen,width):
+        #     plt.axvline(c,0,1,color='red')
+        #     plt.axvspan(c-w,c+w,facecolor='orange')
+        # plt.show()
+
+        # for i in range(len(cen)):
+        #     c = cen[i]
+        #     w = width[i]
+        #     lf, rg = int(c-w),int(c+w)
+        #     xtmp = np.arange(lf,rg+1)
+        #     valtmp = data[lf:rg+1].copy()
+        #     cen[i], width[i] = spc.mean_n_std(xtmp,weights=valtmp)
+        #     maxpos = np.argmax(valtmp)
+        #     hm = valtmp[maxpos]/2
+        #     pl_hm = np.argmin(abs(hm-valtmp[:maxpos]))
+        #     pr_hm = np.argmin(abs(hm-valtmp[maxpos+1:])) + maxpos
+        #     pos = [pl_hm,pr_hm]
+        #     pos = pos[np.argmin([abs(valtmp[pl_hm]-hm),abs(valtmp[pr_hm]-hm)])]
+        #     hwhm = abs(cen[i]-lf-pos)
+        #     width[i] = hwhm
+
+        # width = [1]*len(cen)
+
+        # plt.figure()
+        # plt.plot(target.spec,'.--')
+        # for c,w in zip(cen,width):
+        #     plt.axvline(c,0,1,color='red')
+        #     plt.axvspan(c-w,c+w,facecolor='orange')
+        # plt.show()
+        # # print(len(cen),len(width),len(bal_lines),len(bal_errs))
+        # fit = spc.FuncFit(xdata=np.array(cen)+target.lims[2],ydata=bal_lines,xerr=width,yerr=bal_errs)
+        # fit.pol_fit(2,mode='curve_fit')
+        # fit.plot(mode='subplots')
+        # plt.figure()
+        # plt.hist(fit.residuals(),5)
+        # plt.figure()
+        # # x = np.arange(len(target.spec))
+        # # plt.errorbar(fit.method(x+target.lims[2]),target.spec,target.std,fit.errvar,'.--k')
+        # # A_class(minpos)
+        # # plt.show()
+
+
     # exit()
-    ## Lines
-    data = target.spectral_data(plot_format=True)
-    minpos = data[1].min()
-    l = data[0]
-    plt.figure()
-    plt.title(target.name+': A type star')
-    plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    plt.xlim(3600,7800)
-    A_class(minpos)
-
-    bal_lines = [
-        6562.790,
-        4861.350,
-        4340.472,
-        4101.734,
-        3970.075,
-        3889.064,
-        3835.397,
-        3797.909
-    ]
-    bal_errs = [
-        0.030,
-        0.050,
-        0.006,
-        0.006,
-        0.006,
-        0.006,
-        0.006,
-        0.006    
-    ]
-
-    cen = [
-        837.5,
-        347,
-        200,
-        132,
-        94,
-        71,
-        55.5,
-        45  
-    ]
-
-    width = [
-        7.5,
-        7,
-        10,
-        12,
-        8,
-        6,
-        4.5,
-        3
-    ]
-    data = target.spec.copy()
-    data = data.max()-data
-    plt.figure()
-    plt.plot(data,'.--')
-    for c,w in zip(cen,width):
-        plt.axvline(c,0,1,color='red')
-        plt.axvspan(c-w,c+w,facecolor='orange')
-    plt.show()
-
-    for i in range(len(cen)):
-        c = cen[i]
-        w = width[i]
-        lf, rg = int(c-w),int(c+w)
-        xtmp = np.arange(lf,rg+1)
-        valtmp = data[lf:rg+1].copy()
-        cen[i], width[i] = spc.mean_n_std(xtmp,weights=valtmp)
-        maxpos = np.argmax(valtmp)
-        hm = valtmp[maxpos]/2
-        pl_hm = np.argmin(abs(hm-valtmp[:maxpos]))
-        pr_hm = np.argmin(abs(hm-valtmp[maxpos+1:])) + maxpos
-        pos = [pl_hm,pr_hm]
-        pos = pos[np.argmin([abs(valtmp[pl_hm]-hm),abs(valtmp[pr_hm]-hm)])]
-        hwhm = abs(cen[i]-lf-pos)
-        width[i] = hwhm
-
-    width = [1]*len(cen)
-
-    plt.figure()
-    plt.plot(target.spec,'.--')
-    for c,w in zip(cen,width):
-        plt.axvline(c,0,1,color='red')
-        plt.axvspan(c-w,c+w,facecolor='orange')
-    plt.show()
-    # print(len(cen),len(width),len(bal_lines),len(bal_errs))
-    fit = spc.FuncFit(xdata=np.array(cen)+target.lims[2],ydata=bal_lines,xerr=width,yerr=bal_errs)
-    fit.pol_fit(2,mode='curve_fit')
-    fit.plot(mode='subplots')
-    plt.figure()
-    plt.hist(fit.residuals(),5)
-    plt.figure()
-    # x = np.arange(len(target.spec))
-    # plt.errorbar(fit.method(x+target.lims[2]),target.spec,target.std,fit.errvar,'.--k')
-    # A_class(minpos)
-    # plt.show()
-
-
-    # exit()
     # - - #
+    if 'alfboo' in SEL_OBJ or SEL_OBJ == 'all':
+        ## Arturo
+        night, target_file, selection, target_name = TARGETS[1]
+        if SEL_OBJ == 'alfboo': lamp = spc.Spectrum.empty()
+        target, lamp = spc.calibration(night, target_file, selection, target_name=target_name, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
+        exit()
+        ## Lines
+        data = target.spectral_data(plot_format=True)
+        minpos = data[1].min()
+        l = data[0]
+        plt.figure()
+        plt.title(target.name+': K type star')
+        plt.errorbar(*data,'.-', color='black',alpha=0.5)
+        plt.xlim(4500,7800)
+        K_class(minpos)
+        # plt.figure()
+        # plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
+        # K_class(minpos)
+        # plt.xlim(3600,7800)
+        plt.show()
+        # px = [22,32,285,579,775,867.5]
+        # Dpx = [1,0.5,1.5,2,2,2]
+        # lines = [*caII,np.mean(naI[0:2]),balmer[1],balmer[0],o2[0]]
 
-    ## Arturo
-    night, target_name, selection = TARGETS[1]
+        # fit = spc.FuncFit(px,lines,xerr=Dpx)
+        # fit.pol_fit(2,[1,5000],mode='curve_fit')
+        # fit.plot()
 
-    target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
-
-    ## Lines
-    data = target.spectral_data(plot_format=True)
-    minpos = data[1].min()
-    l = data[0]
-    plt.figure()
-    plt.title(target.name+': K type star')
-    plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    plt.xlim(4500,7800)
-    K_class(minpos)
-    # plt.figure()
-    # plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
-    # K_class(minpos)
-    # plt.xlim(3600,7800)
-    plt.show()
-    # px = [22,32,285,579,775,867.5]
-    # Dpx = [1,0.5,1.5,2,2,2]
-    # lines = [*caII,np.mean(naI[0:2]),balmer[1],balmer[0],o2[0]]
-
-    # fit = spc.FuncFit(px,lines,xerr=Dpx)
-    # fit.pol_fit(2,[1,5000],mode='curve_fit')
-    # fit.plot()
-
-    # plt.figure()
-    # plt.plot(fit.method(np.arange(len(data[1]))),data[1],'.-',color='k')
-    # K_class(minpos)
-    # plt.xlim(3600,7800)
-    # plt.show()
+        # plt.figure()
+        # plt.plot(fit.method(np.arange(len(data[1]))),data[1],'.-',color='k')
+        # K_class(minpos)
+        # plt.xlim(3600,7800)
+        # plt.show()
 
     # - - #
 
-    ## Muceps
-    night, target_name, selection = TARGETS[2]
+    if 'mucep' in SEL_OBJ or SEL_OBJ == 'all':
+        ## Muceps
+        night, target_file, selection, target_name = TARGETS[2]
 
-    target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
+        target, lamp = spc.calibration(night, target_file, selection, target_name=target_name, other_lamp=lamp, display_plots=display_plots,diagn_plots=True)
 
-    ## Lines
-    data = target.spectral_data(plot_format=True)
-    minpos = data[1].min()
-    l = data[0]
-    plt.figure()
-    plt.title(target.name+': M type star')
-    plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    plt.xlim(4500,7800)
-    M_class(minpos)
-    # plt.figure()
-    # plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
-    # M_class(minpos)
-    # plt.xlim(3600,7800)
-    plt.show()
+        ## Lines
+        data = target.spectral_data(plot_format=True)
+        minpos = data[1].min()
+        l = data[0]
+        plt.figure()
+        plt.title(target.name+': M type star')
+        plt.errorbar(*data,'.-', color='black',alpha=0.5)
+        plt.xlim(4500,7800)
+        M_class(minpos)
+        # plt.figure()
+        # plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
+        # M_class(minpos)
+        # plt.xlim(3600,7800)
+        plt.show()
 
-    px = []
-    lines = []
+        px = []
+        lines = []
 
     # - - #
+    if 'betdra' in SEL_OBJ or SEL_OBJ == 'all':
+        ## Rastaban
+        night, target_file, selection, target_name = TARGETS[3]
 
-    ## Rastaban
-    night, target_name, selection = TARGETS[3]
+        target, lamp = spc.calibration(night, target_file, selection, target_name, other_lamp=lamp, display_plots=display_plots,diagn_plots=True)
 
-    target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
+        ## Lines
+        data = target.spectral_data(plot_format=True)
+        minpos = data[1].min()
+        l = data[0]
+        plt.figure()
+        plt.title(target.name+': G type star')
+        plt.errorbar(*data,'.-', color='black',alpha=0.5)
+        plt.xlim(4500,7800)
+        G_class(minpos)
+        # plt.figure()
+        # plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
+        # G_class(minpos)
+        # plt.xlim(3600,7800)
+        # plt.show()
 
-    ## Lines
-    data = target.spectral_data(plot_format=True)
-    minpos = data[1].min()
-    l = data[0]
-    plt.figure()
-    plt.title(target.name+': G type star')
-    plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    plt.xlim(4500,7800)
-    G_class(minpos)
-    plt.figure()
-    plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
-    G_class(minpos)
-    plt.xlim(3600,7800)
-    plt.show()
-
-    px = []
-    lines = []
+        px = []
+        lines = []
 
 #    ## 22-07-26_ohp night
     """
