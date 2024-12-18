@@ -112,7 +112,7 @@ if __name__ == '__main__':
     ord1 = 2
     ord2 = 3
     display_plots = False
-    target, lamp = spc.calibration(night, target_name+'01', selection, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
+    target, lamp = spc.calibration(night, target_name+'01', selection, balmer_cal=False, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
     tmp = target.copy()
     tmp.spec = remove_balmer(tmp.lines,tmp.spec)
     
@@ -135,7 +135,7 @@ if __name__ == '__main__':
     
     ## Response Function
     print('-- RESPONSE FUNCTION --')
-    wlen_ends = (4500, 7201)
+    wlen_ends = (4500, 6700)
 
     wlen, rfunc, tau = spc.ccd_response((alt, Dalt), vega, wlen_ends, bin_width=bin_width,display_plots=True)
 
@@ -148,6 +148,7 @@ if __name__ == '__main__':
     print(tau)
     ratio = np.empty((0,len(rfunc[0])))
     x = 1/np.sin(alt*np.pi/180)
+    fig,ax = plt.subplots(1,1)
     for sel in range(len(alt)):
         target = targets[sel]
         airmass = x[sel]
@@ -178,6 +179,24 @@ if __name__ == '__main__':
 
     plt.figure()
     plt.plot(np.mean(ratio,axis=1),'.-')
+
+    plt.figure()
+    plt.title('Ratio $\\tau$')
+    targets = np.array(targets)
+    ratio_tau = np.array([np.log(targets[i+1].binning(bin=wlen[-1])[1][0]/targets[i].binning(bin=wlen[-1])[1][0])/(x[i]-x[i+1]) * targets[i].get_exposure()/targets[i+1].get_exposure() for i in range(len(targets)-1)])
+    for i in range(ratio_tau.shape[0]):
+        val = ratio_tau[i]
+        plt.plot(val,label=f'$\\Delta$alt = {alt[i]:.3f}-{alt[i+1]:.3f}')
+    plt.plot(tau[0],label='$\\tau$')
+    plt.legend()
+
+    plt.figure()
+    for i in range(ratio_tau.shape[0]):
+        val = ratio_tau[i]
+        plt.plot(val-tau[0],label=f'$\\Delta$alt = {alt[i]:.3f}-{alt[i+1]:.3f}')
+    plt.legend()
+
+    plt.show()
 
     ## Regolo
     target, _ = spc.calibration(night,'Regolo',selection,other_lamp=lamp,display_plots=False)
