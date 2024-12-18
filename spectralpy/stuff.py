@@ -272,7 +272,7 @@ class Spectrum():
 
             if diagn_plots:
                 plt.figure()
-                plt.imshow(data,cmap='gray_r',aspect='auto')
+                plt.imshow(data,cmap='gray_r')
                 plt.errorbar(x_pos,y_pos,Dy,fmt='.')
                 plt.show()
 
@@ -285,14 +285,41 @@ class Spectrum():
             # compute the angle in the degrees from the angular coefficient
             angle1 = np.arctan(m)*180/np.pi  
             Dangle1 = 180/np.pi * Dm/(1+m**2)
+            if diagn_plots:
+                fit.plot(mode='subplots')
+            fmt = unc_format(angle1,Dangle1)
+            str_res ='First Inclination Angle : {angle:' + fmt[0][1:] + '} +/- {Dangle:' + fmt[1][1:] + '} deg  -->  ' + f'{Dangle1/angle1*100:.2f} %'
+            print(str_res.format(angle=angle1,Dangle=Dangle1))
 
             ## Fit of Gaussians
             if gauss_corr:
+                if diagn_plots:
+                    fig0, axes = plt.subplots(3,1,sharex=True)
+                    fig0.suptitle(self.name+': inclination correction',fontsize=20)
+                    axes[0].set_title('The brightest pixels',fontsize=20)
+                    axes[0].imshow(data,cmap='gray_r')
+                    axes[0].errorbar(x_pos,y_pos,Dy,fmt='.',label='Brightest values',color='green',capsize=3)
+                    axes[0].legend()
+                    axes[0].set_ylabel('y [px]',fontsize=18)
+
                 from scipy import ndimage
                 # correct data
-                data = ndimage.rotate(data, angle1, reshape=False).copy()
+                # data = ndimage.rotate(data, angle1, reshape=False).copy()
+                # xlim[1] -= 200
+                # ylim[1] += 5
+                data = ndimage.rotate(target.data, angle1, reshape=False).copy()[slice(*ylim), slice(*xlim)]
+                Ddata = ndimage.rotate(target.sigma, angle1, reshape=False).copy()[slice(*ylim), slice(*xlim)] if target.sigma is not None else None
+                # plt.figure()
+                # plt.imshow(data,norm='log')
+                x_pos = x_pos[x_pos<=data.shape[1]]
+                # for x in x_pos:
+                #     plt.axvline(x,0,1,color='blue')
+                # plt.show()
+                # exit()
                 print('\nGAUSSIAN CORRECTION')
-                if diagn_plots: fig, ax = plt.subplots(1,1)
+                if diagn_plots: 
+                    fig, ax = plt.subplots(1,1)
+                    fig2, ax2 = plt.subplots(1,1)
                 # prepare data 
                 # x_pos = x_pos[::10]
                 y_pos, Dy = np.array([]), np.array([])
@@ -307,9 +334,12 @@ class Spectrum():
                     # take only values greater than the double of the mean
                     pos = np.where(values > np.mean(values)*2)
                     if len(pos[0]) <= 3: pos = np.where(values > np.mean(values))
-                    values = values[pos]
-                    Dvalues = Dvalues[pos]
-                    y = y[pos]
+                    # values = values[pos]
+                    # Dvalues = Dvalues[pos]
+                    # y = y[pos]
+                    # plt.figure()
+                    # plt.errorbar(y,values,Dvalues,fmt='.',linestyle='dashed')
+                    # plt.show()
                     # compute the fit
                     fit = FuncFit(xdata=y, ydata=values,xerr=0.5,yerr=Dvalues)
                     fit.gaussian_fit(initial_values,**fit_args)
@@ -320,9 +350,16 @@ class Spectrum():
                     method = fit.res['func']
                     color = (1-i/max(x_pos),i/max(x_pos),i/(2*max(x_pos))+0.5)
                     if diagn_plots:
-                        ax.plot(data[:,i],color=color,label='fit',**pltargs)
-                        ax.plot(y, method(y,*pop), '--',color=color,**pltargs)
-                if diagn_plots: ax.legend()            
+                        fit.data_plot(ax)
+                        ax2.plot(data[:,i],color=color,label='fit',**pltargs)
+                        ax2.plot(y, method(y,*pop), '--',color=color,**pltargs)
+                if diagn_plots: 
+                    ax.legend()
+                    axes[1].set_title('Gaussian means',fontsize=20)
+                    axes[1].imshow(data,cmap='gray_r')
+                    axes[1].errorbar(x_pos,y_pos,Dy,fmt='.',label='Gaussian means',color='green',capsize=3)
+                    axes[1].legend()
+                    axes[1].set_ylabel('y [px]',fontsize=18)
                 print(len(x_pos),len(y_pos))
                 # compute the fit to get inclination angle
                 fit = FuncFit(xdata=x_pos, ydata=y_pos, yerr=Dy)
@@ -336,12 +373,19 @@ class Spectrum():
                 # compute the total angle
                 angle  = angle1 + angle2
                 Dangle = np.sqrt(Dangle1**2 + Dangle2**2)
+                if diagn_plots:
+                    data = ndimage.rotate(target.data, angle, reshape=False).copy()[slice(*ylim), slice(*xlim)]
+                    axes[2].set_title('Rotated image',fontsize=20)
+                    axes[2].imshow(data,cmap='gray_r')
+                    axes[2].set_ylabel('y [px]',fontsize=18)
+                    axes[2].set_xlabel('x [px]',fontsize=18)
+                    plt.show()
             else: 
                 angle  = angle1
                 Dangle = Dangle1
                 if diagn_plots:
-                    fig,ax = plt.subplots(1,1)
-                    fit.data_plot(ax)
+                    # fig,ax = plt.subplots(1,1)
+                    # fit.data_plot(ax)
                     plt.figure()
                     plt.imshow(data,cmap='gray_r',origin='lower')
                     plt.plot(x_pos, y_pos,'.')
@@ -855,28 +899,66 @@ class FuncFit():
             err = np.sqrt(Dy**2 + err**2)
         return err
 
-    def data_plot(self, ax: Axes, points_num: int = 200, grid: bool = True, pltarg1: dict = {}, pltarg2: dict = {}) -> None:
+    def data_plot(self, ax: Axes, points_num: int = 200, grid: bool = True, pltarg1: dict = {}, pltarg2: dict = {},**pltargs) -> None:
+        if 'title' not in pltargs.keys():
+            pltargs['title'] = 'Fit of the data'
+        if 'fontsize' not in pltargs.keys():
+            pltargs['fontsize'] = 18
+        if 'xlabel' not in pltargs.keys():
+            pltargs['xlabel'] = ''
+        if 'ylabel' not in pltargs.keys():
+            pltargs['ylabel'] = ''
+        title = pltargs['title']
+        fontsize = pltargs['fontsize']
+        ylabel = pltargs['ylabel']
+        xlabel = pltargs['xlabel']
         xdata = self.data[0]
         xx = np.linspace(xdata.min(),xdata.max(),points_num)
         if 'fmt' not in pltarg1.keys():
             pltarg1['fmt'] = '.'        
         ax.errorbar(*self.data,**pltarg1)
         ax.plot(xx,self.method(xx),**pltarg2)
+        ax.set_xlabel(xlabel,fontsize=fontsize)
+        ax.set_ylabel(ylabel,fontsize=fontsize)
+        ax.set_title(title,fontsize=fontsize+2)
         if grid: ax.grid(color='lightgray', ls='dashed')
+        if 'label' in pltarg1.keys() or 'label' in pltarg2.keys():
+            ax.legend(fontsize=fontsize)
 
     def residuals_plot(self, ax: Axes, grid: bool = True, **pltargs) -> None:
-        xdata = self.data[0]
+        if 'title' not in pltargs.keys():
+            pltargs['title'] = 'Residuals of the data'
+        if 'fontsize' not in pltargs.keys():
+            pltargs['fontsize'] = 18
+        if 'xlabel' not in pltargs.keys():
+            pltargs['xlabel'] = ''
+        if 'ylabel' not in pltargs.keys():
+            pltargs['ylabel'] = 'residuals'
+        title = pltargs['title']
+        fontsize = pltargs['fontsize']
+        ylabel = pltargs['ylabel']
+        xlabel = pltargs['xlabel']
+        pltargs.pop('title')
+        pltargs.pop('fontsize')
+        pltargs.pop('ylabel')
+        pltargs.pop('xlabel')
         if 'fmt' not in pltargs.keys():
             pltargs['fmt'] = 'o'
         if 'linestyle' not in pltargs.keys():
             pltargs['linestyle'] = 'dashed'
         if 'capsize' not in pltargs.keys():
             pltargs['capsize'] = 3
+        xdata = self.data[0]
         ax.errorbar(xdata,self.residuals(),self.sigma(),**pltargs)
         ax.axhline(0,0,1,color='black')
+        ax.set_xlabel(xlabel,fontsize=fontsize)
+        ax.set_ylabel(ylabel,fontsize=fontsize)
+        ax.set_title(title,fontsize=fontsize+2)
         if grid: ax.grid(color='lightgray', ls='dashed')
+        if 'label' in pltargs.keys():
+            ax.legend(fontsize=fontsize)
 
-    def plot(self, sel: Literal['data','residuals','all'] = 'all', mode: Literal['plots', 'subplots'] = 'plots', points_num: int = 200, fig: None | Figure | tuple[Figure,Figure] = None, grid: bool = True, plot1: dict = {}, plot2: dict = {}, **resarg) -> None:
+    def plot(self, sel: Literal['data','residuals','all'] = 'all', mode: Literal['plots', 'subplots'] = 'plots', points_num: int = 200, fig: None | Figure | tuple[Figure,Figure] = None, grid: bool = True, plot1: dict = {}, plot2: dict = {}, plotargs: dict = {}, **resargs) -> None:
         if fig is None:
             if sel in ['data','all']: 
                 fig = plt.figure()
@@ -885,16 +967,18 @@ class FuncFit():
         elif isinstance(fig,tuple):
             fig, fig2 = fig
         if sel == 'all' and mode == 'subplots':
-            ax1, ax2 = fig.subplots(2, 1, sharex=True, gridspec_kw=dict(height_ratios=[2, 1], hspace=0.05))        
-            self.data_plot(ax=ax1,points_num=points_num,grid=grid,pltarg1=plot1,pltarg2=plot2)
-            self.residuals_plot(ax=ax2,**resarg)
+            ax1, ax2 = fig.subplots(2, 1, sharex=True, gridspec_kw=dict(height_ratios=[2, 1], hspace=0.05))
+            plotargs['xlabel'] = ''
+            resargs['title'] = ''        
+            self.data_plot(ax=ax1,points_num=points_num,grid=grid,pltarg1=plot1,pltarg2=plot2,**plotargs)
+            self.residuals_plot(ax=ax2,**resargs)
         else:
             if sel in ['data','all']:
                 ax = fig.add_subplot(111)
-                self.data_plot(ax=ax, points_num=points_num,grid=grid,pltarg1=plot1,pltarg2=plot2)
+                self.data_plot(ax=ax, points_num=points_num,grid=grid,pltarg1=plot1,pltarg2=plot2,**plotargs)
             if sel in ['residuals', 'all']:
                 ax2 = fig2.add_subplot(111)
-                self.residuals_plot(ax=ax2,**resarg)
+                self.residuals_plot(ax=ax2,**resargs)
 
 def binning(spectrum: ArrayLike, lines: ArrayLike, bin: float | int | ArrayLike = 50, edges: None | Sequence[float] = None):
     """To bin spectrum data

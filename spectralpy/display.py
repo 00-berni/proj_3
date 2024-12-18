@@ -58,17 +58,21 @@ def quickplot(data: Sequence[ndarray] | ndarray, numfig: int = None, fmt: str = 
     (I wrote it only because of my laziness in writing code).
 
     """
+    if 'fontsize' not in pltargs.keys():
+        pltargs['fontsize'] = 18
+    font_size = pltargs['fontsize']
+    pltargs.pop('fontsize')
     xl,yl = labels
     plt.figure(numfig,figsize=dim)
-    plt.title(title)
+    plt.title(title,fontsize=font_size+2)
     if isinstance(data,ndarray): data = [np.arange(len(data)),data]
     plt.errorbar(*data,fmt=fmt,**pltargs)
-    plt.xlabel(xl)
-    plt.ylabel(yl)
+    plt.xlabel(xl,fontsize=font_size)
+    plt.ylabel(yl,fontsize=font_size)
     if grid: plt.grid(which='both',linestyle='--',alpha=0.2,color='grey')
 
 
-def fits_image(fig: Figure, ax: Axes, data: Spectrum, v: int = -1, subtitle: str = '', **figargs) -> None:
+def fits_image(fig: Figure, ax: Axes, data: Spectrum, v: int = -1, subtitle: str | None = '', **figargs) -> None:
     """To plot fits images
 
     Parameters
@@ -86,18 +90,36 @@ def fits_image(fig: Figure, ax: Axes, data: Spectrum, v: int = -1, subtitle: str
     **figargs
         parameters of `matplotlib.pyplot.imshow()`
     """
-    subtitle = data.name + f', exposure time: {data.get_exposure()} s ' + subtitle
-    ax.set_title(subtitle, fontsize=18)
-    ax.set_xlabel('x [px]')
-    ax.set_ylabel('y [px]')
+    if 'fontsize' not in figargs.keys():
+        figargs['fontsize'] = 18
+    font_size = figargs['fontsize']
+    figargs.pop('fontsize')
+
+    if 'xlabel' not in figargs.keys():
+        figargs['xlabel'] = True
+    if 'ylabel' not in figargs.keys():
+        figargs['ylabel'] = True
+    if figargs['xlabel']: ax.set_xlabel('x [px]', fontsize=font_size)
+    if figargs['ylabel']: ax.set_ylabel('y [px]', fontsize=font_size)
+    figargs.pop('xlabel')
+    figargs.pop('ylabel')
+    if subtitle is None:
+        subtitle = ''
+    elif data.name != 'empty':
+        subtitle = data.name + f', exposure time: {data.get_exposure()} s ' + subtitle
+    ax.set_title(subtitle, fontsize=font_size)
     if v == 1 : color = 'viridis'
     elif v == 0 : color = 'gray'
     else : color = 'gray_r'
     if 'aspect' not in figargs.keys():
         figargs['aspect'] = 'auto'
+    if 'barlabel' not in figargs.keys():
+        figargs['barlabel'] = 'intensity [a.u.]'
+    bar_label = figargs['barlabel']
+    figargs.pop('barlabel')
     image = ax.imshow(data.data, cmap=color,**figargs)
     cbar = fig.colorbar(image, ax=ax, cmap=color, orientation='horizontal')
-    cbar.set_label('intensity [a.u.]')
+    cbar.set_label(bar_label,fontsize=font_size)
 
 ##*
 def show_fits(data: Spectrum, num_plots: Sequence[int] = (1,1), dim: Sequence[int] = (10,7), title: str = '', show: bool = False, **figargs) -> tuple[Figure, Axes | ndarray]:
@@ -117,6 +139,7 @@ def show_fits(data: Spectrum, num_plots: Sequence[int] = (1,1), dim: Sequence[in
         if `True` it displays the figure, by default `False`
     **figargs
         parameters of `fits_image()` and `matplotlib.pyplot.imshow()`
+    
     Returns
     -------
     fig : Figure

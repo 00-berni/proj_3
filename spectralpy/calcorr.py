@@ -66,7 +66,10 @@ def compute_master_dark(mean_dark: Spectrum | None, master_bias: Spectrum | None
             plt.title('Sigma Dark')
             plt.imshow(master_dark.sigma)
             plt.colorbar()
+        if 'norm' not in figargs.keys():
+            figargs['norm'] = 'log'
         show_fits(master_dark,show=True,**figargs)
+    master_dark.name = 'Master Dark'
     return master_dark
 
 def compute_master_flat(flat: Spectrum, master_dark: Spectrum | None = None, master_bias: Spectrum | None = None, diagn_plots: bool = True, **figargs) -> Spectrum:
@@ -115,19 +118,42 @@ def compute_master_flat(flat: Spectrum, master_dark: Spectrum | None = None, mas
         flat.sigma = compute_err(flat, master_dark)
 
     master_flat = flat.copy()
-    master_flat.data = flat.data / np.mean(flat.data)
+    mdata = master_flat.data.copy()
+    # cmdata = np.where(mdata > mdata.max()*99.99999e-100,mdata,0)
+    cmdata = mdata[261:751,275:]
+    # print(mdata.mean(),cmdata.mean())
+    # plt.figure()
+    # plt.imshow(mdata/cmdata.mean(),aspect='auto',origin='lower')
+    # plt.plot(*np.where(mdata<0)[::-1],'.b')
+    # plt.colorbar()
+    # plt.figure()
+    # plt.imshow(cmdata/cmdata.mean(),norm='log',origin='lower')
+    # plt.colorbar()
+    # plt.show()
+    norm_const = cmdata.mean()
+    # master_flat.data = flat.data / np.mean(flat.data)
+    master_flat.data = flat.data / norm_const
     if flat.sigma is not None: 
-        master_flat.sigma /= np.mean(flat.data)
+        master_flat.sigma /= norm_const
         # plt.figure()
-        # plt.imshow(master_flat.sigma)
-        # plt.colorbar()
+        # plt.imshow(master_flat.sigma)    print(mdata.mean(),cmdata.mean())
+    # plt.figure()
+    # plt.imshow(mdata/cmdata.mean(),aspect='auto',origin='lower')
+    # plt.plot(*np.where(mdata<0)[::-1],'.b')
+    # plt.colorbar()
+    # plt.figure()
+    # plt.imshow(cmdata/cmdata.mean(),norm='log',origin='lower')
+    # plt.colorbar()
+    # plt.show()
+
     master_flat.name = 'Master Flat'
     # condition to display the images/plots
     if diagn_plots:
         _ = show_fits(master_flat,show=True,**figargs)
+    master_flat.name = 'Master Flat'
     return master_flat
 
-def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], cut: bool = True, angle: float | None = 0, lim_width: Sequence | None = None, lag: int = 10, fit_args: dict = {}, gauss_corr: bool = True, lamp_incl: bool = True, display_plots: bool = True, diagn_plots: bool = False,**figargs) -> tuple[Spectrum, Spectrum]:
+def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], obj_name: str = '', cut: bool = True, angle: float | None = 0, lim_width: Sequence | None = None, lag: int = 10, fit_args: dict = {}, gauss_corr: bool = True, lamp_incl: bool = True, display_plots: bool = True, diagn_plots: bool = False,**figargs) -> tuple[Spectrum, Spectrum]:
     """To get the science frames of target and its calibration lamp
 
     Parameters
@@ -162,7 +188,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     """
     ## Data extraction
     # get the light frames
-    target, lamp = extract_data(ch_obs,ch_obj,selection,diagn_plots=diagn_plots,**figargs)
+    target, lamp = extract_data(ch_obs,ch_obj,selection,obj_name,diagn_plots=diagn_plots,**figargs)
     if diagn_plots: 
         show_fits(target, title='Light Frame',**figargs)
         if lamp.name != 'empty':
@@ -220,7 +246,15 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
                     plt.plot(pos[1],pos[0],'.',color='red')
                     plt.show()
                     raise
-    
+        if display_plots:
+            calibration[0] = master_flat.copy()
+            fig, ax = plt.subplots(1,len(calibration),sharey=True)
+            for i in range(len(calibration)):
+                norm = 'linear' if i == 0 else 'log'
+                ylabel = not i
+                fits_image(fig,ax[i],calibration[i],norm=norm,aspect='equal',origin='lower',ylabel=ylabel)
+            plt.show()    
+        # exit()
     ## Inclination Correction
     ylen, xlen = target.data.shape      # sizes of the image
     IMAGE_ENDS = [0, ylen, 0, xlen]     # ends of the image
@@ -231,8 +265,26 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     if np.any(target.cut != IMAGE_ENDS):
         exit_cond = False  
         norm = 'linear'
-        if cut:    
-            target, angle = target.angle_correction(angle=angle, gauss_corr=gauss_corr, lim_width=lim_width, lag=lag, diagn_plots=diagn_plots, fit_args=fit_args)      
+        if cut:
+            if display_plots:
+                no_rot_data = target.data.copy()
+            target, angle = target.angle_correction(angle=angle, gauss_corr=gauss_corr, lim_width=lim_width, lag=lag, diagn_plots=diagn_plots, fit_args=fit_args)
+            if display_plots:
+                from scipy import ndimage
+                displ_data0 = np.where(no_rot_data <=0, 1,no_rot_data)
+                # displ_data1 = np.where(target.data <=0, 1,target.data)
+                displ_data1 = ndimage.rotate(displ_data0,target.angle[0],reshape=False)
+                edg1 = slice(*target.cut[:2])
+                edg2 = slice(*target.cut[2:])
+                edg = (slice(*target.cut[:2]),slice(*target.cut[2:]))
+                fig0, (ax01,ax02) = plt.subplots(1,2,sharey=True)
+                fig0.suptitle('Image Rotation',fontsize=20)
+                ax01.set_xlabel('x [px]',fontsize=18)
+                ax01.set_ylabel('y [px]',fontsize=18)
+                ax01.imshow(displ_data0,cmap='gray_r',norm='log',origin='lower')
+                ax02.set_xlabel('x [px]',fontsize=18)
+                ax02.imshow(displ_data1,cmap='gray_r',norm='log',origin='lower')
+                plt.show()
             if np.all(target.lims == IMAGE_ENDS): 
                 exit_cond = True
                 norm = 'log'
@@ -240,7 +292,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
             if lamp.name != 'empty':
                 if lamp_incl: 
                     lamp, _ = lamp.angle_correction(*target.angle, gauss_corr=gauss_corr,lim_width=lim_width, lag=lag, diagn_plots=diagn_plots, fit_args=fit_args)      
-                lamp.lims[:2] = np.copy(target.lims[:2]) 
+                lamp.lims[:2] = np.copy(lamp.lims[:2]) 
                 lamp.cut_image()
     else:
         exit_cond = True  
@@ -359,7 +411,7 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: 
 
     ## Plot
     if display_plots:
-        fit.plot(mode='subplots')
+        fit.plot(mode='subplots',plotargs={'ylabel':'$\\lambda$ [$\\AA$]','title':'Wavelength calibration fit'},xlabel='x [px]')
         plt.figure()
         plt.hist(fit.residuals(),13)
         plt.show()
@@ -492,7 +544,7 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
     # exit()
     return shift
 
-def spectrum_average(data: ndarray, step: int | None = 20) -> tuple[ndarray,ndarray]:
+def spectrum_average(data: ndarray, step: int | None = 10, diagn_plot: bool = False, *plotargs) -> tuple[ndarray,ndarray]:
     """To extact the spectrum from data image
 
     Parameters
@@ -531,9 +583,27 @@ def spectrum_average(data: ndarray, step: int | None = 20) -> tuple[ndarray,ndar
         # average the values
         m_hwhm = (up_hwhm+down_hwhm)/2
         hwhm += [m_hwhm]
+    if diagn_plot:
+        fig,ax = plt.subplots(1,1)
+        dsp_img = Spectrum.empty()
+        dsp_img.data = data.copy()
+        fits_image(fig,ax,dsp_img)
+        ax.errorbar(xpos,ypos,yerr=hwhm,fmt='.',color='violet',capsize=3)
+        plt.show()
+        del dsp_img,fig,ax
     # compute mean quantities
     hwhm = np.mean(hwhm).astype(int)
     cen = np.mean(ypos).astype(int)
+    print('Centroid: ',cen,hwhm)
+    if diagn_plot:
+        fig,ax = plt.subplots(1,1)
+        dsp_img = Spectrum.empty()
+        dsp_img.data = data.copy()
+        fits_image(fig,ax,dsp_img,subtitle='Spectrum extraction')
+        ax.axhspan(cen-hwhm,cen+hwhm,facecolor='orange',alpha=0.4 )
+        ax.axhline(cen,0,1,color='orange')
+        plt.show()
+        del dsp_img
     # compute the edgies of the selected area  
     up = int(cen+hwhm)
     down = int(cen-hwhm)
@@ -549,7 +619,7 @@ def spectrum_average(data: ndarray, step: int | None = 20) -> tuple[ndarray,ndar
     spec0 /= spec0.mean()
     return spec, Dspec
 
-def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angle: float | None = None, gauss_corr: bool = True, angle_fitargs: dict = {}, height: ArrayLike | None = None, row_num: int = 3, lag: int = 1, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, lamp_fitargs: dict = {}, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, balmer_fitargs: dict = {}, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
+def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], target_name: str = '', angle: float | None = None, gauss_corr: bool = True, angle_fitargs: dict = {}, height: ArrayLike | None = None, row_num: int = 3, lag: int = 1, step: int = 10, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, lamp_fitargs: dict = {}, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, balmer_fitargs: dict = {}, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
     """To open and calibrate data
 
     Parameters
@@ -595,17 +665,9 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     """    
     ## Data
     # extract data
-    target, lamp = get_target_data(ch_obs, ch_obj, selection, angle=angle, gauss_corr=gauss_corr, fit_args=angle_fitargs, display_plots=display_plots, diagn_plots=diagn_plots,**figargs)
-    # normalize along the x axis
-    # data = target.data.mean(axis=1)
-    # data = np.array([ target.data[i,:] / data[i] for i in range(len(data)) ])
+    target, lamp = get_target_data(ch_obs, ch_obj, selection, obj_name=target_name, angle=angle, gauss_corr=gauss_corr, fit_args=angle_fitargs, display_plots=display_plots, diagn_plots=diagn_plots,**figargs)
     # average along the y axis
-    target.spec, target.std = spectrum_average(target.data) #mean_n_std(data, axis=0)
-    # plt.figure()
-    # plt.plot(target.spec,'.--')
-    # plt.figure()
-    # plt.plot(target.spec-bkg,'.--')
-    # plt.show()
+    target.spec, target.std = spectrum_average(target.data,step=step,diagn_plot=diagn_plots)
     # compute the height for the lamp
     if height is None: 
         mid_h = int(len(lamp.data)/2)
@@ -618,15 +680,18 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
     if diagn_plots:
         fn = 10
         fig, ax = plt.subplots(1,1)
-        fits_image(fig,ax,lamp)
+        fits_image(fig,ax,lamp,subtitle=None)
         if lag == 1:
             ax.axhspan(mid_h-row_num,mid_h+row_num,facecolor='orange',alpha=0.6)
+            # ax.axhspan(20+target.lims[0]-lamp.lims[0],26+target.lims[0]-lamp.lims[0],facecolor='blue',alpha=0.5)
+            # ax.axhspan(target.lims[0]-lamp.lims[0],target.lims[1]-lamp.lims[0],facecolor='red',alpha=0.5)
         else:
             for h in height:
                 color = (h/height.max()/2+h%3/10, 1-h/height.max()/2+h%2/10, h/height.max())
                 ax.axhline(h,0,1,color=color)
                 quickplot(lamp.data[h],numfig=fn,color=color)
         plt.show()
+
     # if lamp.sigma is not None: 
     #     lamp.std = lamp.sigma[height]
     pos = np.where(lamp.std < 0)[0]
@@ -638,7 +703,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], angl
         raise
     if diagn_plots:
         quickplot(target.spec,title='Uncalibrated spectrum of '+target.name,labels=('x [a.u.]','I [a.u.]'),numfig=1,**pltargs)
-        quickplot(lamp.spec,title='Uncalibrated spectrum of its lamp',labels=('x [a.u.]','I [a.u.]'),numfig=2,**pltargs)
+        quickplot(lamp.spec,title='Uncalibrated spectrum of the lamp',labels=('x [a.u.]','I [a.u.]'),numfig=2,**pltargs)
         plt.show()
     
     ## Calibration

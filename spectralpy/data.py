@@ -436,7 +436,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
     return results
 
 
-def extract_data(ch_obs: str, ch_obj: str, selection: str | Literal['mean'], diagn_plots: bool = True, **figargs) -> tuple[Spectrum, Spectrum]:
+def extract_data(ch_obs: str, ch_obj: str, selection: str | Literal['mean'], obj_name: str = '', diagn_plots: bool = True, **figargs) -> tuple[Spectrum, Spectrum]:
     """To get data of target and calibration lamp spectrum.
     
     Parameters
@@ -482,6 +482,7 @@ def extract_data(ch_obs: str, ch_obj: str, selection: str | Literal['mean'], dia
         print(lims_fit,lims_lamp)
     
     ## Data
+    if obj_name == '': obj_name = ch_obj
     # collect the target data
     if isinstance(obj_fit, list):
         # for more acquisitions it is possible to select one or average on all
@@ -489,7 +490,7 @@ def extract_data(ch_obs: str, ch_obj: str, selection: str | Literal['mean'], dia
             target = Spectrum.empty()
             for (fits, lim) in zip(obj_fit, lims_fit):
                 fits = data_file_path(ch_obs, ch_obj, fits)
-                tmp = get_data_fit(fits,lim,obj_name=ch_obj,diagn_plots=diagn_plots,**figargs)
+                tmp = get_data_fit(fits,lim,obj_name=obj_name,diagn_plots=diagn_plots,**figargs)
                 target.hdul += [tmp.hdul]
                 target.data += [tmp.data]
                 # check edges
@@ -503,16 +504,16 @@ def extract_data(ch_obs: str, ch_obj: str, selection: str | Literal['mean'], dia
             selection = int(selection)
             obj_fit, lims_fit = obj_fit[selection], lims_fit[selection]
             obj_fit = data_file_path(ch_obs, ch_obj, obj_fit)
-            target = get_data_fit(obj_fit,lims_fit,obj_name=ch_obj,diagn_plots=diagn_plots,**figargs)
+            target = get_data_fit(obj_fit,lims_fit,obj_name=obj_name,diagn_plots=diagn_plots,**figargs)
         else: raise Exception('Invalid value for `selection`: '+ selection +' is not allowed')
     else:
         obj_fit = data_file_path(ch_obs, ch_obj, obj_fit)
-        target = get_data_fit(obj_fit,lims_fit,obj_name=ch_obj,diagn_plots=diagn_plots,**figargs)
+        target = get_data_fit(obj_fit,lims_fit,obj_name=obj_name,diagn_plots=diagn_plots,**figargs)
     if diagn_plots: _ = show_fits(target, title='Target spectrum extracted', show=True,**figargs)
     # collect the lamp data, if any
     if obj_lamp is not None:
         obj_lamp = data_file_path(ch_obs, ch_obj, obj_lamp)
-        lamp = get_data_fit(obj_lamp,lims_lamp,obj_name='Lamp of ' + ch_obj, diagn_plots=diagn_plots,**figargs)
+        lamp = get_data_fit(obj_lamp,lims_lamp,obj_name='Lamp of ' + obj_name, diagn_plots=diagn_plots,**figargs)
         if diagn_plots:  _ = show_fits(lamp, show='True',**figargs)
     else: 
         lamp = Spectrum.empty()
