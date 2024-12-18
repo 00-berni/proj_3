@@ -1,13 +1,5 @@
-night,name,selection
-17-03-27,Vega01,mean
-17-03-27,Arturo,mean
-17-03-27,Muceps,mean
-17-03-27,Rastaban,mean
-22-07-26_ohp,vega,0
-22-07-26_ohp,giove,0
-22-07-26_ohp,luna,0
-22-07-26_ohp,luna,1
-22-07-26_ohp,pCygni,0
-22-07-26_ohp,m57,0
-23-03-28,Aldebaran,0
-23-03-28,Sirius2,0
+night,obj,selection,name
+17-03-27,Vega01,mean,alf Lyr
+17-03-27,Arturo,mean,alf Boo
+17-03-27,Muceps,mean,mu. Cep
+17-03-27,Rastaban,mean,bet Dra
