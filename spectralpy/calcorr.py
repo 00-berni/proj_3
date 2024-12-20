@@ -189,6 +189,14 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     ## Data extraction
     # get the light frames
     target, lamp = extract_data(ch_obs,ch_obj,selection,obj_name,diagn_plots=diagn_plots,**figargs)
+    if target.sigma is not None and np.any(target.sigma<0):
+        plt.figure()
+        plt.title('First Open')
+        plt.imshow(target.sigma)
+        plt.plot(*np.where(target.sigma<0)[::-1],'.',color='red')
+        plt.colorbar()
+        plt.show()
+        exit()
     if diagn_plots: 
         show_fits(target, title='Light Frame',**figargs)
         if lamp.name != 'empty':
@@ -231,6 +239,14 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
         target_err = flat_err(target.data) + err(target.sigma)
         target.data = target.data / master_flat.data
         target.sigma = None if isinstance(target_err, int) else np.sqrt(target_err)
+        if target.sigma is not None and np.any(target.sigma<0):
+            plt.figure()
+            plt.title('After correction Open')
+            plt.imshow(target.sigma)
+            plt.plot(*np.where(target.sigma<0)[::-1],'.',color='red')
+            plt.colorbar()
+            plt.show()
+            exit()
 
         if lamp.name != 'empty':
             lamp_err = flat_err(lamp.data) + err(lamp.sigma)
@@ -359,12 +375,12 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: 
         plt.plot(lamp.spec,'.-')
         plt.show()
         exit()
-    plt.figure()
-    plt.plot(lamp.spec)
-    for px,w in zip(pxs,errs):
-        plt.axvline(px,color='red')
-        plt.axvspan(px-w,px+w,facecolor='orange')
-    plt.show()
+    # plt.figure()
+    # plt.plot(lamp.spec)
+    # for px,w in zip(pxs,errs):
+    #     plt.axvline(px,color='red')
+    #     plt.axvspan(px-w,px+w,facecolor='orange')
+    # plt.show()
 
     # for i in range(len(pxs)):
     #     px = pxs[i]
@@ -384,13 +400,13 @@ def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: 
 
     # errs = [0.5]*len(pxs)
 
-    if display_plots:
-        plt.figure()
-        plt.plot(np.arange(lamp.spec.shape[0]),lamp.spec)
-        for px,err in zip(pxs,errs):
-            plt.axvline(px,color='red',linestyle='--')
-            plt.axvspan(px-err,px+err,facecolor='orange',alpha=0.8)
-        plt.show()
+    # if display_plots:
+    #     plt.figure()
+    #     plt.plot(np.arange(lamp.spec.shape[0]),lamp.spec)
+    #     for px,err in zip(pxs,errs):
+    #         plt.axvline(px,color='red',linestyle='--')
+    #         plt.axvspan(px-err,px+err,facecolor='orange',alpha=0.8)
+    #     plt.show()
 
     # shift the pixels
     pxs += trsl
@@ -511,6 +527,8 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
     # prevent errors
     lamp1 = lamp1.copy()
     lamp2 = lamp2.copy()
+    name1 = lamp1.name[8:]
+    name2 = lamp2.name[8:]
     # data must have same length
     edge1 = lamp1.lims[2:]
     edge2 = lamp2.lims[2:]
@@ -539,7 +557,7 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
     shift = lags[corr.argmax()]  
     print('MAX POS:',shift)
     if display_plots:
-        quickplot((lags,corr),title=f'Cross corr -> {shift}',grid=True,**pltargs)
+        quickplot((lags,corr),title=f'Cross-correlation of {name1} and {name2}\nMaximum at lag {shift}',labels=('lag [px]','I [a.u.]'),grid=True,dim=(12,14),**pltargs)
         plt.show()
     # exit()
     return shift
