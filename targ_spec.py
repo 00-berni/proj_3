@@ -81,49 +81,52 @@ def display_lines(minpos: float, edges: tuple[float, float], sel: str | list[str
         plot_line(naI,'Na I','green',minpos)
     plt.legend()
 
+fontsize = 18
+
 def A_class(minpos: float):
     plot_line(balmer,'Balmer','b',minpos)
     # plot_line(o2[0:1],'O$_2$','purple',minpos)
-    plt.legend()
+    plt.legend(fontsize=fontsize)
 
 def K_class(minpos: float):
     plot_line(balmer[0:1],'H$\\alpha$','b',minpos)
     plot_line(balmer[1:2],'H$\\beta$','b',minpos)
-    plot_line(balmer[2:3],'H$\\gamma$','b',minpos)
-    plot_line(balmer[3:4],'H$\\delta$','b',minpos)
-    plot_line(caII[1:2],'CaII K','pink',minpos)
-    plot_line(caII[0:1],'CaII H','pink',minpos)
+    # plot_line(balmer[2:3],'H$\\gamma$','b',minpos)
+    # plot_line(balmer[3:4],'H$\\delta$','b',minpos)
+    # plot_line(caII[1:2],'CaII K','pink',minpos)
+    # plot_line(caII[0:1],'CaII H','pink',minpos)
     # plot_line(naI[0:2],'Na I D','green',minpos)
-    plot_line([np.mean(naI[0:2])],'NaI D mean','green',minpos)
-    plot_line([np.mean(mgI[1:3])],'MgI mean','orange',minpos)
+    plot_line([np.mean(naI[0:2])],'NaI D','green',minpos)
+    plot_line([np.mean(mgI[1:3])],None,'orange',minpos)
     plot_line(mgI[3:4],'MgI','orange',minpos)
     # plot_line(o2[0:],'O$_2$','purple',minpos)
-    plt.legend()
+    plt.legend(fontsize=fontsize)
 
 def G_class(minpos: float):
     plot_line(balmer[0:1],'H$\\alpha$','b',minpos)
     plot_line(balmer[1:2],'H$\\beta$','b',minpos)
-    plot_line(balmer[2:3],'H$\\gamma$','b',minpos)
-    plot_line(balmer[3:4],'H$\\delta$','b',minpos)    
-    plot_line(caII[1:2],'CaII K','pink',minpos)
-    plot_line(caII[0:1],'CaII H','pink',minpos)
+    # plot_line(balmer[2:3],'H$\\gamma$','b',minpos)
+    # plot_line(balmer[3:4],'H$\\delta$','b',minpos)    
+    # plot_line(caII[1:2],'CaII K','pink',minpos)
+    # plot_line(caII[0:1],'CaII H','pink',minpos)
     # plot_line(naI[0:2],'Na I D','green',minpos)
-    plot_line([np.mean(naI[0:2])],'NaI D mean','green',minpos)
-    plot_line([np.mean(mgI[1:3])],'MgI mean','orange',minpos)
+    plot_line([np.mean(naI[0:2])],'NaI D','green',minpos)
+    plot_line([np.mean(mgI[1:3])],'MgI','orange',minpos)
     # plot_line(mgI[3:4],'MgI','orange',minpos)
-    plot_line(feI[1:2],'FeI','violet',minpos)
+    # plot_line(feI[1:2],'FeI','violet',minpos)
     # plot_line(feI[6:7],'FeI','violet',minpos)
     # plot_line(o2[0:],'O$_2$','purple',minpos)
-    plot_line(caI[1:2],'CaI','lime',minpos)
-    plt.legend()
+    # plot_line(caI[1:2],'CaI','lime',minpos)
+    plt.legend(fontsize=fontsize)
 
 def M_class(minpos: float):
     plot_line(balmer[0:1],'H$\\alpha$','b',minpos)
-    plot_line([np.mean(naI[0:2])],'NaI D mean','green',minpos)
+    plot_line(balmer[1:2],'H$\\beta$','b',minpos)
+    plot_line([np.mean(naI[0:2])],'NaI D','green',minpos)
     # plot_line(o2[0:],'O$_2$','purple',minpos)
     # plot_line(caI[:],'CaI','lime',minpos)
     plot_line(tio[:],'TiO','pink',minpos)
-    plt.legend()
+    plt.legend(fontsize=fontsize)
 
 if __name__ == '__main__':
     ### 17-03-27 night
@@ -133,8 +136,15 @@ if __name__ == '__main__':
     2  - mu. Cep > Muceps     : M2-Ia
     3  - bet Dra > Rastaban   : G2Ib-IIa
     """
+    SEL_OBJ = 'all'
     SEL_OBJ = ['alflyr','alfboo','betdra']
+    # SEL_OBJ = ['alfboo']
+    display_plots = True
     display_plots = False
+
+    atm_data = []
+    atm_names = []
+    figsize = (14,14)
 
     # atmfig, atmax = plt.subplots(1,3)
 
@@ -148,14 +158,17 @@ if __name__ == '__main__':
 
         ## Lines
         data = target.spectral_data(plot_format=True)
+        data = data[:,data[0]>=4500]
         minpos = data[1].min()
         l = data[0]
-        spc.quickplot([*data],fmt='-',title= 'calibrated spectrum of ' + target.name, grid=True,labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),capsize=3)
-        spc.quickplot([*data],fmt='-',title= 'A type Star', grid=True,labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),capsize=3,color='black',alpha=0.6)
-        plt.suptitle(target_name,fontsize=20)
+        # spc.quickplot([*data],fmt='-',title= 'calibrated spectrum of ' + target.name, grid=True,labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),capsize=3)
+        spc.quickplot([*data],fmt='-',title= 'Calibrated spectrum of ' + target.name,dim=figsize, grid=True,labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),capsize=3,color='black',alpha=0.6)
+        # plt.suptitle(target_name,fontsize=20)
         plt.xlim(4500,7700)
         A_class(minpos)
-        plt.show()
+        # plt.show()
+        atm_data += [data[:,data[0]>=balmer[0]]]
+        atm_names += [target.name]
         # bal_lines = [
         #     6562.790,
         #     4861.350,
@@ -247,25 +260,29 @@ if __name__ == '__main__':
     # exit()
     # - - #
     if 'alfboo' in SEL_OBJ or SEL_OBJ == 'all':
+        if len(SEL_OBJ) == 1: lamp = spc.Spectrum.empty()
         ## Arturo
         night, target_file, selection, target_name = TARGETS[1]
         if SEL_OBJ == 'alfboo': lamp = spc.Spectrum.empty()
         target, lamp = spc.calibration(night, target_file, selection, target_name=target_name, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
-        exit()
         ## Lines
         data = target.spectral_data(plot_format=True)
         minpos = data[1].min()
         l = data[0]
-        plt.figure()
-        plt.title(target.name+': K type star')
-        plt.errorbar(*data,'.-', color='black',alpha=0.5)
+        data = data[:,data[0]>=4500]
+        spc.quickplot([*data],fmt='-',title= 'Calibrated spectrum of ' + target.name,dim=figsize, grid=True,labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),capsize=3,color='black',alpha=0.6)
+        # plt.figure()
+        # plt.title(target.name+': K type star')
+        # plt.errorbar(*data,'.-', color='black',alpha=0.5)
         plt.xlim(4500,7800)
         K_class(minpos)
         # plt.figure()
         # plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
         # K_class(minpos)
         # plt.xlim(3600,7800)
-        plt.show()
+        # plt.show()
+        atm_data += [data[:,data[0]>=balmer[0]]]
+        atm_names += [target.name]
         # px = [22,32,285,579,775,867.5]
         # Dpx = [1,0.5,1.5,2,2,2]
         # lines = [*caII,np.mean(naI[0:2]),balmer[1],balmer[0],o2[0]]
@@ -292,329 +309,64 @@ if __name__ == '__main__':
         data = target.spectral_data(plot_format=True)
         minpos = data[1].min()
         l = data[0]
-        plt.figure()
-        plt.title(target.name+': M type star')
-        plt.errorbar(*data,'.-', color='black',alpha=0.5)
+        data = data[:,data[0]>=4500]
+        spc.quickplot([*data],fmt='-',title= 'Calibrated spectrum of ' + target.name,dim=figsize, grid=True,labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),capsize=3,color='black',alpha=0.6)
+        # plt.figure()
+        # plt.title(target.name+': M type star')
+        # plt.errorbar(*data,'.-', color='black',alpha=0.5)
         plt.xlim(4500,7800)
         M_class(minpos)
         # plt.figure()
         # plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
         # M_class(minpos)
         # plt.xlim(3600,7800)
-        plt.show()
+        # plt.show()
+        atm_data += [data[:,data[0]>=balmer[0]]]
+        atm_names += [target.name]
 
-        px = []
-        lines = []
 
     # - - #
     if 'betdra' in SEL_OBJ or SEL_OBJ == 'all':
         ## Rastaban
         night, target_file, selection, target_name = TARGETS[3]
 
-        target, lamp = spc.calibration(night, target_file, selection, target_name, other_lamp=lamp, display_plots=display_plots,diagn_plots=True)
+        target, lamp = spc.calibration(night, target_file, selection, target_name, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
 
         ## Lines
         data = target.spectral_data(plot_format=True)
         minpos = data[1].min()
         l = data[0]
-        plt.figure()
-        plt.title(target.name+': G type star')
-        plt.errorbar(*data,'.-', color='black',alpha=0.5)
+        data = data[:,data[0]>=4500]
+        spc.quickplot([*data],fmt='-',title= 'Calibrated spectrum of ' + target.name,dim=figsize, grid=True,labels=('$\\lambda$ [$\\AA$]','I [a.u.]'),capsize=3,color='black',alpha=0.6)
+        # plt.figure()
+        # plt.title(target.name+': G type star')
+        # plt.errorbar(*data,'.-', color='black',alpha=0.5)
         plt.xlim(4500,7800)
         G_class(minpos)
+        # plt.show()
         # plt.figure()
         # plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
         # G_class(minpos)
         # plt.xlim(3600,7800)
-        # plt.show()
+        atm_data += [data[:,data[0]>=balmer[0]]]
+        atm_names += [target.name]
 
-        px = []
-        lines = []
-
-#    ## 22-07-26_ohp night
-    """
-    4  - vega
-    5  - giove
-    6  - luna0
-    7  - luna1
-    8  - pCygni
-    9  - m57
-    """    
-    # night, target_name, selection = TARGETS[4]
-
-    # ord_lamp = 2
-    # ord_balm = 2
-    # display_plots = True
-    # target, lamp = spc.calibration(night, target_name, selection,lag=7,row_num=4, ord_lamp=ord_lamp, ord_balm=ord_balm, display_plots=display_plots,diagn_plots=True)
-    
-    
-    # night, target_name, selection = TARGETS[5]
-
-    # target, lamp = spc.calibration(night, target_name, selection, angle=target.angle, other_lamp=lamp, display_plots=True,diagn_plots=True)
-
-    
-
-#    ## 23-03-28 night
-    # night, target_name, selection = TARGETS[-2]
-
-    # ord = 2
-    # display_plots = True
-    # target, lamp = spc.calibration(night, target_name, selection, ord=ord, display_plots=True)
-
-
-    # night, target_name, selection = TARGETS[2]
-
-    # target, lamp = spc.calibration(night, target_name, selection, other_lamp=lamp, display_plots=display_plots)
-
-    # data = target.spectral_data(plot_format=True)
-    # minpos = data[1].min()
-    # l = data[0]
-    # plt.figure()
-    # plt.errorbar(*data,'.-', color='black',alpha=0.5)
-    # plt.xlim(3600,7800)
-    # display_lines(minpos,(l.min(),l.max()))
-    # plt.show()
-
-    # tg, lp = dt.open_results(['polluce_mean','lamp-polluce'],night,target_name)
-    # minpos = tg[2].min()
-    # dsp.quickplot((tg[0],tg[2],tg[3],tg[1]),fmt='.--',color='black')
-    # plt.legend()
-    # plt.yscale('log')
-    # plt.show()
-
-    # night, target_name, selection = TARGETS[:,1]
-    # target2, lamp2 = spc.calibration(night, target_name, selection, other_lamp=lamp)
-
-#    ## Vega
-
-# - - #
-
-    # file_name = dt.os.path.join(dt.CAL_DIR,'standards','Vega','vega_std.fit')
-    # # lims = [592,618,251,-1,600,612,243,-1]
-    # lims = [592,618,251,-1,605,610,243,-1]
-    # std = dt.get_data_fit(file_name,lims,obj_name='Standard Vega')
-    # std, angle = std.angle_correction(diagn_plots=False)
-    # std.cut_image()
-    # dsp.show_fits(std,show=True)
-    # meandata = std.data.mean(axis=1)
-    # data = np.array([ std.data[i,:] / meandata[i] for i in range(len(meandata)) ])
-    # std.spec, std.std = spc.mean_n_std(data, axis=0)
-
-    # from numpy.typing import ArrayLike
-    # print(' - - STARDARD - - ')
-    # file_path = dt.os.path.join(dt.CAL_DIR,'standards','Vega','H_calibration.txt')
-    # balm, balmerr, lines, errs = np.loadtxt(file_path, unpack=True)
-    # lines += std.lims[2]
-    # ord = 3
-    # fit = spc.FuncFit(xdata=lines, xerr=errs, ydata=balm, yerr=balmerr)
-    # initial_values = [0] + [1]*(ord-1) + [np.mean(lines)]
-    # fit.pol_fit(ord, initial_values=initial_values)
-    # pop = fit.fit_par.copy()
-    # cov = fit.res['cov']
-
-    # def balm_calfunc(x: ArrayLike) -> ArrayLike:
-    #     return fit.res['func'](x, *pop)
-
-    # def balm_errfunc(x: ArrayLike, Dx: ArrayLike) -> ArrayLike:
-    #     par_err = [ x**(2*ord-(i+j)) * cov[i,j] for i in range(ord+1) for j in range(ord+1)]
-    #     err = np.sum([ pop[i]*(ord-i)*x**(ord-i-1) for i in range(ord) ],axis=0)
-    #     return np.sqrt((err * Dx)**2 + np.sum(par_err, axis=0))
-
-    # target.spec = target.spec / target.get_exposure()
-    # target.std = target.std / target.get_exposure()
-    # std.spec = std.spec / std.get_exposure()
-    # std.std = std.std / std.get_exposure()
-
-    # std.func = [balm_calfunc, balm_errfunc]
-    # std.compute_lines()
-    # data = std.spectral_data(True)
-
-    # l = data[0]
-    # minpos = data[1].min()
-    # plt.figure()
-    # plt.subplot(2,1,1)
-    # plt.errorbar(*data,fmt='.-')
-    # display_lines(minpos,(l.min(),l.max()))
-    # plt.subplot(2,1,2)
-    # data = target.spectral_data(True)
-    # l = data[0]
-    # minpos = data[1].min()    
-    # plt.errorbar(*data,fmt='.-')
-    # display_lines(minpos,(l.min(),l.max()))
-
-
-    # plt.show()
-
-
-#   ## Filters
-    # from speclite import filters as flt
-    # filter_b = flt.load_filter('bessell-B')(l_data)
-    # filter_v = flt.load_filter('bessell-V')(l_data)
-    # filter_r = flt.load_filter('bessell-R')(l_data)
-
-    # filter_b /= filter_b.mean()
-    # filter_v /= filter_v.mean()
-    # filter_r /= filter_r.mean()
-
-    # from scipy.signal import convolve
-    # data_b = convolve(I0, filter_b, mode='same')
-    # data_v = convolve(I0, filter_v, mode='same')
-    # data_r = convolve(I0, filter_r, mode='same')
-    # data_b /= data_b.mean()    
-    # data_v /= data_v.mean()
-    # data_r /= data_r.mean()
-    
-    # plt.figure()
-    # plt.plot(l_data,I0,'.-',color='black')
-    # plt.plot(l_data,filter_b,'.-',color='blue')
-    # plt.plot(l_data,filter_v,'.-',color='green')
-    # plt.plot(l_data,filter_r,'.-',color='red')
-    # plt.figure()
-    # plt.plot(l_data,data_b,'.-',color='blue')
-    # plt.plot(l_data,data_v,'.-',color='green')
-    # plt.plot(l_data,data_r,'.-',color='red')
-    # plt.figure()
-    # plt.plot(l_data,data_b-data_v,'.-',color='violet')
-    # plt.plot(l_data,data_v-data_r,'.-',color='orange')
-    # plt.show()
-
-
-
-
-
-
-    # sc_frame, lamp = spc.get_target_data(night,target_name,selection,angle=None)
-
-    # spectr = np.mean(sc_frame.data, axis=0)
-
-    # dsp.quickplot(np.arange(len(spectr)),spectr)
-    # plt.show()
-
-    # height = int(len(lamp.data)/2)
-    # spec_lamp = lamp.data[height]
-    # fig,ax = dsp.show_fits(lamp)
-    # ax.axhline(height,0,1,color='blue')
-    # plt.show()
-    # l, px, err = np.loadtxt(dt.os.path.join(dt.DATA_DIR,night,target_name,'calibration_lines.txt'),unpack=True)
-    # dsp.quickplot(np.arange(len(spec_lamp)),spec_lamp)
-    # for p in px:
-    #     plt.axvline(p,0,1,color='red',linestyle='dashed')
-    # plt.show()
-
-
-    # height = int(input('Choose the height for the spectrum of the lamp\n> '))
-
-
-    # tmp = dt.data_extraction(dt.os.path.join(dt.DATA_DIR,night,target_name,'line_curv.json'))
-    # print(tmp)
-    # centre = []
-    # fig, ax = plt.subplots(1,1)
-    # ax.imshow(lamp.data,cmap='gray_r')
-    # for t in tmp:
-    #     ptin = np.array(tmp[t]['in'])
-    #     ptout = np.array(tmp[t]['out'])
-    #     pt = (ptin+ptout)/2
-    #     def fitfunc(x,*args):
-    #         return x**2*args[0] + x*args[1] + args[2]
-    #     y = pt[:,0]
-    #     x = pt[:,1]
-    #     Dy = (ptout-ptin)[:,0]/2
-    #     Dx = [0.5]*len(y)
-    #     initial_values = [0.2,1,1]
-    #     fit = FuncFit(xdata=x,ydata=y,yerr=Dy,xerr=Dx)
-    #     fit.pipeline(fitfunc,initial_values)
-    #     pop, Dpop = fit.results()
-    #     a,b,c = pop
-    #     c = [-(b**2-4*a*c)/(4*a), -b/(2*a)]
-    #     centre += [c]
-    #     ffig, axx = plt.subplots(1,1)
-    #     xx = np.linspace(x.min(),x.max(),100)
-    #     axx.plot(fitfunc(xx,*pop),xx,'--',color='violet')
-    #     axx.errorbar(y,x,Dx,Dy,fmt='.',color='blue')
-    #     plt.show()
-    # def linfit(x,*args):
-    #     m,q = args
-    #     return m*x + q
-    # centre = np.array(centre)
-    # x = centre[:,1]
-    # y = centre[:,0]
-    # fit = FuncFit(x,y)
-    # fit.pipeline(linfit,[-1,0],['m','q'])
-    # pop, Dpop = fit.results()
-    # plt.figure()
-    # plt.plot(y,x,'.')
-    # plt.plot(linfit(x,*pop),x,'--')
-    # plt.show()
-    # m = pop[0]
-    # angle = np.arctan(m)*180/np.pi   # degrees
-    # _, lamp = dt.angle_correction(lamp.data,angle=angle)
-    # dt.showfits(lamp)
-    # plt.show()
-    #     ax.plot(*c,'x',color='red')
-    #     ax.plot(fitfunc(xx,*pop),xx,'--',color='violet')
-    #     ax.errorbar(y,x,Dx,Dy,fmt='.',color='blue')
-    # plt.show()
-
-    # ### DATA
-    # diagn_plots = False
-    # night = 0
-    # obj_name1 = 'betaLyr'
-
-    # ### ANALYSIS
-    # spectrum, lengths, cal_res =  calibrated_spectrum(night,obj_name1,diagn_plots=diagn_plots, ret_values='calibration')
-
-    # fastplot(lengths, spectrum,title='Corrected and calibrated spectrum of ' + obj_name1,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9],grid=True)
-    # plt.axvline(6563,0,1,color='r',alpha=0.5,label='H$_\\alpha$')
-    # plt.axvline(4861,0,1,color='r',alpha=0.5,label='H$_\\beta$')
-    # plt.axvline(4340,0,1,color='r',alpha=0.5,label='H$_\\gamma$')
-    # plt.axvline(4102,0,1,color='r',alpha=0.5,label='H$_\\delta$')
-    # plt.axvline(3970,0,1,color='r',alpha=0.5,label='H$_\\varepsilon$')
-    # plt.axvline(3889,0,1,color='r',alpha=0.5,label='H$_\\xi$')
-    # plt.axvline(3646,0,1,color='r',linestyle='--',alpha=0.5,label='Balmer Jump')
-    # plt.legend(numpoints=1)
-    # plt.show()
-
-
-
-    # angle1 = cal_res['angle']
-    # flat_value = cal_res['flat']
-    # cal_func = cal_res['func']
-    # err_func = cal_res['err']
-
-    # x = np.arange(len(spectrum))
-    # Dx = np.full(x.shape,1)
-    # print(err_func(x,Dx))
-    # print(err_func(x,Dx,True))
-
-    # obj_name2 = 'vega'
-    # spectrum, lengths, angle2 = calibrated_spectrum(night,obj_name2,flat=flat_value,cal_func=cal_func,err_func=err_func,diagn_plots=diagn_plots,ret_values='calibration')
-
-    # fastplot(lengths, spectrum,title='Corrected and calibrated spectrum of ' + obj_name2,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9],grid=True)
-    # plt.axvline(6563,0,1,color='r',alpha=0.5,label='H$_\\alpha$')
-    # plt.axvline(4861,0,1,color='r',alpha=0.5,label='H$_\\beta$')
-    # plt.axvline(4340,0,1,color='r',alpha=0.5,label='H$_\\gamma$')
-    # plt.axvline(4102,0,1,color='r',alpha=0.5,label='H$_\\delta$')
-    # plt.axvline(3970,0,1,color='r',alpha=0.5,label='H$_\\varepsilon$')
-    # plt.axvline(3889,0,1,color='r',alpha=0.5,label='H$_\\xi$')
-    # plt.axvline(3646,0,1,color='r',linestyle='--',alpha=0.5,label='Balmer Jump')
-    # plt.legend(numpoints=1)
-    # plt.show()
-
-
-    # lag = lamp_corr(night,(obj_name1,obj_name2),(angle1,angle2),diagn_plots=True)
-
-    # obj_name2 = 'gammaCygni'
-    # spectrum, lengths, angle2 = calibrated_spectrum(night,obj_name2,flat=flat_value,cal_func=cal_func,err_func=err_func,diagn_plots=diagn_plots,ret_values='calibration')
-
-    # fastplot(lengths, spectrum,title='Corrected and calibrated spectrum of ' + obj_name2,labels=['$\lambda$ [$\AA$]','counts'],dim=[17,9],grid=True)
-    # plt.axvline(6563,0,1,color='r',alpha=0.5,label='H$_\\alpha$')
-    # plt.axvline(4861,0,1,color='r',alpha=0.5,label='H$_\\beta$')
-    # plt.axvline(4340,0,1,color='r',alpha=0.5,label='H$_\\gamma$')
-    # plt.axvline(4102,0,1,color='r',alpha=0.5,label='H$_\\delta$')
-    # plt.axvline(3970,0,1,color='r',alpha=0.5,label='H$_\\varepsilon$')
-    # plt.axvline(3889,0,1,color='r',alpha=0.5,label='H$_\\xi$')
-    # plt.axvline(3646,0,1,color='r',linestyle='--',alpha=0.5,label='Balmer Jump')
-    # plt.legend(numpoints=1)
-    # plt.show()
- 
-    # lag = lamp_corr(night,(obj_name1,obj_name2),(angle1,angle2),diagn_plots=True)
+    fig, ax = plt.subplots(len(atm_data),1,sharex=True)
+    for i in range(len(atm_data)):
+        ax[i].errorbar(*atm_data[i],color='black',fmt='-',capsize=0,alpha=0.6)
+        ax[i].grid()
+        lab_o2 = 'O$_2$' if i == 0 else ''  
+        lab_h2o = 'H$_2$O' if i == 0 else '' 
+        ax[i].axvspan(6860,6885,facecolor='violet',alpha=0.3,label=lab_o2)
+        ax[i].axvspan(7590,7670,facecolor='violet',alpha=0.3)
+        ax[i].axvspan(7160,7300,facecolor='cyan',alpha=0.3,label=lab_h2o)
+        ax[i].set_ylabel('I [a.u.]',fontsize=fontsize)
+        ax[i].set_title(atm_names[i],fontsize=fontsize+2,y=.5,loc='right',ha='left',va='center',rotation=270)
+    ax[0].annotate('B',(6872.5,0.075),(6872.5,0.13),fontsize=fontsize)
+    ax[0].annotate('A',(7629,0.0044),(7629,0.070),fontsize=fontsize)
+    ax[0].annotate('a',(7230,0.06),(7230,0.100),fontsize=fontsize)
+    ax[0].legend(fontsize=fontsize)
+    ax[0].set_title('Atmospheric bands: telluric contamination',fontsize=fontsize+2,y=1)
+    ax[-1].set_xlabel('$\\lambda$ [$\\AA$]')
+    plt.xlim(6800,7690)
+    plt.show()
