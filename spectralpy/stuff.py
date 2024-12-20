@@ -171,6 +171,8 @@ class Spectrum():
     def rotate_target(self, angle: float = 0, **imagepar) -> 'Spectrum':
         if 'reshape' not in imagepar.keys():
             imagepar['reshape'] = False
+        if 'order' not in imagepar.keys():
+            imagepar['order'] = 1
         from scipy import ndimage
         target = self.copy()
         target.data = ndimage.rotate(target.data,angle=angle,**imagepar)
@@ -210,6 +212,14 @@ class Spectrum():
         After then the image is rotated (and its uncertainties too, if any)
         """
         target = self.copy()
+        if target.sigma is not None and np.any(target.sigma<0):
+            plt.figure()
+            plt.title('Before inclination correction')
+            plt.imshow(target.sigma)
+            plt.plot(*np.where(target.sigma<0)[::-1],'.',color='red')
+            plt.colorbar()
+            plt.show()
+            exit()
         if angle is None:
             lims = target.cut       #: cut image edges to correct inclination 
             ylim = lims[:2]
@@ -307,8 +317,16 @@ class Spectrum():
                 # data = ndimage.rotate(data, angle1, reshape=False).copy()
                 # xlim[1] -= 200
                 # ylim[1] += 5
-                data = ndimage.rotate(target.data, angle1, reshape=False).copy()[slice(*ylim), slice(*xlim)]
-                Ddata = ndimage.rotate(target.sigma, angle1, reshape=False).copy()[slice(*ylim), slice(*xlim)] if target.sigma is not None else None
+                data = ndimage.rotate(target.data, angle1, reshape=False,order=1).copy()[slice(*ylim), slice(*xlim)]
+                Ddata = ndimage.rotate(target.sigma, angle1, reshape=False,order=1).copy()[slice(*ylim), slice(*xlim)] if target.sigma is not None else None
+                if Ddata is not None and np.any(Ddata<0):
+                    plt.figure()
+                    plt.title('After first rotation')
+                    plt.imshow(Ddata)
+                    plt.plot(*np.where(Ddata<0)[::-1],'.',color='red')
+                    plt.colorbar()
+                    plt.show()
+                    exit()
                 # plt.figure()
                 # plt.imshow(data,norm='log')
                 x_pos = x_pos[x_pos<=data.shape[1]]
@@ -323,10 +341,19 @@ class Spectrum():
                 # prepare data 
                 # x_pos = x_pos[::10]
                 y_pos, Dy = np.array([]), np.array([])
+                stop_val = x_pos[-1]+1
                 # fit colums with a gaussian
                 for i in x_pos:
                     values = data[:,i]
                     Dvalues = Ddata[:,i].copy() if Ddata is not None else None
+                    if Dvalues is not None and np.any(Dvalues<0):
+                        plt.figure()
+                        plt.title('Gaussian inclination')
+                        plt.imshow(Ddata)
+                        plt.plot(*np.where(Ddata<0)[::-1],'.',color='red')
+                        plt.colorbar()
+                        plt.show()
+                        exit()
                     y = np.arange(len(values))
                     # estimate HWHM for the initial value of the sigma
                     hwhm = abs(np.argmax(values) - np.argmin(abs(values - max(values)/2)))
@@ -344,6 +371,9 @@ class Spectrum():
                     fit = FuncFit(xdata=y, ydata=values,xerr=0.5,yerr=Dvalues)
                     fit.gaussian_fit(initial_values,**fit_args)
                     pop, perr = fit.results()
+                    if pop[2] < 0:
+                        stop_val = i
+                        break
                     # store results
                     y_pos = np.append(y_pos,pop[1])
                     Dy = np.append(Dy,pop[2])
@@ -353,6 +383,7 @@ class Spectrum():
                         fit.data_plot(ax)
                         ax2.plot(data[:,i],color=color,label='fit',**pltargs)
                         ax2.plot(y, method(y,*pop), '--',color=color,**pltargs)
+                x_pos = x_pos[x_pos<stop_val]
                 if diagn_plots: 
                     ax.legend()
                     axes[1].set_title('Gaussian means',fontsize=20)
@@ -374,7 +405,7 @@ class Spectrum():
                 angle  = angle1 + angle2
                 Dangle = np.sqrt(Dangle1**2 + Dangle2**2)
                 if diagn_plots:
-                    data = ndimage.rotate(target.data, angle, reshape=False).copy()[slice(*ylim), slice(*xlim)]
+                    data = ndimage.rotate(target.data, angle, reshape=False,order=1).copy()[slice(*ylim), slice(*xlim)]
                     axes[2].set_title('Rotated image',fontsize=20)
                     axes[2].imshow(data,cmap='gray_r')
                     axes[2].set_ylabel('y [px]',fontsize=18)
