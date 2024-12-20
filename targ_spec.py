@@ -367,6 +367,6 @@ if __name__ == '__main__':
     ax[0].annotate('a',(7230,0.06),(7230,0.100),fontsize=fontsize)
     ax[0].legend(fontsize=fontsize)
     ax[0].set_title('Atmospheric bands: telluric contamination',fontsize=fontsize+2,y=1)
-    ax[-1].set_xlabel('$\\lambda$ [$\\AA$]')
+    ax[-1].set_xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
     plt.xlim(6800,7690)
     plt.show()
