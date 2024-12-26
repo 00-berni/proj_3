@@ -106,16 +106,29 @@ def compute_master_flat(flat: Spectrum, master_dark: Spectrum | None = None, mas
     if master_bias is not None: 
         flat.data  = flat - master_bias
         flat.sigma =  compute_err(flat, master_bias)
+    if True in np.isnan(flat.data): 
+        print('Flat Flat')
+        exit()
     # correct by dark, if any
     if master_dark is not None: 
         # check the exposure times
         fl_exp = flat.get_exposure()
         dk_exp = master_dark.get_exposure()
+        print('EXPOSURES',fl_exp,dk_exp)
         if fl_exp != dk_exp:
+            if True in np.isnan(master_dark.data): 
+                print('Dark Dark 0')
+                exit()
             master_dark.data  = master_dark.data / dk_exp * fl_exp
             master_dark.sigma = master_dark.sigma / dk_exp * fl_exp
+        if True in np.isnan(master_dark.data): 
+            print('Dark Dark')
+            exit()
         flat.data  = flat - master_dark 
         flat.sigma = compute_err(flat, master_dark)
+        if True in np.isnan(flat.data): 
+            print('Flat Flat Dark')
+            exit()
 
     master_flat = flat.copy()
     mdata = master_flat.data.copy()
@@ -206,10 +219,21 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     ## Calibration correction
     if ch_obs != '18-04-22':
         calibration = extract_cal_data(ch_obs)
+        if True in np.isnan(calibration[0].data): 
+            print('MAster Flat')
+            exit()
         if len(calibration) > 1:
             if len(calibration) == 3:   #: in this case `calibration = [flat, dark, bias]` 
+                if diagn_plots:
+                    show_fits(calibration[-1],title='Master Bias',show=True)
+                    if True in np.isnan(calibration[-1].data): 
+                        print('Master Bias')
+                        exit()
                 # compute master dark
                 calibration[1] = compute_master_dark(*calibration[1:], diagn_plots=diagn_plots,**figargs)
+                if True in np.isnan(calibration[1].data): 
+                    print('Master Dark')
+                    exit()
                 # bias correction
                 bias = calibration[2]
                 target.data = target - bias
@@ -232,6 +256,9 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
                 lamp.sigma = compute_err(lamp, dark)
         # compute master flat
         master_flat = compute_master_flat(*calibration,diagn_plots=diagn_plots,**figargs)
+        if True in np.isnan(master_flat.data): 
+            print('MAster Flat 2')
+            exit()
         print('MIN',master_flat.data.min())
         flat_err = lambda data : 0 if master_flat.sigma is None else (data*master_flat.sigma / master_flat.data**2)**2
         # flat correction
@@ -527,6 +554,7 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
     # prevent errors
     lamp1 = lamp1.copy()
     lamp2 = lamp2.copy()
+    if lamp1.get_exposure() != lamp2.get_exposure(): exit()
     name1 = lamp1.name[8:]
     name2 = lamp2.name[8:]
     # data must have same length
@@ -537,32 +565,35 @@ def lamp_correlation(lamp1: Spectrum, lamp2: Spectrum, display_plots: bool = Tru
     print('EDGE',edge1)
     print('EDGE',edge2)
     print('EDGE',edge)
-    if all(edge != [0,0]):
+    print(edge != [0,0])
+    if any(edge != [0,0]):
         edge1 = [0 if edge[0] > 0 else -edge[0], -edge[1] if edge[1] > 0 else None]
-        edge2 = [edge[0] if edge[0] > 0 else 0 , None if edge[1] > 0 else edge[1]]
+        edge2 = [edge[0] if edge[0] > 0 else 0 , None if edge[1] >= 0 else edge[1]]
     print('EDGEs',edge1, edge2)
     lamp1 = lamp1.spec[slice(*edge1)].copy()
     lamp2 = lamp2.spec[slice(*edge2)].copy()
+    lamp1 /= lamp1.mean()
+    lamp2 /= lamp2.mean()
 
     ## Correlation procedure
-    print('LAMP2',lamp2)
     # normalize the data
     # lamp1 = lamp1 - lamp1.mean()
     # lamp2 = lamp2 - lamp2.mean()
     # compute cross-correlation
-    from scipy.signal import correlate
-    corr = correlate(lamp1,lamp2)
-    lags = np.arange(len(corr)) - (len(lamp1)-1)
+    from scipy.signal import correlate, correlation_lags
+    corr = correlate(lamp1,lamp2,mode='full')
+    corr /= corr.max()
+    lags = correlation_lags(len(lamp1),len(lamp2),mode='full')
     # compute the lag
     shift = lags[corr.argmax()]  
     print('MAX POS:',shift)
     if display_plots:
-        quickplot((lags,corr),title=f'Cross-correlation of {name1} and {name2}\nMaximum at lag {shift}',labels=('lag [px]','I [a.u.]'),grid=True,dim=(12,14),**pltargs)
+        quickplot((lags,corr),title=f'Cross-correlation of {name1} and {name2}\nMaximum at lag {shift}',labels=('lag [px]','Norm. values'),grid=True,dim=(12,14),**pltargs)
         plt.show()
     # exit()
     return shift
 
-def spectrum_average(data: ndarray, step: int | None = 10, diagn_plot: bool = False, *plotargs) -> tuple[ndarray,ndarray]:
+def spectrum_average(target: Spectrum, step: int | None = 10, norm: bool = True, diagn_plot: bool = False, *plotargs) -> tuple[ndarray,ndarray]:
     """To extact the spectrum from data image
 
     Parameters
@@ -587,6 +618,7 @@ def spectrum_average(data: ndarray, step: int | None = 10, diagn_plot: bool = Fa
     Then it averages to get a centroid and a mean HWHM and averages the
     spectra inside [centroid - HWHM, centroid + HWHM]
     """
+    data = target.data.copy()
     xpos = np.arange(0,data.shape[1],step)          #: columns positions
     ypos = np.argmax(data[:,xpos].copy(),axis=0)    #: max value positions
     # compute the estimation of hwhm for each column
@@ -613,6 +645,8 @@ def spectrum_average(data: ndarray, step: int | None = 10, diagn_plot: bool = Fa
     hwhm = np.mean(hwhm).astype(int)
     cen = np.mean(ypos).astype(int)
     print('Centroid: ',cen,hwhm)
+    target.cen = cen
+    target.span = hwhm
     if diagn_plot:
         fig,ax = plt.subplots(1,1)
         dsp_img = Spectrum.empty()
@@ -629,15 +663,20 @@ def spectrum_average(data: ndarray, step: int | None = 10, diagn_plot: bool = Fa
     spec0, Dspec0 = mean_n_std(data[down:up+1],axis=0)
     # normalize spectra along the x axis
     data = data[down:up+1].copy()
-    data_m = data.mean(axis=1)
-    data = np.array([ data[i,:] / data_m[i] for i in range(len(data_m)) ])
-    # average spectra in the selected area
-    spec, Dspec = mean_n_std(data,axis=0)
-    Dspec0 /= spec0.mean()
-    spec0 /= spec0.mean()
+    if norm:
+        data_m = data.mean(axis=1)
+        data = np.array([ data[i,:] / data_m[i] for i in range(len(data_m)) ])
+        # average spectra in the selected area
+        spec, Dspec = mean_n_std(data,axis=0)
+        Dspec0 /= spec0.mean()
+        spec0 /= spec0.mean()
+    else:
+        spec = data.sum(axis=0)
+        cen_val = data[hwhm]
+        Dspec = np.mean([abs(cen_val - data[0]),abs(cen_val - data[-1])],axis=0)
     return spec, Dspec
 
-def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], target_name: str = '', angle: float | None = None, gauss_corr: bool = True, angle_fitargs: dict = {}, height: ArrayLike | None = None, row_num: int = 3, lag: int = 1, step: int = 10, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, lamp_fitargs: dict = {}, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, balmer_fitargs: dict = {}, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
+def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], target_name: str = '', angle: float | None = None, gauss_corr: bool = True, angle_fitargs: dict = {}, height: ArrayLike | None = None, row_num: int = 3, lag: int = 1, step: int = 10, norm: bool = True, other_lamp: Spectrum | None = None, ord_lamp: int = 2, initial_values_lamp: Sequence[float] | None = None, lamp_fitargs: dict = {}, balmer_cal: bool = True, ord_balm: int = 3, initial_values_balm: Sequence[float] | None = None, balmer_fitargs: dict = {}, save_data: bool = True, txtkw: dict = {}, display_plots: bool = True, diagn_plots: bool = False, figargs: dict = {}, pltargs: dict = {}) -> tuple[Spectrum, Spectrum]:
     """To open and calibrate data
 
     Parameters
@@ -685,22 +724,30 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], targ
     # extract data
     target, lamp = get_target_data(ch_obs, ch_obj, selection, obj_name=target_name, angle=angle, gauss_corr=gauss_corr, fit_args=angle_fitargs, display_plots=display_plots, diagn_plots=diagn_plots,**figargs)
     # average along the y axis
-    target.spec, target.std = spectrum_average(target.data,step=step,diagn_plot=diagn_plots)
+    target.spec, target.std = spectrum_average(target,step=step,norm=norm,diagn_plot=diagn_plots)
+    if target.std is None: 
+        print('Oh nyo')
+        exit()
     # compute the height for the lamp
     if height is None: 
         mid_h = int(len(lamp.data)/2)
-        height = np.sort([ mid_h + i*lag for i in range(-row_num,row_num+1) ])
+        height = slice(mid_h-row_num,mid_h+row_num+1,lag)
         print('LAMP HEIGHT: ', height)
 
     # take lamp spectrum at `height` 
-    lamp.spec, lamp.std = mean_n_std(lamp.data, axis=0)
-    # lamp.spec, lamp.std = mean_n_std(lamp.data[height], axis=0)
+    lamp.spec, lamp.std = mean_n_std(lamp.data[height], axis=0)
+    if isinstance(height,slice):   
+        down, up, _ = height.indices(lamp.data.shape[0])
+        lamp.cen  = int((down+up)/2)
+        lamp.span = int((up-down)/2)
     if diagn_plots:
         fn = 10
         fig, ax = plt.subplots(1,1)
         fits_image(fig,ax,lamp,subtitle=None)
         if lag == 1:
-            ax.axhspan(mid_h-row_num,mid_h+row_num,facecolor='orange',alpha=0.6)
+            if isinstance(height,slice):   
+                print('DOWN-UP',down,up)
+                ax.axhspan(down,up,facecolor='orange',alpha=0.6)
             # ax.axhspan(20+target.lims[0]-lamp.lims[0],26+target.lims[0]-lamp.lims[0],facecolor='blue',alpha=0.5)
             # ax.axhspan(target.lims[0]-lamp.lims[0],target.lims[1]-lamp.lims[0],facecolor='red',alpha=0.5)
         else:
@@ -728,7 +775,6 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], targ
     if other_lamp is not None :      
         # compute the lag between the two lamps
         shift = lamp_correlation(lamp, other_lamp, display_plots=display_plots, **pltargs)
-        # shift=0
         # store the functions
         lamp.func = [*other_lamp.func]
         target.func = [*other_lamp.func]
@@ -783,7 +829,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], targ
     return target, lamp
 
 
-def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray], data: tuple[ndarray, ndarray], bins: ndarray, display_plots: bool = True, diagn_plot: bool = False) -> tuple[tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
+def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray], data: tuple[ndarray, ndarray], bins: ndarray, display_plots: bool = True, diagn_plot: bool = False,**pltargs) -> tuple[tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
     """To compute the optical depth and the 0 airmass spectrum
 
     Parameters
@@ -808,6 +854,14 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
     (tau, Dtau) : tuple[ndarray,ndarray]
         optical depth and uncertainty
     """
+    if 'fontsize' not in pltargs.keys():
+        pltargs['fontsize'] = 18
+    fontsize = pltargs['fontsize']
+    pltargs.pop('fontsize')
+    if 'figsize' not in pltargs.keys():
+        pltargs['figsize'] = (13,10)
+    figsize = pltargs['figsize']
+    pltargs.pop('figsize')
     # load data
     x, Dx = airmass
     l_data, Dl_data = wlen
@@ -817,9 +871,11 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
     a_I0  = np.empty((0,2))
     a_tau = np.empty((0,2))
     if diagn_plot:    
-        fig1, ax1 = plt.subplots(1,1)
-        fig2, ax2 = plt.subplots(1,1)
-        ax2.axhline(0, 0, 1, color='black')
+        # fig1 = plt.figure(figsize=figsize)
+        # fig2 = plt.figure(figsize=figsize)
+        fig1, ax1 = plt.subplots(1,1,figsize=figsize)
+        fig2, ax2 = plt.subplots(1,1,figsize=figsize)
+        # ax2.axhline(0, 0, 1, color='black')
     for i in range(l_data.shape[1]):
         # select data
         y = y_data[:,i]
@@ -827,23 +883,27 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
         # fit routine
         #.. Assuming N/t = exp(-tau*a)*I0 then 
         #.. log(N/t) = - tau * a + log(I0)
-        initial_values = [-0.5, np.log(y).max()]
+        # initial_values = [-0.5, np.log(y).max()]
         # initial_values = [-1,1]
         fit = FuncFit(xdata=x, ydata=np.log(y), xerr=Dx, yerr=Dy/y)
-        fit.linear_fit(initial_values, names=('tau','ln(I0)'))
+        # fit.linear_fit(names=('tau','ln(I0)'),mode='curve_fit')
+        fit.linear_fit(names=('tau','ln(I0)'),mode='odr')
         pop, Dpop = fit.results()
         I0  = np.exp(pop[1])
         DI0 = Dpop[1] * I0
         # store the results
         a_I0  = np.append(a_I0,  [ [I0, DI0] ], axis=0)
-        a_tau = np.append(a_tau, [ [abs(pop[0]), Dpop[0]] ], axis=0)
+        a_tau = np.append(a_tau, [ [-pop[0], Dpop[0]] ], axis=0)
         # plot them
         if diagn_plot:
-            xx = np.linspace(x.min(),x.max(),50)
+            xlabel = '$X$' if i == 0 else ''
+            ylabel = '$\\ln{(\\mathcal{N}/t_{exp})}$' if i == 0 else ''
             color = (0.5,i/l_data.shape[1],1-i/l_data.shape[1])
-            ax1.errorbar(x, np.log(y), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
-            ax1.plot(xx, fit.method(xx), color=color)
-            ax2.errorbar(x, np.log(y) - fit.method(x), xerr=Dx, yerr=Dy/y, fmt='.', color=color)
+            fit.data_plot(ax1,pltarg1={'color':color},pltarg2={'color':color},ylabel=ylabel,color=color,xlabel=xlabel)
+            fit.residuals_plot(ax2,color=color,xlabel=xlabel)
+            # fit.plot(mode='subplots')
+            # plt.show()
+            # if i == 5 : exit()
     print('DIFF',np.diff(bins,axis=0), np.diff(Dl_data,axis=0))
     # select a row
     l_data, Dl_data = l_data[0], Dl_data[0] 
@@ -853,47 +913,90 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
     tau, Dtau = a_tau[:,0], a_tau[:,1]
     # plot
     if display_plots:
-        plt.figure()
-        plt.title('Estimated Optical Depth')
-        plt.errorbar(l_data,-tau,Dtau,Dl_data,'.',linestyle='dashed')
-        plt.xlabel('$\\lambda$ [$\\AA$]')
-        plt.ylabel('$\\tau$')
-        plt.show()
-
-        plt.figure()
-        plt.title('Estimated Data at 0 airmass')
-        plt.errorbar(l_data, I0, DI0, Dl_data)
+        quickplot([l_data,tau,Dtau,Dl_data],dim=figsize,fmt='.',title='Estimated Optical Depth',labels=('$\\lambda$ [$\\AA$]','$\\tau$'),fontsize=fontsize,linestyle='dashed')
+        # plt.figure()
+        # plt.title('Estimated Optical Depth')
+        # plt.errorbar(l_data,tau,Dtau,Dl_data,'.',linestyle='dashed')
+        # plt.xlabel('$\\lambda$ [$\\AA$]')
+        # plt.ylabel('$\\tau$')
         plt.grid(True,which='both',axis='x')
         plt.xticks(bins,bins,rotation=45)
-        plt.xlabel('$\\lambda$ [$\\AA$]')
-        plt.ylabel('$I_0$ [counts/s]')
+        plt.show()
+
+        quickplot([l_data, I0, DI0, Dl_data],dim=figsize,fmt='.',title='Estimated Spectrum at 0 airmass',labels=('$\\lambda$ [$\\AA$]','$\\Sigma$ [counts/s]'),fontsize=fontsize,linestyle='dashed')
+        # plt.figure()
+        # plt.title('Estimated Data at 0 airmass')
+        # plt.errorbar(l_data, I0, DI0, Dl_data)
+        # plt.xlabel('$\\lambda$ [$\\AA$]')
+        # plt.ylabel('$I_0$ [counts/s]')
+        plt.grid(True,which='both',axis='x')
+        plt.xticks(bins,bins,rotation=45)
         plt.show()
     return (I0, DI0), (tau, Dtau)
 
-def remove_balmer(lines: np.ndarray, spectrum: np.ndarray, wlen_width: float = 80, display_plots: bool = False) -> np.ndarray:
-    from scipy.interpolate import CubicSpline
+def remove_balmer(lines: np.ndarray, spectrum: np.ndarray, wlen_gap: ArrayLike = 90, display_plots: bool = False,**pltargs) -> np.ndarray:
     from .data import BALMER
+    from scipy.interpolate import CubicSpline
+    balmer = BALMER
     wlen = lines.copy()
     spec = spectrum.copy()
     bins = []
     wlen_ends = []
-    for bal in BALMER:
-        pos = np.where((wlen >= bal - wlen_width) & (wlen <= bal + wlen_width))[0]
-        if len(pos) != 0:
-            bins += [pos]
-            wlen_ends += [[bal - wlen_width, bal + wlen_width]]
-            wlen = np.delete(wlen,pos)
-            spec  = np.delete(spec ,pos)
-    if display_plots:
-        plt.figure()
-        plt.plot(wlen,spec,'.-')
+    if isinstance(wlen_gap,(float,int)):
+        wlen_width = wlen_gap
+        for bal in balmer:
+            pos = np.where((wlen >= bal - wlen_width) & (wlen <= bal + wlen_width))[0]
+            if len(pos) != 0:
+                bins += [pos]
+                wlen_ends += [[bal - wlen_width, bal + wlen_width]]
+                wlen = np.delete(wlen,pos)
+                spec  = np.delete(spec ,pos)
+    else:
+        if np.shape(wlen_gap)[1] != 2: wlen_gap = np.transpose(wlen_gap)
+        for wend in wlen_gap:
+            pos = np.where((wlen >= wend[0]) & (wlen <= wend[1]))[0]
+            if len(pos) != 0:
+                bins += [pos]
+                wlen_ends += [[*wend]]
+                wlen = np.delete(wlen,pos)
+                spec  = np.delete(spec ,pos)
     interpol = CubicSpline(wlen,spec)
     spectrum = spectrum.copy()
     for p in bins:
         spectrum[p] = interpol(lines[p])
     if display_plots:
-        plt.figure()
-        plt.plot(lines,spectrum,'.-')
+        if 'grid' not in pltargs.keys():
+            pltargs['grid'] = True
+        if 'fontsize' not in pltargs.keys():
+            pltargs['fontsize'] = 18
+        if 'figsize' not in pltargs.keys():
+            pltargs['figsize'] = (13,10)
+        if 'title' not in pltargs.keys():
+            pltargs['title'] = ''
+        if 'xlim' not in pltargs.keys():
+            pltargs['xlim'] = (wlen.min(),wlen.max())
+        grid = pltargs['grid']
+        fontsize = pltargs['fontsize']
+        figsize = pltargs['figsize']
+        title = pltargs['title']
+        xlim = pltargs['xlim']
+        pltargs.pop('grid')
+        pltargs.pop('fontsize')
+        pltargs.pop('figsize')
+        pltargs.pop('title')
+        pltargs.pop('xlim')
+        fig, (ax1,ax2) = plt.subplots(2,1,figsize=figsize,sharex=True)
+        ax1.set_title(title,fontsize=fontsize+2)
+        ax1.plot(wlen,spec,'.-',**pltargs)
+        ax2.plot(lines,spectrum,'.-',**pltargs)
+        ax1.set_xlim(*xlim)
+        ax2.set_xlim(*xlim)
+        ax1.set_ylabel('Counts',fontsize=fontsize)
+        ax2.set_ylabel('Counts',fontsize=fontsize)
+        ax2.set_xlabel('$\\lambda$ ($\\AA$)',fontsize=fontsize)
+        if grid:
+            ax1.grid()
+            ax2.grid()
         plt.show()
     return spectrum
 
@@ -964,7 +1067,7 @@ def vega_std(bin: int | float | ArrayLike = 50, edges: None | Sequence[float] = 
 
 
 
-def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen_ends: tuple[float,float],  bin_width: float | int = 50, std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
+def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen_ends: tuple[float,float],  bin_width: float | int = 50, std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False,**pltargs) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
     """To estimate instrument response function
 
     Parameters
@@ -995,11 +1098,29 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen
     (op_dep, Dop_dep) : tuple[ndarray,ndarray]
         _description_
     """
+    if 'fontsize' not in pltargs.keys():
+        pltargs['fontsize'] = 18
+    fontsize = pltargs['fontsize']
+    pltargs.pop('fontsize')
+    if 'figsize' not in pltargs.keys():
+        pltargs['figsize'] = (13,10)
+    figsize = pltargs['figsize']
+    pltargs.pop('figsize')
     ## Data Collection
     alt, Dalt = altitude
     # airmass
     x  = 1/np.sin(alt*np.pi/180)
     Dx = Dalt * np.cos(alt*np.pi/180) * x**2 * np.pi/180 
+    print('AIRMASSES')
+    amfmt, aufmt = unc_format(alt,Dalt)
+    xmfmt, xufmt = unc_format(x,Dx)
+    for i in range(len(x)):
+        ai,Dai = alt[i],Dalt[i]
+        xi,Dxi = x[i],Dx[i]
+        tmp_str = 'alt0{index} = {val:' + amfmt[1:] + '} +/- {err:' + aufmt[1:] + '} --> {perc:.2%}'
+        print(tmp_str.format(index=i+1,val=ai,err=Dai,perc=Dai/ai))
+        tmp_str = 'x0{index} = {val:' + xmfmt[1:] + '} +/- {err:' + xufmt[1:] + '} --> {perc:.2%}'
+        print(tmp_str.format(index=i+1,val=xi,err=Dxi,perc=Dxi/xi))
     # ends of the wavelengths range
     # min_line = np.trunc(np.max(wlen_ends,axis=0)[0])
     # max_line = np.trunc(np.min(wlen_ends,axis=0)[1]) + 1
@@ -1013,19 +1134,22 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen
     a_bin  = []     #: bins values
     for obs in tg_obs:
         obs = obs.copy()
+        exp_time = obs.get_exposure()
         # normalize spectrum data by exposure time
-        obs.spec = obs.spec / obs.get_exposure()
+        obs.spec = obs.spec / exp_time
+        obs.std = obs.std / exp_time if obs.std is not None else None
         # bin the data
         l, y, bins = obs.binning(bin=bin_width,edges=(min_line,max_line))    
-        if diagn_plots:
-            plt.figure()
-            plt.title('Normalized Binned Data')
-            plt.plot(l[0],y[0],'.-')
-            plt.grid(True,which='both',axis='x')
-            plt.xticks(bins,bins,rotation=45)
-            plt.xlabel('$\\lambda$ [$\\AA$]')
-            plt.ylabel('$N/t_{exp}$ [counts/s]')
-            plt.show()
+        # if diagn_plots:
+        #     quickplot([l[0],y[0]],dim=figsize,title='Normalized Binned Data',labels=('$\\lambda$ [$\\AA$]','$N/t_{exp}$ [counts/s]'),fmt='.',linestyle='dashed')
+        #     # plt.figure()
+        #     # plt.title('Normalized Binned Data')
+        #     # plt.plot(l[0],y[0],'.-')
+        #     # plt.xlabel('$\\lambda$ [$\\AA$]')
+        #     # plt.ylabel('$N/t_{exp}$ [counts/s]')
+        #     plt.xticks(bins,bins,rotation=45)
+        #     plt.grid(True,which='both',axis='x')
+        #     plt.show()
         # store the results     
         l_data +=  [[*l]]
         y_data +=  [[*y]]
@@ -1035,20 +1159,20 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen
     y_data, Dy_data = np.array(y_data).transpose((1,0,2))
     a_bin = np.array(a_bin)
     if display_plots:
-        plt.figure()
-        plt.title('Binned data for different airmass')
+        plt.figure(figsize=figsize)
+        plt.title('Binned data for different airmass',fontsize=fontsize+2)
         for i in range(l_data.shape[0]):
-            plt.errorbar(l_data[i],y_data[i],Dy_data[i],Dl_data[i], label=f'$X = ${x[i]:.2f} -> {alt[i]:.0f} deg')
-            plt.xticks(a_bin[i],a_bin[i],rotation=45)
-        plt.xlabel('$\\lambda$ [$\\AA$]')
-        plt.ylabel('Norm. Data [counts/s]')
+            plt.errorbar(l_data[i],y_data[i],Dy_data[i],Dl_data[i], label=f'$X = ${x[i]:.3f}')
+        plt.xticks(a_bin[0],a_bin[0],rotation=45)
+        plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
+        plt.ylabel('Norm. Data [counts/s]',fontsize=fontsize)
         plt.grid(True,which='both',axis='x')
-        plt.legend()
+        plt.legend(fontsize=fontsize)
         plt.show()
 
     ## Atmospheric Transfer Function
     # estimate 0 airmass spectrum
-    (I0, DI0), (op_dep, Dop_dep) = atm_transfer((x,Dx), (l_data,Dl_data), (y_data,Dy_data), a_bin, display_plots=display_plots, diagn_plot=diagn_plots)
+    (I0, DI0), (op_dep, Dop_dep) = atm_transfer((x,Dx), (l_data,Dl_data), (y_data,Dy_data), a_bin, display_plots=display_plots, diagn_plot=diagn_plots,**pltargs)
 
     ## Response Function
     # select a row
