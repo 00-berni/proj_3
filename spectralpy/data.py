@@ -135,7 +135,7 @@ def get_standard(name: str = 'Vega', sel: int = 0, diagn_plots: bool = False) ->
         data_file = os.path.join(dir_path,file_name)
         l, spec,_ = np.loadtxt(data_file, unpack=True)
         wlen = np.append(wlen,l)
-        data = np.append(data,spec)
+        data = np.append(data,spec)*1e16 # erg/cm²/s/A 
 
         pos = np.argsort(wlen)
         wlen = wlen[pos]
@@ -356,6 +356,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
                 mean_flat.hdul += [tmp.hdul]
                 mean_flat.data += [tmp.data]
                 mean_flat.lims = lim
+            mean_flat.update_header()
             mean_flat.data, mean_flat.sigma = mean_n_std(mean_flat.data,axis=0)
             mean_flat.name = 'Mean Flat'
             if display_plot: _ = show_fits(mean_flat)
@@ -370,6 +371,7 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
                 tmp = get_data_fit(d, obj_name='dark',check_edges=False,diagn_plots=False, **figargs) 
                 mean_dark.hdul += [tmp.hdul]
                 mean_dark.data += [tmp.data]
+            mean_dark.update_header()
             mean_dark.data, mean_dark.sigma = mean_n_std(mean_dark.data,axis=0)
             mean_dark.name = 'Mean Dark'
             if display_plot: _ = show_fits(mean_dark, **figargs)
@@ -381,9 +383,10 @@ def extract_cal_data(ch_obs: Literal['17-03-27','18-11-27','22-07-26_ohp','22-07
             bias = calibration['bias'] 
             for b in bias:
                 b = data_file_path(ch_obs,'calibrazione',b)
-                tmp = get_data_fit (b, obj_name='bias',check_edges=False,diagn_plots=False, **figargs) 
+                tmp = get_data_fit(b, obj_name='bias',check_edges=False,diagn_plots=False, **figargs) 
                 master_bias.hdul += [tmp.hdul]
                 master_bias.data += [tmp.data]
+            master_bias.update_header()
             master_bias.data, master_bias.sigma = mean_n_std(master_bias.data,axis=0)
             master_bias.name = 'Master Bias'
             if display_plot: _ = show_fits(master_bias, **figargs)
@@ -487,15 +490,21 @@ def extract_data(ch_obs: str, ch_obj: str, selection: str | Literal['mean'], obj
     if isinstance(obj_fit, list):
         # for more acquisitions it is possible to select one or average on all
         if selection == 'mean':
+            exp_times = []
             target = Spectrum.empty()
             for (fits, lim) in zip(obj_fit, lims_fit):
                 fits = data_file_path(ch_obs, ch_obj, fits)
                 tmp = get_data_fit(fits,lim,obj_name=obj_name,diagn_plots=diagn_plots,**figargs)
+                exptime = tmp.hdul[0].header['EXPTIME']
+                if (len(exp_times) != 0) and (exptime not in exp_times):
+                    raise ValueError(f'Cannot average, different exposure times -> {fits}')
+                exp_times += [exptime]
                 target.hdul += [tmp.hdul]
                 target.data += [tmp.data]
                 # check edges
                 target.lims = lim[4:]
                 target.cut  = lim[:4]
+            target.update_header()
             target.data, target.sigma = mean_n_std(target.data,axis=0)
             target.format_ends()
             print('LIMS',target.cut,target.lims)
