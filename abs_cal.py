@@ -1,143 +1,107 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import spectralpy as spc
+from spectralpy.calcorr import remove_balmer
 from scipy.interpolate import CubicSpline
-
-label = lambda i,arr,name : name if i==arr[0] else ''
-
-def plot_line(lines: list[float], name: str, color: str, minpos: float) -> None:
-    for line in lines:
-        plt.axvline(line,0,1,color=color,label=label(line,lines,name))
-        plt.annotate(name,(line,minpos),(line+10,minpos))
+import astropy.units as u
+from numpy.typing import ArrayLike
 
 
-b_name = ['H$\\alpha$', 'H$\\beta$', 'H$\\gamma$', 'H$\\delta$', 'H$\\epsilon$', 'H$\\xi$', 'H$\\eta$','H$\\theta$','H$\\iota$','H$\\kappa$']
-balmer = [6562.79, 4861.350, 4340.472, 4101.734, 3970.075, 3889.064, 3835.397, 3797.909, 3770.633, 3750.151]
-bal_err = [0.03,0.05]+[0.006]*7
-feI  = [7610.2676,  7635.8482,  5896.7357, 5274.9807, 4300.2036, 4384.6718, 4401.4425,  4459.3521, 4351.5437]
-feII = [7636.2373, 7611.2601, 6871.6994, 6496.9415, 6497.2764, 6497.4985,  5175.3973, 5274.5277, 4384.31313, 4459.67779, 4351.76199, 4336.30962]
-tiI  = [6497.683, 4300.4848, 4300.5538, 4301.0787, 4322.1141, 4321.7709 ]
-tiII = [4300.0424,  4301.29545, 4350.83776  ]
-neI  = [ 5274.0406, 4402.380, 4460.1758, 4336.2251 ]
-neII = [4384.1063, 4384.2194, 4322.372]
-oI  = [5274.967,5275.123]
-oII = [4384.446, 4351.260, 4336.859, 4322.4477]
-mgI  = [4351.9057]
-mgII = [4384.637]
-arI  = []
-arII = [4401.75478] 
-caII = [3968.47,3933.66]
 
-def display_lines(minpos: float, edges: tuple[float, float], sel: str | list[str] = 'HI') -> None:
-    if 'HI' in sel:
-        for (b,err,name) in zip(balmer,bal_err,b_name):
-            # b += 100
-            if edges[0] <= b <= edges[1]:
-                plt.axvline(b,0,1, color='blue',label=label(b,balmer,'H I'))
-                plt.annotate(name,(b,minpos),(b+10,minpos))
-                plt.axvspan(b-err,b+err,0,1,color='blue',alpha=0.3)
-    if 'BHa' in sel:
-        plot_line(balmer[0:1], b_name[0],'orange',minpos)
-    if 'BHb' in sel:
-        plot_line(balmer[1:2], b_name[1],'orange',minpos)
-    if 'BHc' in sel:
-        plot_line(balmer[2:3], b_name[2],'orange',minpos)
-    if 'BHd' in sel:
-        plot_line(balmer[3:4], b_name[4],'orange',minpos)
-    if 'Fe' in sel or 'FeI' in sel:
-        plot_line(feI, 'Fe I','orange',minpos)
-    if 'Fe' in sel or 'FeII' in sel:
-        plot_line(feII,'Fe II','yellow',minpos)
-    if 'Ti' in sel or 'TiI' in sel:
-        plot_line(tiI, 'Ti I','violet',minpos)
-    if 'Ti' in sel or 'TiII' in sel:
-        plot_line(tiII,'Ti II','plum',minpos)
-    if 'Ne' in sel or 'NeI' in sel:
-        plot_line(neI, 'Ne I','green',minpos)
-    if 'Ne' in sel or 'NeII' in sel:
-        plot_line(neII,'Ne II','lime',minpos)
-    if 'O' in sel or 'OI' in sel:
-        plot_line(oI, 'O I','deeppink',minpos)
-    if 'O' in sel or 'OII' in sel:
-        plot_line(oII,'O II','hotpink',minpos)
-    if 'Mg' in sel or 'MgI' in sel:
-        plot_line(mgI, 'Mg I','red',minpos)
-    if 'Mg' in sel or 'MgII' in sel:
-        plot_line(mgII,'Mg II','tomato',minpos)
-    if 'Ar' in sel or 'ArI' in sel:
-        plot_line(arI, 'Ar I','aqua',minpos)
-    if 'Ar' in sel or 'ArII' in sel:
-        plot_line(arII,'Ar II','cyan',minpos)
-    if 'Ca' in sel or 'CaII' in sel:
-        plot_line(caII,'Ca II','cyan',minpos)
-    plt.legend()
-
-
-def remove_balmer(lines: np.ndarray, spectrum: np.ndarray, wlen_width: float = 80, display_plots: bool = False) -> np.ndarray:
-    wlen = lines.copy()
-    spec = spectrum.copy()
-    bins = []
-    wlen_ends = []
-    for bal in balmer:
-        pos = np.where((wlen >= bal - wlen_width) & (wlen <= bal + wlen_width))[0]
-        if len(pos) != 0:
-            bins += [pos]
-            wlen_ends += [[bal - wlen_width, bal + wlen_width]]
-            wlen = np.delete(wlen,pos)
-            spec  = np.delete(spec ,pos)
-    if display_plots:
-        plt.figure()
-        plt.plot(wlen,spec,'.-')
-    interpol = CubicSpline(wlen,spec)
-    spectrum = spectrum.copy()
-    for p in bins:
-        spectrum[p] = interpol(lines[p])
-    if display_plots:
-        plt.figure()
-        plt.plot(lines,spectrum,'.-')
-        plt.show()
-    return spectrum
+def compute_pos(lat: str, lon: str):
+    res = []
+    for pos in [lat,lon]:
+        pos = np.array(pos.split(' ')).astype(float)
+        res += [(pos[0]+pos[1]/60+pos[2]/3600) * u.deg]
+    return res
 
 if __name__ == '__main__':
+    from astropy.coordinates import AltAz, EarthLocation, SkyCoord
+    from astropy.time import Time
     ## Data
     print('-- DATA --')
     night = '17-03-27'
     target_name = 'Vega'
     selection = 'mean'
-    alt  = np.array([21.57,34.68,43.90,59.06])
-    Dalt = np.full(alt.shape,0.03)
+    wlen_ends = (4500, 6700)
+    obs_num = 3
 
     ## Wavelength Calibration
     print('-- WAVELENGTH CALIBRATION --')
     ord1 = 2
     ord2 = 3
     display_plots = False
-    target, lamp = spc.calibration(night, target_name+'01', selection, balmer_cal=False, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
+    target, lamp = spc.calibration(night, target_name+'01', selection, norm=False, balmer_cal=False, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots)
     tmp = target.copy()
-    tmp.spec = remove_balmer(tmp.lines,tmp.spec)
-    
-    ## Prepare Data
-    print('-- PREPARE DATA --')
-    bin_width = 50
+    spans = [tmp.span]
     targets = [target]
-    vega = [tmp]
-    wlen_ends = [[target.lines[0],target.lines[-1]]]
-    for i in range(1,len(alt)):
-        tmp, _ = spc.calibration(night,target_name+f'0{i+1}',selection, other_lamp=lamp, display_plots=False)
+    for i in range(1,obs_num):
+        tmp, _ = spc.calibration(night,target_name+f'0{i+1}',selection, norm=False, other_lamp=lamp, display_plots=False)
+        spans += [tmp.span]
         targets += [tmp]
-        tmp.spec = remove_balmer(tmp.lines, tmp.spec)
-        vega += [tmp]
-        wlen_ends += [[tmp.lines[0],tmp.lines[-1]]]
-        # plt.figure()
-        # plt.errorbar(*tmp.spectral_data(True),fmt='.-')
-        # display_lines(tmp.spec.min(),(tmp.lines.min(),tmp.lines.max()))
-        # plt.show()
-    
-    ## Response Function
-    print('-- RESPONSE FUNCTION --')
-    wlen_ends = (4500, 6700)
 
-    wlen, rfunc, tau = spc.ccd_response((alt, Dalt), vega, wlen_ends, bin_width=bin_width,display_plots=True)
+    # spectrum extraction
+    alt = []
+    Dalt = []
+    vega = []
+    wlen_gap = [
+        [[4814,4920],[6520,6700]],
+        [[4790,5000],[6238,6650]],
+        [[4790,5000],[6238,6650]],
+        [[4790,5000],[6238,6650]],
+        [[4790,5000],[6238,6650]]
+    ]
+    min_span = np.min(spans)
+    for i in range(len(targets)):
+        tag = targets[i].copy()
+        span = slice(tag.cen-min_span,tag.cen+min_span+1)
+        data = tag.data[span].copy()
+        tag.spec = np.sum(data,axis=0)
+        cen_val = data[min_span]
+        tag.std = np.mean([abs(cen_val - data[0]),abs(cen_val - data[-1])],axis=0)
+        tag.spec = remove_balmer(tag.lines, tag.spec,wlen_gap=wlen_gap[i],display_plots=True,xlim=wlen_ends)
+        vega += [tag]
+        lat, lon = tag.header[0]['SITELAT'], tag.header[0]['SITELONG']
+        lat, lon = compute_pos(lat,lon)
+        print(tag.name,'\tPOS:',lat,lon)
+        obs = EarthLocation(lat=lat,lon=lon)
+        obj = SkyCoord.from_name('alf Lyr')
+        estalt = []
+        for h in tag.header:
+            time = Time(h['DATE-OBS'])
+            coord = obj.transform_to(AltAz(obstime=time,location=obs))
+            print('ALT',coord.alt)
+            estalt += [coord.alt.value]
+        Destalt = (np.max(estalt)-np.min(estalt))/ 2
+        estalt = np.mean(estalt)   
+        print(tag.name,'\tALT:',estalt, Destalt)
+        alt +=  [estalt]
+        Dalt += [Destalt]
+    fig1, ax1 = plt.subplots(1,1)
+    fig2, ax2 = plt.subplots(1,1)
+    for tg, veg, a in zip(targets,vega,alt):
+        tmp_tgdata = tg.spectral_data(True) 
+        tmp_data = veg.spectral_data(True)
+        ax1.errorbar(*tmp_tgdata,fmt='.',linestyle='dashed',label=f'{a:.2f} deg')
+        ax2.errorbar(*tmp_data,fmt='.',linestyle='dashed',label=f'{a:.2f} deg')
+    ax1.legend()
+    ax2.set_xlim(*wlen_ends)
+    ax2.legend()
+    plt.show()
+    alt = np.array(alt)
+    Dalt = np.array(Dalt)
+    exit()
+
+    print('-- RESPONSE FUNCTION --')
+    # alt = alt[[0,1,3]]
+    # Dalt = Dalt[[0,1,3]]
+    # vega = [*vega[:2]]+[vega[3]]
+    # alt = alt[:-1]
+    # Dalt = Dalt[:-1]
+    # vega = vega[:-1]
+
+    bin_width = 50
+    wlen, rfunc, tau = spc.ccd_response((alt, Dalt), vega, wlen_ends, bin_width=bin_width,display_plots=True,diagn_plots=True)
 
     # alt_reg = 58 + 9*60 + 33.6*3600
     # airmass = 1/np.sin(alt_reg*np.pi/180)
@@ -155,7 +119,7 @@ if __name__ == '__main__':
         (veg_wlen,Dveg_wlen), (veg_spec,Dveg_spec), _  = target.binning(bin=wlen[-1])
         veg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() / rfunc[0]
 
-        (std_wlen, std_Dwlen), (std_spec, std_Dspec) = spc.vega_std(wlen[-1],balmer_rem=True,diagn_plots=display_plots)
+        (std_wlen, std_Dwlen), (std_spec, std_Dspec) = spc.vega_std(wlen[-1],balmer_rem=True,diagn_plots=display_plots) 
 
         ratio = np.append(ratio,[veg_spec/std_spec],axis=0)
 
@@ -199,7 +163,7 @@ if __name__ == '__main__':
     plt.show()
 
     ## Regolo
-    target, _ = spc.calibration(night,'Regolo',selection,other_lamp=lamp,display_plots=False)
+    target, _ = spc.calibration(night,'Regolo',selection,norm=False,other_lamp=lamp,display_plots=False)
     (bin_wlen,_), (bin_reg,_), _ = target.binning(bin=wlen[-1])
     alt_reg = 58 + 9/60 + 33.6/3600
     airmass = 1/np.sin(alt_reg*np.pi/180)
