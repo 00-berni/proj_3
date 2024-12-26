@@ -25,7 +25,7 @@ import numpy as np
 from numpy import ndarray
 from numpy.typing import ArrayLike
 from typing import Callable, Sequence, Any, Literal
-from astropy.io.fits import HDUList
+from astropy.io.fits import HDUList, PrimaryHDU, Header
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
@@ -88,6 +88,26 @@ class Spectrum():
         """
         return Spectrum([],[],[],[],False,hotpx=False,name='empty',check_edges=False)
 
+    @staticmethod
+    def get_header(hdul: HDUList | PrimaryHDU | list[HDUList]) -> Header | list[Header]:
+        if hdul == []:
+            header = []
+        elif isinstance(hdul,PrimaryHDU):
+            header = hdul.header
+        elif isinstance(hdul,HDUList):
+            header = hdul[0].header
+        elif isinstance(hdul,list):
+            header = []
+            for hh in hdul:
+                if isinstance(hh, HDUList): 
+                    header += [hh[0].header]
+                elif isinstance(hh,PrimaryHDU):
+                    header += [hh.header]
+        else:
+            print(hdul)
+            raise TypeError(f'Wrong type {type(hdul)}')
+        return header
+
     def __init__(self, hdul: HDUList | Sequence[HDUList] | None, data: ndarray | None, lims: ArrayLike | None, cut: ArrayLike | None, sigma: ndarray | None = None, hotpx: bool = True, name: str = '', check_edges: bool = True) -> None:
         """Constructor of the class
 
@@ -113,6 +133,7 @@ class Spectrum():
             cut  = Spectrum.check_edges(cut , shape=data.shape)
         self.name = name
         self.hdul = hdul.copy()
+        self.header = Spectrum.get_header(hdul)
         self.data  = hotpx_remove(data) if hotpx else data 
         self.sigma = np.copy(sigma) if sigma is not None else None
         self.lims = lims
@@ -120,27 +141,33 @@ class Spectrum():
         self.angle : None | tuple[float, float] = None
         self.sldata  : None | ndarray = None
         self.slsigma : None | ndarray = None
+        self.cen  : None | int = None
+        self.span : None | int = None
         self.spec  : None | ndarray = None
         self.std   : None | ndarray = None
         self.lines : None | ndarray = None
         self.errs  : None | ndarray = None
         self.func : None | tuple[Callable, Callable]  = None
-        print(self.cut)
-        print(self.lims)
 
     def print_header(self) -> None:
         """To print the header of fits file"""
-        # take the header
-        hdr = self.hdul[0].header
-        print(' - HEADER -')
-        print(hdr.tostring(sep='\n'))
-        print()
+        header = self.header
+        if isinstance(header,Header):
+            header = [header]
+        for h in header:
+            print(' - HEADER -')
+            print(h.tostring(sep='\n'))
+            print()
+
+    def update_header(self) -> None:
+        self.header = Spectrum.get_header(self.hdul)
+
     
     def format_ends(self) -> None:
         self.lims = Spectrum.check_edges(self.lims,self.data.shape)
         self.cut  = Spectrum.check_edges(self.cut ,self.data.shape)
-    
-    def get_exposure(self) -> float:
+
+    def get_exposure(self, key: Literal['EXPTIME','EXPOSURE'] = 'EXPTIME') -> float:
         """To get the exposure time
 
         Returns
@@ -149,15 +176,13 @@ class Spectrum():
             exposure time
             For different acquisitions the mean is computed
         """
-        if isinstance(self.hdul[0], HDUList):
-            exp_time = []
-            for hd in self.hdul:
-                header = hd[0].header
-                exp_time += [header['EXPOSURE']]
-            exp_time = np.mean(exp_time)
+        header = self.header
+        if isinstance(header, list):
+            for hd in header:
+                print(self.name + ':\t',hd[key])
+            exp_time = np.mean([hd[key] for hd in header])
         else:
-            header = self.hdul[0].header
-            exp_time = header['EXPOSURE']
+            exp_time = header[key]
         return exp_time
     
     def cut_image(self) -> None:
@@ -167,6 +192,9 @@ class Spectrum():
         self.data = self.data[lims]
         if self.sigma is not None:
             self.sigma = self.sigma[lims]
+
+    def nan_remove(self) -> None:
+        self.data = hotpx_remove(self.data)
 
     def rotate_target(self, angle: float = 0, **imagepar) -> 'Spectrum':
         if 'reshape' not in imagepar.keys():
@@ -509,7 +537,7 @@ class Spectrum():
         # # plt.show()
         return (bin_lines, err_lines), (bin_spect, err_spect), bins
 
-    def spectral_data(self, plot_format: bool = False) -> ndarray[float,ndarray]:
+    def spectral_data(self, plot_format: bool = False) -> list[ndarray | None]:
         """To get spectral data
 
         Parameters
@@ -528,9 +556,10 @@ class Spectrum():
             `[xdata, ydata, yerr, xerr]`
         """
         if plot_format:
-            spectral_data = np.array([self.lines, self.spec, self.std, self.errs])
+            spectral_data = [self.lines, self.spec, self.std, self.errs]
         else:
-            spectral_data = np.array([self.lines, self.errs, self.spec, self.std])
+            spectral_data = [self.lines, self.errs, self.spec, self.std]
+        if (self.errs is not None) and (self.std is not None): spectral_data = np.array(spectral_data)
         return spectral_data
 
     def copy(self) -> 'Spectrum':
@@ -542,7 +571,13 @@ class Spectrum():
             the copy
         """
         target = Spectrum([*self.hdul], self.data.copy(), np.copy(self.lims), cut=np.copy(self.cut), sigma=self.sigma, hotpx=False, name=self.name,check_edges=False)
+        target.angle = self.angle  
+        target.cen  = self.cen
+        target.span = self.span
+        target.sldata  = self.sldata.copy()  if self.sldata  is not None else None
+        target.slsigma = self.slsigma.copy() if self.slsigma is not None else None
         target.spec  = self.spec.copy()  if self.spec  is not None else None
+        target.std   = self.std.copy()   if self.std   is not None else None
         target.lines = self.lines.copy() if self.lines is not None else None
         target.errs  = self.errs.copy()  if self.errs  is not None else None
         target.func  = [*self.func]      if self.func  is not None else None
@@ -743,10 +778,10 @@ class FuncFit():
         self.fit_par = pop
         self.fit_err = Dpop
         self.res['cov'] = pcov
-        if yerr is not None or xerr is not None:
-            chisq = out.sum_square
-            chi0 = len(ydata) - len(pop)
-            self.res['chisq'] = (chisq, chi0)
+        # if yerr is not None or xerr is not None:
+        #     chisq = out.sum_square
+        #     chi0 = len(ydata) - len(pop)
+        #     self.res['chisq'] = (chisq, chi0)
 
     def chi_routine(self, err_func: Callable[[ArrayLike,ArrayLike,ArrayLike], ArrayLike] | None = None, iter: int = 3, **chiargs) -> None:
         xdata, ydata, yerr, xerr = self.data
@@ -770,13 +805,13 @@ class FuncFit():
         self.fit_par = pop
         self.fit_err = Dpop
         self.res['cov'] = pcov
-        if sigma is not None:
-            chisq = np.sum(((ydata - method(xdata,*pop)) / sigma)**2)
-            chi0 = len(ydata) - len(pop)
-            self.res['chisq'] = (chisq, chi0)        
+        # if sigma is not None:
+        #     chisq = np.sum(((ydata - method(xdata,*pop)) / sigma)**2)
+        #     chi0 = len(ydata) - len(pop)
+        #     self.res['chisq'] = (chisq, chi0)        
             
 
-    def fit(self, method: Callable[[Any,Any],Any], initial_values: Sequence[Any], mode: Literal['odr','curve_fit'] = 'odr', **fitargs) -> None:
+    def fit(self, method: Callable[[Any,Any],Any], initial_values: Sequence[Any], mode: Literal['odr','curve_fit'] = 'curve_fit', **fitargs) -> None:
         """To compute the fit
 
         Parameters
@@ -919,7 +954,7 @@ class FuncFit():
         self.res['errfunc'] = lambda x,Dx: FuncFit.poly_error(x,Dx,self.fit_par,self.errvar)
         # self.res['errfunc'] = lambda x,Dx: FuncFit.poly_error(x,Dx,self.fit_par)
 
-    def linear_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('m','q'), mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
+    def linear_fit(self, initial_values: Sequence[float] | None = None, names: Sequence[str] = ('m','q'), mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
         self.pol_fit(ord=1, initial_values=initial_values, names=names, mode=mode, **fitargs)
     
     def sigma(self) -> ArrayLike:
@@ -1062,7 +1097,9 @@ def binning(spectrum: ArrayLike, lines: ArrayLike, bin: float | int | ArrayLike 
     # average over the values in each bin
     pos = lambda i : np.where((bins[i] <= lines) & (lines < bins[i+1]))[0]
     print('EDGES',bins[[0,-1]])
-    bin_spect, err_spect = np.array([ [*mean_n_std(spectrum[pos(i)])] for i in range(bin_num+1)]).transpose()
+    # bin_spect, err_spect = np.array([ [*mean_n_std(spectrum[pos(i)])] for i in range(bin_num+1)]).transpose()
+    bin_spect = np.array([ np.mean(spectrum[pos(i)]) for i in range(bin_num+1)])
+    err_spect = np.array([ (spectrum[pos(i)].max()-spectrum[pos(i)].min())/2 for i in range(bin_num+1)])
     # plt.figure()
     # plt.plot(bin_lines,[np.mean(spectrum[pos(i)]) for i in range(len(bin_lines))], '.-')
     # plt.plot(bin_lines, bin_spect,'x-')
