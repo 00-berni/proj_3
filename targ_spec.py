@@ -140,7 +140,7 @@ if __name__ == '__main__':
     SEL_OBJ = ['alflyr','alfboo','betdra']
     # SEL_OBJ = ['alfboo']
     display_plots = True
-    display_plots = False
+    # display_plots = False
 
     atm_data = []
     atm_names = []
@@ -156,6 +156,7 @@ if __name__ == '__main__':
         ord2 = 3
         target, lamp = spc.calibration(night, target_file, selection, target_name=target_name, angle_fitargs={'mode':'curve_fit'},lamp_fitargs={'mode': 'curve_fit'}, ord_lamp=ord1,balmer_cal=False, ord_balm=ord2, display_plots=display_plots,diagn_plots=False)
 
+        vega_lamp = lamp.copy()
         ## Lines
         data = target.spectral_data(plot_format=True)
         data = data[:,data[0]>=4500]
@@ -169,93 +170,6 @@ if __name__ == '__main__':
         # plt.show()
         atm_data += [data[:,data[0]>=balmer[0]]]
         atm_names += [target.name]
-        # bal_lines = [
-        #     6562.790,
-        #     4861.350,
-        #     4340.472,
-        #     4101.734,
-        #     3970.075,
-        #     3889.064,
-        #     3835.397,
-        #     3797.909
-        # ]
-        # bal_errs = [
-        #     0.030,
-        #     0.050,
-        #     0.006,
-        #     0.006,
-        #     0.006,
-        #     0.006,
-        #     0.006,
-        #     0.006    
-        # ]
-
-        # cen = [
-        #     837.5,
-        #     347,
-        #     200,
-        #     132,
-        #     94,
-        #     71,
-        #     55.5,
-        #     45  
-        # ]
-
-        # width = [
-        #     7.5,
-        #     7,
-        #     10,
-        #     12,
-        #     8,
-        #     6,
-        #     4.5,
-        #     3
-        # ]
-        # data = target.spec.copy()
-        # data = data.max()-data
-        # plt.figure()
-        # plt.plot(data,'.--')
-        # for c,w in zip(cen,width):
-        #     plt.axvline(c,0,1,color='red')
-        #     plt.axvspan(c-w,c+w,facecolor='orange')
-        # plt.show()
-
-        # for i in range(len(cen)):
-        #     c = cen[i]
-        #     w = width[i]
-        #     lf, rg = int(c-w),int(c+w)
-        #     xtmp = np.arange(lf,rg+1)
-        #     valtmp = data[lf:rg+1].copy()
-        #     cen[i], width[i] = spc.mean_n_std(xtmp,weights=valtmp)
-        #     maxpos = np.argmax(valtmp)
-        #     hm = valtmp[maxpos]/2
-        #     pl_hm = np.argmin(abs(hm-valtmp[:maxpos]))
-        #     pr_hm = np.argmin(abs(hm-valtmp[maxpos+1:])) + maxpos
-        #     pos = [pl_hm,pr_hm]
-        #     pos = pos[np.argmin([abs(valtmp[pl_hm]-hm),abs(valtmp[pr_hm]-hm)])]
-        #     hwhm = abs(cen[i]-lf-pos)
-        #     width[i] = hwhm
-
-        # width = [1]*len(cen)
-
-        # plt.figure()
-        # plt.plot(target.spec,'.--')
-        # for c,w in zip(cen,width):
-        #     plt.axvline(c,0,1,color='red')
-        #     plt.axvspan(c-w,c+w,facecolor='orange')
-        # plt.show()
-        # # print(len(cen),len(width),len(bal_lines),len(bal_errs))
-        # fit = spc.FuncFit(xdata=np.array(cen)+target.lims[2],ydata=bal_lines,xerr=width,yerr=bal_errs)
-        # fit.pol_fit(2,mode='curve_fit')
-        # fit.plot(mode='subplots')
-        # plt.figure()
-        # plt.hist(fit.residuals(),5)
-        # plt.figure()
-        # # x = np.arange(len(target.spec))
-        # # plt.errorbar(fit.method(x+target.lims[2]),target.spec,target.std,fit.errvar,'.--k')
-        # # A_class(minpos)
-        # # plt.show()
-
 
     # exit()
     # - - #
@@ -264,7 +178,7 @@ if __name__ == '__main__':
         ## Arturo
         night, target_file, selection, target_name = TARGETS[1]
         if SEL_OBJ == 'alfboo': lamp = spc.Spectrum.empty()
-        target, lamp = spc.calibration(night, target_file, selection, target_name=target_name, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
+        target, lamp = spc.calibration(night, target_file, selection, target_name=target_name, other_lamp=vega_lamp, display_plots=display_plots,diagn_plots=False)
         ## Lines
         data = target.spectral_data(plot_format=True)
         minpos = data[1].min()
@@ -277,7 +191,7 @@ if __name__ == '__main__':
         plt.xlim(4500,7800)
         K_class(minpos)
         # plt.figure()
-        # plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
+        # plt.plot(fit.method(np.arange(lerrsen(data[1]))+target.lims[2]),data[1],'.-')
         # K_class(minpos)
         # plt.xlim(3600,7800)
         # plt.show()
@@ -303,7 +217,7 @@ if __name__ == '__main__':
         ## Muceps
         night, target_file, selection, target_name = TARGETS[2]
 
-        target, lamp = spc.calibration(night, target_file, selection, target_name=target_name, other_lamp=lamp, display_plots=display_plots,diagn_plots=True)
+        target, lamp = spc.calibration(night, target_file, selection, target_name=target_name, other_lamp=vega_lamp, display_plots=display_plots,diagn_plots=True)
 
         ## Lines
         data = target.spectral_data(plot_format=True)
@@ -330,7 +244,7 @@ if __name__ == '__main__':
         ## Rastaban
         night, target_file, selection, target_name = TARGETS[3]
 
-        target, lamp = spc.calibration(night, target_file, selection, target_name, other_lamp=lamp, display_plots=display_plots,diagn_plots=False)
+        target, lamp = spc.calibration(night, target_file, selection, target_name, other_lamp=vega_lamp, display_plots=display_plots,diagn_plots=False)
 
         ## Lines
         data = target.spectral_data(plot_format=True)
