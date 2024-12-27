@@ -106,7 +106,7 @@ def get_balm_lines(ch_obs: str, ch_obj: str) -> ndarray:
     data = np.loadtxt(file_path, unpack=True)
     return data
 
-def get_standard(name: str = 'Vega', sel: int = 0, diagn_plots: bool = False) -> tuple[ndarray, ndarray]:
+def get_standard(name: str = 'Vega', sel: int = 0, diagn_plots: bool = False,**pltargs) -> tuple[ndarray, ndarray]:
     """To get data of the standard for the absolute calibration
 
     Parameters
@@ -126,6 +126,14 @@ def get_standard(name: str = 'Vega', sel: int = 0, diagn_plots: bool = False) ->
         corresponding absolute surface flux values in erg/s/cm^2/A
     """
     dir_path = os.path.join(CAL_DIR,'standards',name)
+    if 'fontsize' not in pltargs.keys():
+        pltargs['fontsize'] = 18
+    fontsize = pltargs['fontsize']
+    pltargs.pop('fontsize')
+    if 'figsize' not in pltargs.keys():
+        pltargs['figsize'] = (13,10)
+    figsize = pltargs['figsize']
+    pltargs.pop('figsize')
     if name == 'Vega':
         file_name = 'vega_std.txt'
 
@@ -140,11 +148,15 @@ def get_standard(name: str = 'Vega', sel: int = 0, diagn_plots: bool = False) ->
         pos = np.argsort(wlen)
         wlen = wlen[pos]
         data = data[pos]
+        name = 'alf Lyr'
         
     if diagn_plots:
-        plt.figure()
-        plt.title('Absolute Spectrum of ' + name)
+        plt.figure(figsize=figsize)
+        plt.title('Standard Spectrum of ' + name,fontsize=fontsize+2)
         plt.plot(wlen,data,'.-')
+        plt.grid()
+        plt.ylabel('$I_{std}$ [erg/(s cm$^2$ $\\AA$)]',fontsize=fontsize)
+        plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
         plt.show()
     return wlen, data
 
