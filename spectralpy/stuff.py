@@ -1069,7 +1069,7 @@ def binning(spectrum: ArrayLike, lines: ArrayLike, bin: float | int | ArrayLike 
     (bin_spect, err_spect) : tuple[ndarray, ndarray]
         binned spectrum and the uncertainty
         Each value is the average over the values in the bin
-        and the relative uncertainty is the STD
+        and the relative uncertainty is the semi-dispersion
     bins : ndarray
         bins values
     """
@@ -1097,13 +1097,8 @@ def binning(spectrum: ArrayLike, lines: ArrayLike, bin: float | int | ArrayLike 
     # average over the values in each bin
     pos = lambda i : np.where((bins[i] <= lines) & (lines < bins[i+1]))[0]
     print('EDGES',bins[[0,-1]])
-    # bin_spect, err_spect = np.array([ [*mean_n_std(spectrum[pos(i)])] for i in range(bin_num+1)]).transpose()
     bin_spect = np.array([ np.mean(spectrum[pos(i)]) for i in range(bin_num+1)])
     err_spect = np.array([ (spectrum[pos(i)].max()-spectrum[pos(i)].min())/2 for i in range(bin_num+1)])
-    # plt.figure()
-    # plt.plot(bin_lines,[np.mean(spectrum[pos(i)]) for i in range(len(bin_lines))], '.-')
-    # plt.plot(bin_lines, bin_spect,'x-')
-    # plt.show()
     return (bin_lines, err_lines), (bin_spect, err_spect), bins
 
 
