@@ -22,10 +22,10 @@ if __name__ == '__main__':
     print('-- DATA --')
     night = '17-03-27'
     target_name = 'Vega'
-    selection = 'mean'
+    selection = 0#'mean'
     wlen_ends = (4500, 6200)
     wl_lim = lambda wlen : (wlen >= wlen_ends[0]) & (wlen <= wlen_ends[-1])
-    obs_num = 3
+    obs_num = 5
 
     ## Wavelength Calibration
     print('-- WAVELENGTH CALIBRATION --')
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     spans = [tmp.span]
     targets = [target.copy()]
     for i in range(1,obs_num):
-        if i == 3: diagn_plots=True
+        # if i == 3: diagn_plots=True
         tmp, _ = spc.calibration(night,target_name+f'0{i+1}',selection, norm=False, other_lamp=lamp, display_plots=False,diagn_plots=diagn_plots)
         spans += [tmp.span]
         targets += [tmp.copy()]
