@@ -103,6 +103,7 @@ class Spectrum():
                     header += [hh[0].header]
                 elif isinstance(hh,PrimaryHDU):
                     header += [hh.header]
+            if len(header)==1: header = header[0]
         else:
             print(hdul)
             raise TypeError(f'Wrong type {type(hdul)}')
