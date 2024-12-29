@@ -11,6 +11,7 @@ R = 71492 * u.km                        #: equat. radius of Jupiter from https:/
 DR = 4 * u.km                           #: its uncertainty
 C = const.c.to(u.m/u.s)                 #: light velocity
 PERIOD = (9+55/60+29.711/3600) * u.h    #: Sid. rot. period (III) of Jupiter from https://ssd.jpl.nasa.gov/horizons/app.html#/
+FONTSIZE = 18
 
 
 
@@ -138,6 +139,7 @@ for i in col:
         ax[0].axhline(k,0,1)
         ax0.plot(ext_data[:,i],color=color1)
 plt.figure()
+plt.title('Estimated center positions',fontsize=FONTSIZE+2)
 plt.imshow(data,origin='lower',norm='log',cmap='gray_r')
 plt.errorbar(col,c,Dc,fmt='.-')
 plt.show()
@@ -151,7 +153,10 @@ PX_WIDTH = jupiter.header['YPIXSZ']*1e-6
 FOCAL = jupiter.header['FOCALLEN']*1e-3 
 ANG_DIAM = 44.29871 / 3600 * np.pi /180
 rad = np.round(ANG_DIAM*FOCAL / PX_WIDTH /2).astype(int)
-
+print('PX_WIDTH',PX_WIDTH)
+print('FOCAL',FOCAL)
+print('ANG_DIAM',ANG_DIAM)
+print('RAD',rad)
 
 ## Slicing
 # store the value of the 0 point
@@ -184,7 +189,10 @@ plt.show()
 heights = np.array([710+i*1 for i in range(4)])
 lamp.spec, lamp.std = spc.mean_n_std(lamp.data[heights],axis=0)
 plt.figure()
+plt.title('Lamp spectrum',fontsize=FONTSIZE)
 plt.errorbar(np.arange(*lamp.spec.shape),lamp.spec,lamp.std,fmt='.-')
+plt.ylabel('I [a.u.]',fontsize=FONTSIZE)
+plt.xlabel('x [px]',fontsize=FONTSIZE)
 plt.show()
 # get data
 lines, px, Dpx = spc.get_cal_lines(OBS_NIGHT,TARGET_NAME)
@@ -193,7 +201,7 @@ Dlines = lines/20000 / 2
 m0 = np.mean(np.diff(lines)/np.diff(px))
 fit = spc.FuncFit(xdata=px,xerr=Dpx,ydata=lines,yerr=Dlines)
 fit.linear_fit([m0,0])
-fit.plot(mode='subplots',points_num=3)
+fit.plot(mode='subplots',points_num=3,plotargs={'title':'Wavelength calibration','ylabel':'$\\lambda$ [$\\AA$]','fontsize': FONTSIZE},xlabel='x [px]',fontsize=FONTSIZE)
 plt.show()
 
 ### Period Estimation
@@ -213,14 +221,16 @@ def find_minimum(values, avg: float, dir: str):
     return pos
 
 ## Lines Selection
-cut_list = [(598,620),(676,705),(886,910),(1184,1205)]
+cut_list = [(232,257),(428,450),(570,594),(598,620),(676,705),(886,910),(1184,1205)]
 # sel_cut = (885,910)
 plt.figure(figsize=(15,10))
+plt.title('Selected Lines',fontsize=FONTSIZE+2)
 plt.imshow(data,origin='lower',cmap='gray')
 for sel_cut in cut_list: 
+    # plt.axvspan(*sel_cut,color='yellow',alpha=0.2)
     plt.axvline(sel_cut[0],0,1,color='w',linestyle='dashdot')
     plt.axvline(sel_cut[1],0,1,color='w',linestyle='dashdot')
-
+plt.show()
 (mf, qf), (Dmf, Dqf) = fit.results()
 est_ps = []
 for sel_cut in cut_list: 
@@ -236,16 +246,19 @@ for sel_cut in cut_list:
     mp2 = p2.mean()
 
     plt.figure(figsize=(15,10))
+    plt.title(f'Line in {sel_cut}',fontsize=FONTSIZE+2)
     plt.imshow(data[:,slice(*sel_cut)],origin='lower')
     plt.axhline(px_u+sh,0,1)
     plt.axhline(px_d-sh,0,1)
 
-    plt.figure(figsize=(15,10))
-    plt.plot(x1,p1,'.--',color='b')
-    plt.plot(x2,p2,'.--',color='orange')
-    plt.axhline(mp1,0,1,linestyle='dashed',color='b',alpha=0.6)
-    plt.axhline(mp2,0,1,linestyle='dashed',color='orange',alpha=0.6)
-    plt.xticks(x1,x1)
+
+
+    # plt.figure(figsize=(15,10))
+    # plt.plot(x1,p1,'.--',color='b')
+    # plt.plot(x2,p2,'.--',color='orange')
+    # plt.axhline(mp1,0,1,linestyle='dashed',color='b',alpha=0.6)
+    # plt.axhline(mp2,0,1,linestyle='dashed',color='orange',alpha=0.6)
+    # plt.xticks(x1,x1)
 
     if p1.argmax() > p2.argmax():
         right = find_minimum(p1,mp1,'right')
@@ -260,17 +273,28 @@ for sel_cut in cut_list:
     print(right-left)
     shift3 = abs(right-left)
     plt.figure(figsize=(15,10))
-    plt.plot(x1,p1,'.--',color='b')
-    plt.plot(x2,p2,'.--',color='orange')
-    plt.axvline(left,0,1)
+    plt.title('Spectrum at the edges',fontsize=FONTSIZE)
+    plt.plot(x1,p1,'.--',color='b',label=f'h = {px_u}')
+    plt.plot(x2,p2,'.--',color='orange',label=f'h = {px_d}')
+    plt.axvline(left,0,1,label='ends')
     plt.axvline(right,0,1)
-    plt.axhline(mp1,0,1,linestyle='dashed',color='b',alpha=0.6)
-    plt.axhline(mp2,0,1,linestyle='dashed',color='orange',alpha=0.6)
+    plt.axhline(mp1,0,1,linestyle='dashed',color='b',alpha=0.6,label='mean')
+    plt.axhline(mp2,0,1,linestyle='dashed',color='orange',alpha=0.6,label='mean')
     plt.xticks(x1,x1)
+    plt.legend(fontsize=FONTSIZE)
     
+    int_spec = np.sum(data[:,slice(*sel_cut)],axis=0)
+    tmp = np.argmin(int_spec)
+    tmp = np.arange(tmp-3,tmp+4)
+    tmp = np.average(tmp,weights=1/int_spec[tmp])
     minpos = np.argmin(np.sum(data[:,slice(*sel_cut)],axis=0)) + sel_cut[0] + jupiter.lims[2]
     minval = fit.method(minpos)
     print(minval)
+    plt.figure(figsize=(15,10))
+    plt.title('Integrated spectrum',fontsize=FONTSIZE+2)
+    plt.plot(int_spec,'.--')
+    plt.axvline(minpos,0,1,linestyle='dashed')
+    plt.axvline(tmp,0,1,linestyle='dashdot')
     # 8pi R/C (min+q/m)/sh
     # 8pi R/C [ (Dq/m)² + (q*Dm/m²)² + 2 q/m³ Cov] / sh
     # T [ (Dq/q) + (Dm/m) + 2Cov/qm ]
@@ -283,6 +307,7 @@ for sel_cut in cut_list:
     print((T3-PERIOD))
     print((T3-PERIOD)/DT3)
     est_ps += [T3.value]
+    plt.show()
 est_ps, std_ps = spc.mean_n_std(est_ps)
 print('\n\n= = =\n')
 print(est_ps,std_ps,std_ps/est_ps*100)
@@ -290,4 +315,3 @@ if (est_ps-std_ps) <= PERIOD.value <= (est_ps+std_ps):
     print('OK')
 else:
     print((est_ps-PERIOD.value)/std_ps*100)
-plt.show()
