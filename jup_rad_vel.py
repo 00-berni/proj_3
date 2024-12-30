@@ -16,13 +16,14 @@ FONTSIZE = 18
 
 
 OBS_NIGHT = '18-04-22'
-TARGET_NAME = 'giove'    
+TARGET = 'giove'    
 SELECTION = 0
+TARGET_NAME = 'Jupiter'
 fit_args = { 'mode': 'odr' }                #: parameters for the fit
 lim_width = [[0,1391],[[0,112],[108,221]]]  #: coordinates of the ends of the spectrum
 lag = 15                                    #: step length to collect xdata
 # open and extract the fit file 
-jupiter, lamp = spc.get_target_data(OBS_NIGHT,TARGET_NAME,SELECTION,angle=None,lim_width=lim_width,lag=lag,gauss_corr=False,lamp_incl=False, fit_args=fit_args, diagn_plots=False,norm='log',aspect='equal')
+jupiter, lamp = spc.get_target_data(OBS_NIGHT,TARGET,SELECTION,obj_name=TARGET_NAME,angle=None,lim_width=lim_width,lag=lag,gauss_corr=False,lamp_incl=False, fit_args=fit_args, diagn_plots=False,norm='log',aspect='equal')
 
 
 plt.figure(figsize=(10,7))
@@ -188,19 +189,22 @@ plt.show()
 # average over 4 rows
 heights = np.array([710+i*1 for i in range(4)])
 lamp.spec, lamp.std = spc.mean_n_std(lamp.data[heights],axis=0)
+# get data
+lines, px, Dpx = spc.get_cal_lines(OBS_NIGHT,TARGET)
+Dlines = lines/20000 / 2
 plt.figure()
 plt.title('Lamp spectrum',fontsize=FONTSIZE)
-plt.errorbar(np.arange(*lamp.spec.shape),lamp.spec,lamp.std,fmt='.-')
+plt.errorbar(np.arange(*lamp.spec.shape),lamp.spec,lamp.std)
+for pxi,Dpxi in zip(px,Dpx):
+    plt.axvline(pxi,0,1,color='red',linestyle='dashdot')
+    plt.axvspan(pxi-Dpxi,pxi+Dpxi,facecolor='orange',alpha=0.4)
 plt.ylabel('I [a.u.]',fontsize=FONTSIZE)
 plt.xlabel('x [px]',fontsize=FONTSIZE)
 plt.show()
-# get data
-lines, px, Dpx = spc.get_cal_lines(OBS_NIGHT,TARGET_NAME)
-Dlines = lines/20000 / 2
 # fit a line
-m0 = np.mean(np.diff(lines)/np.diff(px))
+# m0 = np.mean(np.diff(lines)/np.diff(px))
 fit = spc.FuncFit(xdata=px,xerr=Dpx,ydata=lines,yerr=Dlines)
-fit.linear_fit([m0,0])
+fit.linear_fit(mode='curve_fit')
 fit.plot(mode='subplots',points_num=3,plotargs={'title':'Wavelength calibration','ylabel':'$\\lambda$ [$\\AA$]','fontsize': FONTSIZE},xlabel='x [px]',fontsize=FONTSIZE)
 plt.show()
 
@@ -284,22 +288,21 @@ for sel_cut in cut_list:
     plt.legend(fontsize=FONTSIZE)
     
     int_spec = np.sum(data[:,slice(*sel_cut)],axis=0)
-    tmp = np.argmin(int_spec)
-    tmp = np.arange(tmp-3,tmp+4)
-    tmp = np.average(tmp,weights=1/int_spec[tmp])
-    minpos = np.argmin(np.sum(data[:,slice(*sel_cut)],axis=0)) + sel_cut[0] + jupiter.lims[2]
-    minval = fit.method(minpos)
+    minpos = np.argmin(int_spec)
+    minpx  = minpos + sel_cut[0] + jupiter.lims[2]
+    Dminpos = 0.5
+    minval = fit.method(minpx)
     print(minval)
     plt.figure(figsize=(15,10))
     plt.title('Integrated spectrum',fontsize=FONTSIZE+2)
     plt.plot(int_spec,'.--')
-    plt.axvline(minpos,0,1,linestyle='dashed')
-    plt.axvline(tmp,0,1,linestyle='dashdot')
+    plt.errorbar(minpos,int_spec[minpos],xerr=Dminpos,fmt='.',capsize=3,color='red')
     # 8pi R/C (min+q/m)/sh
     # 8pi R/C [ (Dq/m)² + (q*Dm/m²)² + 2 q/m³ Cov] / sh
     # T [ (Dq/q) + (Dm/m) + 2Cov/qm ]
     T3 = (8*np.pi*R/C * minval/(shift3*mf)).to(u.h)
-    DT3 = (T3-(8*np.pi*R/C*minpos/shift3).to(u.h)) * np.sqrt((Dmf/mf)**2+(Dqf/qf)**2+2*fit.res['cov'][0,1]/mf/qf)
+    DT3 = (8*np.pi*R/C*minpx/shift3).to(u.h) * (Dminpos + Dqf/mf + qf*Dmf/mf**2 + np.sqrt(2*fit.res['cov'][0,1]/mf/qf)) 
+    # DT3 = (T3-(8*np.pi*R/C*minpos/shift3).to(u.h)) * np.sqrt((Dmf/mf)**2+(Dqf/qf)**2+2*fit.res['cov'][0,1]/mf/qf)
     # DT3 = (T3-8*np.pi*R/C*minpos/shift3).to(u.h) * np.sqrt((Dmf/mf)**2+(Dqf/qf)**2)
     print(C*(shift3*mf)/minval/4)
     print(T3,DT3,DT3/T3*100)
@@ -307,7 +310,7 @@ for sel_cut in cut_list:
     print((T3-PERIOD))
     print((T3-PERIOD)/DT3)
     est_ps += [T3.value]
-    plt.show()
+    # plt.show()
 est_ps, std_ps = spc.mean_n_std(est_ps)
 print('\n\n= = =\n')
 print(est_ps,std_ps,std_ps/est_ps*100)
