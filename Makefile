@@ -9,7 +9,7 @@ abs_cal_r:
 	python3 ./abs_cal.py > ./results/output-abscal.txt
 
 jupiter_r:
-	python3 ./jup_rad_vel.py > ./results/output-jup.txt
+	python3 ./jup_period.py > ./results/output-jup.txt
 
 spectra:
 	python3 ./targ_spec.py
@@ -18,7 +18,7 @@ abs_cal:
 	python3 ./abs_cal.py
 
 jupiter:
-	python3 ./jup_rad_vel.py
+	python3 ./jup_period.py
 
 all:
 	make spectra
