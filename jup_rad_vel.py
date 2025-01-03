@@ -27,7 +27,7 @@ jupiter, lamp = spc.get_target_data(OBS_NIGHT,TARGET,SELECTION,obj_name=TARGET_N
 
 
 plt.figure(figsize=(10,7))
-plt.imshow(jupiter.data,cmap='gray_r',norm='log')
+plt.imshow(jupiter.data[:,::-1],cmap='gray',norm='log')
 # from scipy.signal import medfilt2d
 # data = medfilt2d(jupiter.data.copy())
 data = jupiter.data.copy()
@@ -215,14 +215,14 @@ plt.show()
 mid = cen - cp_jup.lims[0]
 px_u = np.round(mid+rad).astype(int)
 px_d = np.round(mid-rad).astype(int)
-def find_minimum(values, avg: float, dir: str):
-    pos = values.argmax()
-    step = -1 if dir == 'left' else +1
-    while values[pos] > avg:
-        pos += step
-        if pos == 0 or pos == len(values):
-            break
-    return pos
+# def find_minimum(values, avg: float, dir: str):
+#     pos = values.argmax()
+#     step = -1 if dir == 'left' else +1
+#     while values[pos] > avg:
+#         pos += step
+#         if pos == 0 or pos == len(values):
+#             break
+#     return pos
 
 ## Lines Selection
 cut_list = [(232,257),(428,450),(570,594),(598,620),(676,705),(886,910),(1184,1205)]
@@ -236,85 +236,150 @@ for sel_cut in cut_list:
     plt.axvline(sel_cut[1],0,1,color='w',linestyle='dashdot')
 plt.show()
 (mf, qf), (Dmf, Dqf) = fit.results()
-est_ps = []
-for sel_cut in cut_list: 
-    print('\n- - -\nValue for',sel_cut)
-    sh = 0
-    p1 = data[px_u+sh,slice(*sel_cut)]
-    p2 = data[px_d-sh,slice(*sel_cut)]
-    p1 = p1.max()-p1    
-    p2 = p2.max()-p2    
-    x1 = np.arange(len(p1))    
-    x2 = np.arange(len(p2))    
-    mp1 = p1.mean()
-    mp2 = p2.mean()
-
-    plt.figure(figsize=(15,10))
-    plt.title(f'Line in {sel_cut}',fontsize=FONTSIZE+2)
-    plt.imshow(data[:,slice(*sel_cut)],origin='lower')
-    plt.axhline(px_u+sh,0,1)
-    plt.axhline(px_d-sh,0,1)
 
 
+sel_cut = (676,705)
+p1 = data[px_u,slice(*sel_cut)]
+p2 = data[px_d,slice(*sel_cut)]
+av1 = p1.max() - np.mean(data[px_u])
+av2 = p2.max() - np.mean(data[px_d])
+p1 = p1.max()-p1    
+p2 = p2.max()-p2    
+x1 = np.arange(len(p1))    
+x2 = np.arange(len(p2))    
 
-    # plt.figure(figsize=(15,10))
-    # plt.plot(x1,p1,'.--',color='b')
-    # plt.plot(x2,p2,'.--',color='orange')
-    # plt.axhline(mp1,0,1,linestyle='dashed',color='b',alpha=0.6)
-    # plt.axhline(mp2,0,1,linestyle='dashed',color='orange',alpha=0.6)
-    # plt.xticks(x1,x1)
+plt.figure(figsize=(15,10))
+plt.title(f'Line in {sel_cut}',fontsize=FONTSIZE+2)
+plt.imshow(data[:,slice(*sel_cut)],origin='lower')
+plt.axhline(px_u,0,1)
+plt.axhline(px_d,0,1)
 
-    if p1.argmax() > p2.argmax():
-        right = find_minimum(p1,mp1,'right')
-        left  = find_minimum(p2,mp2,'left')
-    elif p1.argmax() < p2.argmax():
-        right = find_minimum(p2,mp2,'right')
-        left  = find_minimum(p1,mp1,'left')
-    else:
-        break
+from scipy.signal import correlate, correlation_lags
 
-    print(left,right)
-    print(right-left)
-    shift3 = abs(right-left)
-    plt.figure(figsize=(15,10))
-    plt.title('Spectrum at the edges',fontsize=FONTSIZE)
-    plt.plot(x1,p1,'.--',color='b',label=f'h = {px_u}')
-    plt.plot(x2,p2,'.--',color='orange',label=f'h = {px_d}')
-    plt.axvline(left,0,1,label='ends')
-    plt.axvline(right,0,1)
-    plt.axhline(mp1,0,1,linestyle='dashed',color='b',alpha=0.6,label='mean')
-    plt.axhline(mp2,0,1,linestyle='dashed',color='orange',alpha=0.6,label='mean')
-    plt.xticks(x1,x1)
-    plt.legend(fontsize=FONTSIZE)
+new_corr = correlate(p1-av1,p2-av2,mode='full')
+new_lag = correlation_lags(len(p1),len(p2))
+corr_shift = abs(new_lag[new_corr.argmax()])
+Dcorr_shift = 0.5
+print('CORR',corr_shift)
+plt.figure()
+plt.plot(new_lag,new_corr)
+plt.figure()
+plt.plot(p1)
+plt.plot(p2)
+plt.figure()
+plt.plot(p1-av1)
+plt.plot(p2-av2)
+plt.show()
     
-    int_spec = np.sum(data[:,slice(*sel_cut)],axis=0)
-    minpos = np.argmin(int_spec)
-    minpx  = minpos + sel_cut[0] + jupiter.lims[2]
-    Dminpos = 0.5
-    minval = fit.method(minpx)
-    print(minval)
-    plt.figure(figsize=(15,10))
-    plt.title('Integrated spectrum',fontsize=FONTSIZE+2)
-    plt.plot(int_spec,'.--')
-    plt.errorbar(minpos,int_spec[minpos],xerr=Dminpos,fmt='.',capsize=3,color='red')
-    # 8pi R/C (min+q/m)/sh
-    # 8pi R/C [ (Dq/m)² + (q*Dm/m²)² + 2 q/m³ Cov] / sh
-    # T [ (Dq/q) + (Dm/m) + 2Cov/qm ]
-    T3 = (8*np.pi*R/C * minval/(shift3*mf)).to(u.h)
-    DT3 = (8*np.pi*R/C*minpx/shift3).to(u.h) * (Dminpos + Dqf/mf + qf*Dmf/mf**2 + np.sqrt(2*fit.res['cov'][0,1]/mf/qf)) 
-    # DT3 = (T3-(8*np.pi*R/C*minpos/shift3).to(u.h)) * np.sqrt((Dmf/mf)**2+(Dqf/qf)**2+2*fit.res['cov'][0,1]/mf/qf)
-    # DT3 = (T3-8*np.pi*R/C*minpos/shift3).to(u.h) * np.sqrt((Dmf/mf)**2+(Dqf/qf)**2)
-    print(C*(shift3*mf)/minval/4)
-    print(T3,DT3,DT3/T3*100)
-    print(PERIOD)
-    print((T3-PERIOD))
-    print((T3-PERIOD)/DT3)
-    est_ps += [T3.value]
-    # plt.show()
-est_ps, std_ps = spc.mean_n_std(est_ps)
-print('\n\n= = =\n')
-print(est_ps,std_ps,std_ps/est_ps*100)
-if (est_ps-std_ps) <= PERIOD.value <= (est_ps+std_ps): 
+int_spec = np.sum(data[:,slice(*sel_cut)],axis=0)
+minpos = np.argmin(int_spec)
+minpx  = minpos + sel_cut[0] + jupiter.lims[2]
+Dminpos = 0.5
+minval = fit.method(minpx)
+print(minval)
+plt.figure(figsize=(15,10))
+plt.title('Integrated spectrum',fontsize=FONTSIZE+2)
+plt.plot(int_spec,'.--')
+plt.errorbar(minpos,int_spec[minpos],xerr=Dminpos,fmt='.',capsize=3,color='red')
+print('ERR',np.sqrt((Dqf/mf)**2 + (qf*Dmf/mf**2)**2 + 2*fit.res['cov'][0,1]/mf/qf))
+# 8pi R/C (min+q/m)/sh
+# 8pi R/C [ (Dq/m)² + (q*Dm/m²)² + 2 q/m³ Cov] / sh
+# T [ (Dq/q) + (Dm/m) + 2Cov/qm ]
+T3 = (8*np.pi*R/C * minval/(corr_shift*mf)).to(u.h)
+DT3 = (8*np.pi*R/C).to(u.h) * ((Dminpos + np.sqrt((Dqf/mf)**2 + (qf*Dmf/mf**2)**2 + 2*fit.res['cov'][0,1]*qf/mf**3))/corr_shift + (minpx + qf/mf)*Dcorr_shift/corr_shift**2) 
+# DT3 = (8*np.pi*R/C/corr_shift).to(u.h) * (Dminpos + np.sqrt((Dqf/mf)**2 + (qf*Dmf/mf**2)**2 + 2*fit.res['cov'][0,1]*qf/mf**3)) 
+# DT3 = (T3-(8*np.pi*R/C*minpos/shift3).to(u.h)) * np.sqrt((Dmf/mf)**2+(Dqf/qf)**2+2*fit.res['cov'][0,1]/mf/qf)
+# DT3 = (T3-8*np.pi*R/C*minpos/shift3).to(u.h) * np.sqrt((Dmf/mf)**2+(Dqf/qf)**2)
+print((C*(corr_shift*mf)/minval/4).to(u.km/u.s))
+print(T3,DT3,DT3/T3*100,'%')
+print(PERIOD)
+print((T3-PERIOD))
+print((T3-PERIOD)/DT3)
+if (T3-DT3).value <= PERIOD.value <= (T3+DT3).value: 
     print('OK')
 else:
-    print((est_ps-PERIOD.value)/std_ps*100)
+    print(((T3-PERIOD)/DT3).value)  
+
+
+# est_ps = []
+# for sel_cut in cut_list: 
+#     print('\n- - -\nValue for',sel_cut)
+#     sh = 0
+#     p1 = data[px_u+sh,slice(*sel_cut)]
+#     p2 = data[px_d-sh,slice(*sel_cut)]
+#     p1 = p1.max()-p1    
+#     p2 = p2.max()-p2    
+#     x1 = np.arange(len(p1))    
+#     x2 = np.arange(len(p2))    
+#     mp1 = p1.mean()
+#     mp2 = p2.mean()
+
+#     plt.figure(figsize=(15,10))
+#     plt.title(f'Line in {sel_cut}',fontsize=FONTSIZE+2)
+#     plt.imshow(data[:,slice(*sel_cut)],origin='lower')
+#     plt.axhline(px_u+sh,0,1)
+#     plt.axhline(px_d-sh,0,1)
+
+
+
+#     # plt.figure(figsize=(15,10))
+#     # plt.plot(x1,p1,'.--',color='b')
+#     # plt.plot(x2,p2,'.--',color='orange')
+#     # plt.axhline(mp1,0,1,linestyle='dashed',color='b',alpha=0.6)
+#     # plt.axhline(mp2,0,1,linestyle='dashed',color='orange',alpha=0.6)
+#     # plt.xticks(x1,x1)
+
+#     if p1.argmax() > p2.argmax():
+#         right = find_minimum(p1,mp1,'right')
+#         left  = find_minimum(p2,mp2,'left')
+#     elif p1.argmax() < p2.argmax():
+#         right = find_minimum(p2,mp2,'right')
+#         left  = find_minimum(p1,mp1,'left')
+#     else:
+#         break
+
+#     print(left,right)
+#     print(right-left)
+#     shift3 = abs(right-left)
+#     plt.figure(figsize=(15,10))
+#     plt.title('Spectrum at the edges',fontsize=FONTSIZE)
+#     plt.plot(x1,p1,'.--',color='b',label=f'h = {px_u}')
+#     plt.plot(x2,p2,'.--',color='orange',label=f'h = {px_d}')
+#     plt.axvline(left,0,1,label='ends')
+#     plt.axvline(right,0,1)
+#     plt.axhline(mp1,0,1,linestyle='dashed',color='b',alpha=0.6,label='mean')
+#     plt.axhline(mp2,0,1,linestyle='dashed',color='orange',alpha=0.6,label='mean')
+#     plt.xticks(x1,x1)
+#     plt.legend(fontsize=FONTSIZE)
+    
+#     int_spec = np.sum(data[:,slice(*sel_cut)],axis=0)
+#     minpos = np.argmin(int_spec)
+#     minpx  = minpos + sel_cut[0] + jupiter.lims[2]
+#     Dminpos = 0.5
+#     minval = fit.method(minpx)
+#     print(minval)
+#     plt.figure(figsize=(15,10))
+#     plt.title('Integrated spectrum',fontsize=FONTSIZE+2)
+#     plt.plot(int_spec,'.--')
+#     plt.errorbar(minpos,int_spec[minpos],xerr=Dminpos,fmt='.',capsize=3,color='red')
+#     # 8pi R/C (min+q/m)/sh
+#     # 8pi R/C [ (Dq/m)² + (q*Dm/m²)² + 2 q/m³ Cov] / sh
+#     # T [ (Dq/q) + (Dm/m) + 2Cov/qm ]
+#     T3 = (8*np.pi*R/C * minval/(shift3*mf)).to(u.h)
+#     DT3 = (8*np.pi*R/C*minpx/shift3).to(u.h) * (Dminpos + Dqf/mf + qf*Dmf/mf**2 + np.sqrt(2*fit.res['cov'][0,1]/mf/qf)) 
+#     # DT3 = (T3-(8*np.pi*R/C*minpos/shift3).to(u.h)) * np.sqrt((Dmf/mf)**2+(Dqf/qf)**2+2*fit.res['cov'][0,1]/mf/qf)
+#     # DT3 = (T3-8*np.pi*R/C*minpos/shift3).to(u.h) * np.sqrt((Dmf/mf)**2+(Dqf/qf)**2)
+#     print(C*(shift3*mf)/minval/4)
+#     print(T3,DT3,DT3/T3*100)
+#     print(PERIOD)
+#     print((T3-PERIOD))
+#     print((T3-PERIOD)/DT3)
+#     est_ps += [T3.value]
+#     # plt.show()
+# est_ps, std_ps = spc.mean_n_std(est_ps)
+# print('\n\n= = =\n')
+# print(est_ps,std_ps,std_ps/est_ps*100)
+# if (est_ps-std_ps) <= PERIOD.value <= (est_ps+std_ps): 
+#     print('OK')
+# else:
+#     print((est_ps-PERIOD.value)/std_ps*100)
