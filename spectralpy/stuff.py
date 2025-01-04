@@ -892,11 +892,11 @@ class FuncFit():
     def residuals(self) -> ArrayLike:
         return self.data[1] - self.fvalues()
 
-    def pipeline(self,method: Callable[[Any,Any],Any], initial_values: Sequence[Any], names: Sequence[str] | None = None, mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
+    def pipeline(self,method: Callable[[Any,Any],Any], initial_values: Sequence[Any], names: Sequence[str] | None = None, mode: Literal['odr','curve_fit'] = 'curve_fit',**fitargs) -> None:
         self.fit(method=method,initial_values=initial_values,mode=mode,**fitargs)
         self.infos(names=names)
     
-    def gaussian_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('k','mu','sigma'),mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
+    def gaussian_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('k','mu','sigma'),mode: Literal['odr','curve_fit'] = 'curve_fit',**fitargs) -> None:
         """To fit with a Gaussian
 
         Parameters
@@ -914,22 +914,8 @@ class FuncFit():
         error_function = lambda x, Dx : FuncFit.err_func(x,Dx,self.fit_par,self.errvar)
         self.res['errfunc'] = error_function
 
-    def voigt_fit(self, initial_values: Sequence[float], names: Sequence[str] = ['sigma','gamma','k','median'], mode: Literal['odr','curve_fit'] = 'odr',**fitargs):
-        # def voigt_func(data: ArrayLike, *args) -> ArrayLike:
-        #     sigma, gamma, k, mu_g, mu_l = args
-        #     gauss = np.exp(-((data-mu_g)/sigma)**2/2) / np.sqrt(2*np.pi*sigma**2)
-        #     loren = gamma / ((data-mu_l)**2 + gamma**2) / np.pi
-        #     voigt = np.convolve(gauss,loren,mode='same')
-        #     return k * voigt / voigt.mean()
-        def voigt_func(data: ArrayLike, *args) -> ArrayLike:
-            from scipy.special import voigt_profile
-            sigma, gamma, k, mu = args
-            return k*voigt_profile(data-mu,sigma,gamma)
-        
-        self.pipeline(method=voigt_func,initial_values=initial_values,names=names,mode=mode, **fitargs)
 
-
-    def pol_fit(self, ord: int | None = None, initial_values: Sequence[float] | None = None, names: Sequence[str] | None = None, mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
+    def pol_fit(self, ord: int | None = None, initial_values: Sequence[float] | None = None, names: Sequence[str] | None = None, mode: Literal['odr','curve_fit'] = 'curve_fit',**fitargs) -> None:
         if initial_values is None:
             if ord is None: raise ValueError('You have to set the grade of the polynomial')
             xdata, ydata = self.data[0:2]
