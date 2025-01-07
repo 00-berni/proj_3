@@ -22,8 +22,9 @@ if __name__ == '__main__':
     print('-- DATA --')
     night = '17-03-27'
     target_name = 'Vega'
-    selection = 0#'mean'
+    selection = 'mean'
     wlen_ends = (4500, 6200)
+    # wlen_ends = (4500, 5900)
     wl_lim = lambda wlen : (wlen >= wlen_ends[0]) & (wlen <= wlen_ends[-1])
     obs_num = 5
 
@@ -65,19 +66,33 @@ if __name__ == '__main__':
         targets[i] = tag.copy()
         tag.spec = remove_balmer(tag.lines, tag.spec,wlen_gap=wlen_gap[i],display_plots=display_plots,xlim=wlen_ends)
         vega += [tag]
-        lat, lon = tag.header[0]['SITELAT'], tag.header[0]['SITELONG']
+        if isinstance(tag.header,list):
+            lat = tag.header[0]['SITELAT'] 
+            lon = tag.header[0]['SITELONG']
+        else:
+            lat = tag.header['SITELAT'] 
+            lon = tag.header['SITELONG']
         lat, lon = compute_pos(lat,lon)
         print(tag.name,'\tPOS:',lat,lon)
         obs = EarthLocation(lat=lat,lon=lon)
         obj = SkyCoord.from_name('alf Lyr')
-        estalt = []
-        for h in tag.header:
-            time = Time(h['DATE-OBS'])
+
+        if isinstance(tag.header,list):
+            estalt = []
+            for h in tag.header:
+                time = Time(h['DATE-OBS'])
+                coord = obj.transform_to(AltAz(obstime=time,location=obs))
+                print('ALT',coord.alt)
+                estalt += [coord.alt.value]
+            Destalt = (np.max(estalt)-np.min(estalt))/ 2
+            estalt = np.mean(estalt)   
+        else:
+            time = Time(tag.header['DATE-OBS'])
             coord = obj.transform_to(AltAz(obstime=time,location=obs))
             print('ALT',coord.alt)
-            estalt += [coord.alt.value]
-        Destalt = (np.max(estalt)-np.min(estalt))/ 2
-        estalt = np.mean(estalt)   
+            estalt = coord.alt.value
+            Destalt = 0.02
+
         print(tag.name,'\tALT:',estalt, Destalt)
         alt +=  [estalt]
         Dalt += [Destalt]
