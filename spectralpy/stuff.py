@@ -896,7 +896,7 @@ class FuncFit():
         self.fit(method=method,initial_values=initial_values,mode=mode,**fitargs)
         self.infos(names=names)
     
-    def gaussian_fit(self, initial_values: Sequence[float], names: Sequence[str] = ('k','mu','sigma'),mode: Literal['odr','curve_fit'] = 'curve_fit',**fitargs) -> None:
+    def gaussian_fit(self, initial_values: Sequence[float] | None = None, names: Sequence[str] = ('k','mu','sigma'),mode: Literal['odr','curve_fit'] = 'curve_fit',**fitargs) -> None:
         """To fit with a Gaussian
 
         Parameters
@@ -906,6 +906,14 @@ class FuncFit():
         names : list[str] | None, optional
             names, by default None
         """
+        if initial_values is None:
+            xdata, ydata = self.data[0:2]
+            maxpos = ydata.argmax()
+            hm = ydata[maxpos]/2
+            hm_pos = np.argmin(abs(hm-ydata))
+            hwhm = abs(xdata[maxpos]-xdata[hm_pos])
+            initial_values = [ydata[maxpos],maxpos,hwhm]
+
         if mode == 'curve_fit': 
             fitargs['err_func'] = FuncFit.err_func
         self.pipeline(method=FuncFit.gauss_func,initial_values=initial_values,names=names,mode=mode,**fitargs)
