@@ -517,6 +517,9 @@ def extract_data(ch_obs: str, ch_obj: str, selection: str | Literal['mean'], obj
                 target.lims = lim[4:]
                 target.cut  = lim[:4]
             target.update_header()
+            # plt.figure()
+            # plt.title(tmp.name)
+            # plt.imshow(np.sum([h[0].data for h in target.hdul],axis=0),cmap='gray_r',aspect='equal')
             target.data, target.sigma = mean_n_std(target.data,axis=0)
             target.format_ends()
             print('LIMS',target.cut,target.lims)
