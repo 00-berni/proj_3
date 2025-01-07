@@ -829,7 +829,7 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], targ
     return target, lamp
 
 
-def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray], data: tuple[ndarray, ndarray], bins: ndarray, display_plots: bool = True, diagn_plot: bool = False,**pltargs) -> tuple[tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
+def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray], data: tuple[ndarray, ndarray], bins: ndarray, fit_mode: Literal['curve_fit','odr'] = 'odr', display_plots: bool = True, diagn_plot: bool = False,**pltargs) -> tuple[tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
     """To compute the optical depth and the 0 airmass spectrum
 
     Parameters
@@ -883,7 +883,7 @@ def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray]
         #.. Assuming N/t = exp(-tau*a)*S0 then 
         #.. log(N/t) = - tau * a + log(S0)
         fit = FuncFit(xdata=x, ydata=np.log(y), xerr=Dx, yerr=Dy/y)
-        fit.linear_fit(names=('tau','ln(S0)'),mode='odr')
+        fit.linear_fit(names=('tau','ln(S0)'),mode=fit_mode)
         pop, Dpop = fit.results()
         S0  = np.exp(pop[1])
         DS0 = Dpop[1] * S0
@@ -1074,7 +1074,7 @@ def vega_std(bin: int | float | ArrayLike = 50, edges: None | Sequence[float] = 
 
 
 
-def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen_ends: tuple[float,float],  bin_width: float | int = 50, std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False,**pltargs) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
+def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen_ends: tuple[float,float],  bin_width: float | int = 50, fit_mode: Literal['curve_fit','odr'] = 'odr' , std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False,**pltargs) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
     """To estimate instrument response function
 
     Parameters
@@ -1164,7 +1164,7 @@ def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen
 
     ## Atmospheric Transfer Function
     # estimate 0 airmass spectrum
-    (S0, DS0), (op_dep, Dop_dep) = atm_transfer((x,Dx), (l_data,Dl_data), (y_data,Dy_data), a_bin, display_plots=display_plots, diagn_plot=diagn_plots,**pltargs)
+    (S0, DS0), (op_dep, Dop_dep) = atm_transfer((x,Dx), (l_data,Dl_data), (y_data,Dy_data), a_bin, fit_mode=fit_mode, display_plots=display_plots, diagn_plot=diagn_plots,**pltargs)
 
 
 
