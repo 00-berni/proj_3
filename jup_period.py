@@ -52,20 +52,16 @@ xdata = np.arange(data.shape[0])
 fig, ax = plt.subplots(2,1)
 for i in col:
     ydata = data[:,i]
-    # fit a parabola
-    fit = spc.FuncFit(xdata=xdata,ydata=ydata,xerr=1)
-    fit.pol_fit(2,[-0.2,1,1],mode='curve_fit')
-    # extract the parameters and the covariances
-    a,b,c = fit.fit_par
-    cov = fit.res['cov']
-    delta = b**2 - 4*a*c
-    # compute the uncertainty related with the estimated vertex value
-    der = [ b/(2*a**2),
-            -1/(2*a) ]
-    err = np.sqrt(np.sum([der[j]*der[k]*cov[j,k] for k in range(len(der)) for j in range(len(der))]))
-    # store the results
-    v  += [-b/2/a]
-    Dv += [err]
+    # fit a gaussian
+    fit = spc.FuncFit(xdata=xdata,ydata=ydata)
+    hm = ydata.max()/2
+    hm_pos = np.argmin(abs(hm-ydata))
+    hwhm = abs(ydata.argmax()-hm_pos)
+    initial_values = [ydata.max(),ydata.argmax(),hwhm]
+    print('initial_values',initial_values)
+    fit.gaussian_fit()
+    v  += [fit.fit_par[1]]
+    Dv += [fit.fit_err[1]]
     # plot
     color1 = (i/N,0,0.5)
     color2 = (i/N,1-i/N,0.5)
@@ -78,7 +74,7 @@ plt.show()
 
 ## Linear Fit
 fit = spc.FuncFit(xdata=col,ydata=v,yerr=Dv)
-fit.linear_fit([0,np.mean(v)],mode='curve_fit')
+fit.linear_fit(mode='curve_fit')
 fit.plot(mode='subplots')
 plt.show()
 m  = fit.fit_par[0]
@@ -123,8 +119,8 @@ fig0, ax0 = plt.subplots(1,1)
 for i in col:
     ydata = data[:,i]
     # fit a Gaussian
-    fit = spc.FuncFit(xdata=xdata,ydata=ydata,xerr=1)
-    fit.gaussian_fit([ydata.max(),xdata.mean(),2],mode='curve_fit')
+    fit = spc.FuncFit(xdata=xdata,ydata=ydata)
+    fit.gaussian_fit(mode='curve_fit')
     # extract the estimated paramters
     k,mu = fit.fit_par[:2]
     Dk,Dmu = fit.fit_err[:2]
@@ -317,3 +313,4 @@ print('DISCR',discr,Ddiscr, abs(discr/Ddiscr))
 # A/Ds * (Dp + Dha + Dm*B/m**2 + (p-ha + B/m)*DDs/Ds) 
 T3 = (8*np.pi*R/C * (minpx - ha_px + BALMER/mf)/(corr_shift)).to(u.h)
 DT3 = (8*np.pi*R/C/corr_shift).to(u.h) * (Dminpos + Dha_px + BALMER*Dmf/mf**2 + (minpx+ha_px + BALMER/mf)*Dcorr_shift/corr_shift)
+print('New T3',T3,DT3)
