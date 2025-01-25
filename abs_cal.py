@@ -1,12 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import spectralpy as spc
-from spectralpy.calcorr import remove_balmer
-from scipy.interpolate import CubicSpline
 import astropy.units as u
-from numpy.typing import ArrayLike
-from statistics import pvariance
-
+from spectralpy.calcorr import remove_balmer
+from astropy.coordinates import AltAz, EarthLocation, SkyCoord
+from astropy.time import Time
 
 def compute_pos(lat: str, lon: str):
     res = []
@@ -16,56 +14,58 @@ def compute_pos(lat: str, lon: str):
     return res
 
 if __name__ == '__main__':
-    from astropy.coordinates import AltAz, EarthLocation, SkyCoord
-    from astropy.time import Time
-    ## Data
-    print('-- DATA --')
-    night = '17-03-27'
-    target_name = 'Vega'
-    selection = 'mean'
-    wlen_ends = (4500, 6200)
-    # wlen_ends = (4500, 5900)
-    wl_lim = lambda wlen : (wlen >= wlen_ends[0]) & (wlen <= wlen_ends[-1])
-    obs_num = 5
 
-    ## Wavelength Calibration
+    ### CONSTANTS
+    FONTSIZE = 18
+    NIGHT = '17-03-27'
+    TARGET_NAME = 'Vega'
+    SELECTION = 0
+    WLEN_ENDS = (4500,6490)
+    wl_lim = lambda wlen : (wlen >= WLEN_ENDS[0]) & (wlen <= WLEN_ENDS[-1])
+
+    ### WAVELENGTH CALIBRATION
     print('-- WAVELENGTH CALIBRATION --')
     ord1 = 2
     ord2 = 3
     display_plots = False
     diagn_plots = False
-    target, lamp = spc.calibration(night, target_name+'01', selection, norm=False, balmer_cal=False, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=diagn_plots)
-    tmp = target.copy()
-    spans = [tmp.span]
-    targets = [target.copy()]
-    for i in range(1,obs_num):
-        # if i == 3: diagn_plots=True
-        tmp, _ = spc.calibration(night,target_name+f'0{i+1}',selection, norm=False, other_lamp=lamp, display_plots=False,diagn_plots=diagn_plots)
-        spans += [tmp.span]
+    cal_target, cal_lamp = spc.calibration(NIGHT, TARGET_NAME+'01','mean', norm=False, balmer_cal=False, ord_lamp=ord1, ord_balm=ord2, display_plots=display_plots,diagn_plots=diagn_plots)
+
+    ### DATA
+    # initialize variables
+    targets: list[spc.Spectrum] = []    #: list of data
+    vega:    list[spc.Spectrum] = []    #: list of spectra after balmer's removal
+    spans = []  #: list of each extraction region width
+    alt  = np.array([])  #: array of altitudes
+    Dalt = np.array([])  #: array of the uncertainty in them 
+    # collect data
+    for i in [2,3]:
+        tmp, _ = spc.calibration(NIGHT,TARGET_NAME+f'0{i}',SELECTION, norm=False, other_lamp=cal_lamp, display_plots=False,diagn_plots=diagn_plots)
+        # store data
+        spans   += [tmp.span]
         targets += [tmp.copy()]
 
-    # spectrum extraction
-    alt = []
-    Dalt = []
-    vega = []
+    ## Spectrum Extraction
     wlen_gap = [
-        [[4814,4920],[6520,6700]],
-        [[4790,5000],[6520,6690]],
-        [[4790,5000],[6520,6690]],
-        [[4790,5000],[6238,6650]],
-        [[4790,5000],[6238,6650]]
+        [[4805,4924],[6520,6690]],
+        [[4790,4910],[6520,6690]]
     ]
-    min_span = np.min(spans)
+    min_span = np.min(spans)    #: minimum width
     for i in range(len(targets)):
         tag = targets[i].copy()
+        # take data inside a section wide `min_span`
         span = slice(tag.cen-min_span,tag.cen+min_span+1)
         data = tag.data[span].copy()
         tag.spec = np.sum(data,axis=0)
+        # set the uncertainty to semi-dispersion
         cen_val = data[min_span]
         tag.std = np.mean([abs(cen_val - data[0]),abs(cen_val - data[-1])],axis=0)
+        # update data
         targets[i] = tag.copy()
-        tag.spec = remove_balmer(tag.lines, tag.spec,wlen_gap=wlen_gap[i],display_plots=display_plots,xlim=wlen_ends)
-        vega += [tag]
+        # remove Balmer's lines
+        tag.spec = remove_balmer(tag.lines, tag.spec,wlen_gap=wlen_gap[i],display_plots=display_plots,xlim=WLEN_ENDS)
+        vega += [tag.copy()]
+        # extract observation site information
         if isinstance(tag.header,list):
             lat = tag.header[0]['SITELAT'] 
             lon = tag.header[0]['SITELONG']
@@ -75,8 +75,9 @@ if __name__ == '__main__':
         lat, lon = compute_pos(lat,lon)
         print(tag.name,'\tPOS:',lat,lon)
         obs = EarthLocation(lat=lat,lon=lon)
+        # compute sky coordinates of Vega
         obj = SkyCoord.from_name('alf Lyr')
-
+        # compute the altitude and the airmass on the observation date
         if isinstance(tag.header,list):
             estalt = []
             for h in tag.header:
@@ -91,11 +92,13 @@ if __name__ == '__main__':
             coord = obj.transform_to(AltAz(obstime=time,location=obs))
             print('ALT',coord.alt)
             estalt = coord.alt.value
+            # set an uncertainty a priori
             Destalt = 0.02
-
         print(tag.name,'\tALT:',estalt, Destalt)
-        alt +=  [estalt]
-        Dalt += [Destalt]
+        # store the results
+        alt  = np.append(alt,[estalt])
+        Dalt = np.append(Dalt,[Destalt])
+
     fig1, ax1 = plt.subplots(1,1)
     fig2, ax2 = plt.subplots(1,1)
     for tg, veg, a in zip(targets,vega,alt):
@@ -104,270 +107,159 @@ if __name__ == '__main__':
         ax1.errorbar(*tmp_tgdata,fmt='.',linestyle='dashed',label=f'{a:.2f} deg')
         ax2.errorbar(*tmp_data,fmt='.',linestyle='dashed',label=f'{a:.2f} deg')
     ax1.legend()
-    ax2.set_xlim(*wlen_ends)
+    ax2.set_xlim(*WLEN_ENDS)
     ax2.legend()
     plt.show()
-    alt = np.array(alt)
-    Dalt = np.array(Dalt)
 
 
+    ### RESPONSE FUNCTION
     print('-- RESPONSE FUNCTION --')
-    # alt = alt[[0,1,3]]
-    # Dalt = Dalt[[0,1,3]]
-    # vega = [*vega[:2]]+[vega[3]]
 
-    bin_width = 50
-    wlen, rfunc, tau = spc.ccd_response((alt, Dalt), vega, wlen_ends, bin_width=bin_width,display_plots=True,diagn_plots=True)
-    
-    int_tau = CubicSpline(wlen[0],tau[0])
-    int_res = CubicSpline(wlen[0],rfunc[0])
+    BIN_WIDTH = 50
+    # wlen, rfunc, tau = spc.ccd_response((alt, Dalt), vega, WLEN_ENDS, bin_width=bin_width,display_plots=True,diagn_plots=True)
+    x  = 1/np.sin(alt*np.pi/180)
+    Dx = Dalt * np.cos(alt*np.pi/180) * x**2 * np.pi/180 
+    unbin_wlen  = []
+    unbin  = []
+    ydata  = []
+    Dydata = []
+    for obs in vega:
+        obs = obs.copy()        
+        exp_time = obs.get_exposure()
+        obs.spec = obs.spec / exp_time
+        unbin_wlen += [obs.lines[wl_lim(obs.lines)]]
+        unbin += [obs.spec[wl_lim(obs.lines)]]
+        obs.std  = obs.std  / exp_time if obs.std is not None else None
+        (wlen, Dwlen), (bin_spec, Dbin_spec), bins = obs.binning(bin=BIN_WIDTH,edges=WLEN_ENDS)
+        ydata  += [bin_spec]
+        Dydata += [Dbin_spec]
 
-
-    # ratio = np.empty((0,len(rfunc[0])))
-    x = 1/np.sin(alt*np.pi/180)
     plt.figure()
-    plt.title('Transmittance')
-    for xi in x: 
-        plt.plot(wlen[0],np.exp(-tau[0]*xi),'.--',label=f'X = {xi:.3f}')
-    plt.legend()
+    plt.errorbar(wlen,ydata[0],Dydata[0],fmt='.--',label=f'$X = {x[0]:.3f}$')    
+    plt.errorbar(wlen,ydata[1],Dydata[1],fmt='.--',label=f'$X = {x[1]:.3f}$')
+    plt.grid(True,which='both',axis='x')
+    plt.legend(fontsize=FONTSIZE)
+    plt.show()    
+
+
+    # Ii = exp(-tau xi) S R
+    # I1/I2 = exp(-tau (x1-x2))
+    # ln(I1/I2) = -tau * (x1-x2)
+    # tau = ln(I1/I2)/(x2-x1)
+    # Dtau = [DI1/I1 + DI2/I2 + ln(I1/I2)/(x2-x1)*(Dx1+Dx2)]/(x2-x1) 
+    tau  = np.log(ydata[1]/ydata[0]) / (x[0]-x[1])
+    Dtau = (Dydata[1]/ydata[1] + Dydata[0]/ydata[0] + tau*(Dx[1]+Dx[0]))/(x[0]-x[1])
+    plt.figure()
+    plt.errorbar(wlen,tau,Dtau,fmt='.--')
+    # plt.show()
+
+    def fit_func(x, *params):
+        b,c,d = params
+        return np.exp(b*(x-c)) + d
+    initial_values = [-1e-4,wlen[1],tau.min()]
+    fit = spc.FuncFit(xdata=wlen,ydata=tau,yerr=Dtau)
+    fit.pipeline(fit_func,initial_values)
+    fit.plot(mode='subplots')
+    plt.figure()
+    plt.hist(fit.residuals(),15)
+    plt.show()    
+
+
+    # ln(I) = -tau x + ln(SR)
+    # ln(SR) = ln(Ii) + tau xi
+
+    Sigma = [ydata[i]*np.exp(tau*x[i]) for i in range(2) ]
+    DSigma = abs(Sigma[1]-Sigma[0])/2
+    Sigma = np.mean(Sigma,axis=0)
+    plt.errorbar(wlen,Sigma,DSigma,fmt='.--')
+    plt.figure()
+    plt.errorbar(wlen,Sigma,DSigma,fmt='.--')
+    plt.plot(wlen,ydata[0],'.--') 
+    plt.plot(wlen,ydata[1],'.--')
+    plt.show() 
+
+
+    ends = (max(unbin_wlen[0][0],unbin_wlen[1][0]),min(unbin_wlen[0][-1],unbin_wlen[1][-1]))
+    for i in range(2):
+        wlen_i = unbin_wlen[i] 
+        sel_pos = (wlen_i >= ends[0]) & (wlen_i <= ends[1])
+        unbin_wlen[i] = wlen_i[sel_pos]
+        unbin[i] = unbin[i][sel_pos]
+    unbin_wlen = unbin_wlen[0]
+    unbin_S = np.mean([unbin[i] * np.exp(fit_func(unbin_wlen,*fit.fit_par)*x[i]) for i in range(2)],axis=0)
+    plt.figure()
+    plt.plot(unbin_wlen,unbin_S,'.--')
+    plt.errorbar(wlen,Sigma,DSigma,fmt='.--')
+
+    (wlen,Dwlen),(Sigma, DSigma), bins = spc.binning(unbin_S,unbin_wlen,bins)
+    plt.errorbar(wlen,Sigma,DSigma,fmt='.--',color='green')
     plt.show()
 
-    fontsize = 18
-    fig, ax = plt.subplots(len(alt),1,figsize=(13,10),sharex=True)
-    ax[0].set_title('Data reconstruction from estimated responce function',fontsize=fontsize+2)
-    ax[-1].set_xlabel('$\\lambda$ ($\\AA$)',fontsize=fontsize)
-    for sel in range(len(alt)):
-        target = targets[sel].copy()
-        airmass = x[sel]
-        stdwl, stdsp = spc.get_standard()
 
-        stdsp = stdsp[wl_lim(stdwl)]
-        stdwl = stdwl[wl_lim(stdwl)]
-        cmp_spec = target.get_exposure() * np.exp(-int_tau(stdwl)*airmass) * stdsp * int_res(stdwl)
-        data = target.spectral_data(True)
-        data = [dt[wl_lim(data[0])] for dt in data]
+    from speclite import filters
 
-        ax[sel].plot(stdwl,cmp_spec,label=f'Vega0{sel+1}')
-        ax[sel].errorbar(*data,'.',linestyle='dashed',alpha=0.7)
-        ax[sel].legend(fontsize=fontsize)
-        ax[sel].grid()
-        ax[sel].set_ylabel('Counts',fontsize=fontsize)
-        
-        # (veg_wlen,Dveg_wlen), (veg_spec,Dveg_spec), _  = target.binning(bin=wlen[-1])
-        # (std_wlen, std_Dwlen), (std_spec, std_Dspec) = spc.vega_std(wlen[-1],balmer_rem=False,diagn_plots=display_plots) 
-        # cmp_spec = target.get_exposure() * np.exp(-tau[0]*airmass) * std_spec * rfunc[0]
-
-        # fig,(ax1,ax2) = plt.subplots(2,1)
-        
-        # ax1.set_title('The 2')
-        # ax1.plot(wlen[0],cmp_spec)
-        # ax1.errorbar(wlen[0],veg_spec,Dveg_spec,Dveg_wlen,'.',linestyle='dashed')
-        # ax1.set_xlim(*wlen_ends)
-        # ax1.grid()        
-        # ax1.legend()        
-        # ax2.errorbar(wlen[0],veg_spec-cmp_spec,Dveg_spec,fmt='.',linestyle='dashed',capsize=3)
-        # ax2.axhline(0,0,1,color='k')
-        # ax2.legend()
-        # ax2.grid()        
-        # ax2.set_xlim(*wlen_ends)
-
-        # target.spec = remove_balmer(target.lines,target.spec,wlen_gap[sel])
-        # (veg_wlen,Dveg_wlen), (veg_spec,Dveg_spec), _  = target.binning(bin=wlen[-1])
-        # (std_wlen, std_Dwlen), (std_spec, std_Dspec) = spc.vega_std(wlen[-1],balmer_rem=True,diagn_plots=display_plots) 
-        # cmp_spec = target.get_exposure() * np.exp(-tau[0]*airmass) * std_spec * rfunc[0]
-
-        # fig,(ax1,ax2) = plt.subplots(2,1)
-        
-        # ax1.set_title('The Removed')
-        # ax1.plot(wlen[0],cmp_spec)
-        # ax1.errorbar(wlen[0],veg_spec,Dveg_spec,Dveg_wlen,'.',linestyle='dashed')
-        # ax1.set_xlim(*wlen_ends)
-        # ax1.grid()        
-        # ax1.legend()        
-        # ax2.errorbar(wlen[0],veg_spec-cmp_spec,Dveg_spec,fmt='.',linestyle='dashed',capsize=3)
-        # ax2.axhline(0,0,1,color='k')
-        # ax2.legend()
-        # ax2.grid()        
-        # ax2.set_xlim(*wlen_ends)
-
-        (veg_wlen,Dveg_wlen), (veg_spec,Dveg_spec), _  = target.binning(bin=wlen[-1])
-        veg_spec *= np.exp(tau[0]*airmass) / target.get_exposure() / rfunc[0]
-
-        (std_wlen, std_Dwlen), (std_spec, std_Dspec) = spc.vega_std(wlen[-1],balmer_rem=False,diagn_plots=display_plots) 
-
-        # ratio = np.append(ratio,[veg_spec/std_spec],axis=0)
-
-        # plt.figure()
-        # plt.subplot(2,1,1)
-        # plt.title('Comparison')
-        # (tar_wlen,_), (tar_spec,_), _ = target.binning(bin=wlen[-1])
-        # plt.plot(tar_wlen,tar_spec,'.-')
-        # plt.subplot(2,1,2)
-        # plt.errorbar(veg_wlen,veg_spec,fmt='.-',label=f'data - {alt[sel]}')
-        # plt.errorbar(std_wlen,std_spec,std_Dspec,std_Dwlen,'.--',label='std')
-        # plt.legend()
-        # plt.figure()
-        # disp = (veg_spec-std_spec)/std_spec
-        # plt.title(f'Disp {disp.mean()}, Sig {np.sqrt(pvariance(disp))}')
-        # plt.plot(std_wlen,disp,'.--')
-        # plt.axhline(0,0,1,color='black')
+    blue = filters.load_filter('bessell-B')
+    visible = filters.load_filter('bessell-V')
+    red = filters.load_filter('bessell-R')
+    filters.plot_filters(filters.load_filters('bessell-B','bessell-V','bessell-R'))
+    plt.plot(wlen,Sigma)
     plt.show()
+    index_col = []
+    for filt in [blue,visible,red]:
+        tmp_wlen = wlen.copy()
+        tmp_data = Sigma.copy()
+        filt_wlen = filt.wavelength.copy()
+        prv_pos = np.where(tmp_wlen <= filt_wlen[0])[0]
+        if len(prv_pos) == 0:
+            bin_diff = (wlen[0]-filt_wlen[0])
+            bin_diff = bin_diff//BIN_WIDTH if bin_diff%BIN_WIDTH==0 else bin_diff//BIN_WIDTH+1
+            bin_diff = bin_diff.astype(int)
+            tmp_wlen = np.append(np.linspace(wlen[0]-bin_diff*BIN_WIDTH,wlen[0]-BIN_WIDTH,bin_diff),tmp_wlen)
+            tmp_data = np.append([0]*bin_diff,tmp_data)
+            print('Prev',wlen.shape,tmp_wlen.shape,tmp_data.shape)
+        else:
+            tmp_wlen = tmp_wlen[prv_pos[-1]:]
+            tmp_data = tmp_data[prv_pos[-1]:]
+        fll_pos = np.where(tmp_wlen >= filt_wlen[-1])[0]
+        if len(fll_pos) == 0:
+            bin_diff = (filt_wlen[-1]-wlen[-1])
+            bin_diff = bin_diff//BIN_WIDTH if bin_diff%BIN_WIDTH==0 else bin_diff//BIN_WIDTH+1
+            bin_diff = bin_diff.astype(int)
+            tmp_wlen = np.append(tmp_wlen,np.linspace(wlen[-1]+BIN_WIDTH,wlen[-1]+BIN_WIDTH*bin_diff,bin_diff))
+            tmp_data = np.append(tmp_data,[0]*bin_diff)
+            print('Foll',wlen[-1],tmp_wlen[-1],filt_wlen[-1])
+        else:
+            tmp_wlen = tmp_wlen[:fll_pos[0]+1]
+            tmp_data = tmp_data[:fll_pos[0]+1]
+        
+        index_col += [filt.convolve_with_array(tmp_wlen,tmp_data)]
+    print(index_col)
+    blue, visible, red = index_col 
+    print(np.diff(index_col))
+    print(blue-red)
 
-    # plt.figure()
-    # plt.plot(np.mean(ratio,axis=1),'.-')
+    (_,_),(std_spec,_) = spc.vega_std(bins)
+    plt.plot(wlen,std_spec,'.--')
+    response = Sigma/std_spec
+    plt.figure()
+    plt.plot(wlen,response,'.--')
 
-    # plt.figure()
-    # plt.title('Ratio $\\tau$')
-    # targets = np.array(targets)
-    # ratio_tau = np.array([np.log(targets[i+1].binning(bin=wlen[-1])[1][0]/targets[i].binning(bin=wlen[-1])[1][0])/(x[i]-x[i+1]) * targets[i].get_exposure()/targets[i+1].get_exposure() for i in range(len(targets)-1)])
-    # for i in range(ratio_tau.shape[0]):
-    #     val = ratio_tau[i]
-    #     plt.plot(val,label=f'$\\Delta$alt = {alt[i]:.3f}-{alt[i+1]:.3f}')
-    # plt.plot(tau[0],label='$\\tau$')
-    # plt.legend()
+    from scipy.interpolate import CubicSpline
 
-    # plt.figure()
-    # for i in range(ratio_tau.shape[0]):
-    #     val = ratio_tau[i]
-    #     plt.plot(val-tau[0],label=f'$\\Delta$alt = {alt[i]:.3f}-{alt[i+1]:.3f}')
-    # plt.legend()
+    _, (std_spec,_) = spc.vega_std(bins,balmer_rem=False)
 
-    # plt.show()
+    int_response = CubicSpline(wlen,response)
 
-    # ### OTHER METHOD 
+    for obs,airmass in zip(targets,x):
+        est_tau = fit.method(wlen)
+        exp_time = obs.get_exposure()
+        rec_spec = np.exp(-est_tau*airmass)*std_spec*exp_time*response
+        _, (obs_sp,_),_ = obs.binning(bins)
+        plt.figure(figsize=(10,13))
+        plt.subplot(2,1,1)
+        plt.plot(wlen,obs_sp,'.--')
+        plt.plot(wlen,rec_spec,'x--')
+        plt.subplot(2,1,2)
+        plt.plot(wlen,(obs_sp-rec_spec)/obs_sp*100,'.--')
 
-    # # airmass
-    # x  = 1/np.sin(alt*np.pi/180)
-    # Dx = Dalt * np.cos(alt*np.pi/180) * x**2 * np.pi/180 
-
-    # x1  = x[1]
-    # x2  = x[2]
-    # Dx1 = Dx[1]
-    # Dx2 = Dx[2]
-    # vega1 : spc.Spectrum = vega[1].copy()
-    # vega2 : spc.Spectrum = vega[2].copy()
-    # vega1.spec = vega1.spec / vega1.get_exposure()
-    # vega2.spec = vega2.spec / vega2.get_exposure()
-    # (wl1, Dwl1), (sp1, Dsp1), bb = vega1.binning(bin=bin_width,edges=wlen_ends)
-    # (wl2, Dwl2), (sp2, Dsp2), _  = vega2.binning(bin=bb,edges=wlen_ends)
-    # ratio  = sp1/sp2
-    # Dratio = ratio * (Dsp1/sp1 + Dsp2/sp2)
-    # diff  = x2-x1
-    # Ddiff = np.sqrt(Dx1**2+Dx2**2)
-    # tau0  = np.log(ratio) * diff
-    # Dtau0 = abs(diff * Dratio/ratio) + abs(np.log(ratio) * Ddiff)
-    # plt.figure()
-    # plt.errorbar(wl1,tau0,Dtau0,Dwl1,'.',linestyle='dashed')
-    # plt.show()
-    # (std_wlen, std_Dwlen), (std_spec, std_Dspec) = spc.vega_std(bb,balmer_rem=True,diagn_plots=display_plots) 
-
-    # r1 = sp1 * np.exp(tau0*x1) / std_spec
-    # r2 = sp2 * np.exp(tau0*x2) / std_spec
-    # r = np.mean([r1,r2],axis=0)
-    # plt.figure()
-    # plt.plot(wl1,r1,'.--',label='1')
-    # plt.plot(wl2,r2,'.--',label='2')
-    # plt.plot(wl1,r,'.--',label='mean')
-    # plt.legend()
-
-    # plt.figure()
-    # plt.plot(wl1,r,'.--')
-    # plt.errorbar(wlen[0],*rfunc,wlen[1],fmt='.',linestyle='dashed')
-    # plt.show()
-
-    # vega0 = vega[0]
-    # (wl,Dwl), (sp,Dsp), _ = vega0.binning(bin=bb,edges=wlen_ends)
-    # stdsp = sp * np.exp(tau0*x[0]) / r
-    # plt.figure()
-    # plt.plot(wl,stdsp,'.--')
-    # plt.plot(wl,std_spec,'.--')
-    # plt.show()
-
-    # ## Regolo
-    # target, _ = spc.calibration(night,'Regolo',selection,norm=False,other_lamp=lamp,display_plots=False)
-    # (bin_wlen,_), (bin_reg,_), _ = target.binning(bin=wlen[-1])
-    # alt_reg = 58 + 9/60 + 33.6/3600
-    # airmass = 1/np.sin(alt_reg*np.pi/180)
-    # print('AIRMASS',airmass)
-    # print('AIRMASS',x)
-    # texp = target.get_exposure()
-    # pos = np.argsort(x)
-    # factor = np.array([ CubicSpline(x[pos], ratio[pos,i])(airmass) for i in range(ratio.shape[1])])
-    # # for i in range(ratio.shape[1]):
-    # #     tmp = CubicSpline(x, ratio[:,i])
-    # #     factor = (tmp(airmass))
-    # pos = np.argmin(abs(x-airmass))
-    # abs_reg = bin_reg / texp / rfunc[0]  * np.exp(tau[0]*airmass)
-    # plt.figure()
-    # plt.title('Correction Factor')
-    # for r, xi in zip(ratio,x):
-    #     plt.plot(bin_wlen,r,'.-',label=f'Veg {xi}')
-    # plt.plot(bin_wlen,factor,'.-',label=f'Reg {airmass}')
-    # plt.legend()
-
-    # probe = vega[pos].copy()
-    # _, (b_probe,_), _ = probe.binning(bin=wlen[-1])
-    # probe = b_probe / probe.get_exposure() / rfunc[0] * np.exp(tau[0]*x[pos])
-
-    # (std_wlen,_), (std_spec,_) = spc.vega_std(wlen[-1],balmer_rem=False)
-
-    # print(len(bin_wlen),len(abs_reg))
-    # plt.figure()
-    # plt.subplot(2,1,1)
-    # plt.title('Regolo Comparison')
-    # plt.plot(bin_wlen, bin_reg, '.-')
-    # plt.plot(bin_wlen, b_probe, '.-',color='green')
-    # plt.subplot(2,1,2)
-    # plt.plot(bin_wlen, abs_reg, '.-',label='Regolo')
-    # plt.plot(bin_wlen, probe, '.-',label='Regolo')
-    # plt.plot(std_wlen,std_spec,'.-',color='green',label='std of Vega')
-    # plt.xlim(wlen[-1].min(),wlen[-1].max())
-    # plt.legend()
-    # plt.show()
-    # exit()
-    # fig, (ax1,ax2,ax3) = plt.subplots(3,1)
-    
-    # ax1.plot(bin_wlen, factor,'.-',color='red')
-    # ax2.plot(bin_wlen, rfunc[0],'.-',color='blue')
-    # ax3.plot(bin_wlen, tau[0],'.-',color='violet')
-
-    # factor = CubicSpline(bin_wlen, factor)(target.lines)
-    # respon = CubicSpline(bin_wlen, rfunc[0])(target.lines)
-    # tau_in = CubicSpline(bin_wlen, tau[0])(target.lines)
-    # ax1.plot(target.lines,factor,'+--',color='red')
-    # ax1.set_xlim(*wlen_ends)
-    # ax2.plot(target.lines,respon,'+--',color='blue')
-    # ax2.set_xlim(*wlen_ends)
-    # ax3.plot(target.lines,tau_in,'+--',color='violet')
-    # ax3.set_xlim(*wlen_ends)
-    
-    # abs_reg = target.spec / texp / respon / factor * np.exp(tau_in*airmass)
-
-    # plt.figure()
-    # plt.subplot(2,1,1)
-    # plt.title('Regolo Comparison')
-    # plt.plot(target.lines, target.spec, '.-')
-    # plt.xlim(*wlen_ends)
-    # plt.subplot(2,1,2)
-    # plt.plot(target.lines, abs_reg, '.-')
-    # plt.xlim(*wlen_ends)
-    # plt.show()
-        # plt.figure()
-        # plt.plot(wlen,std_spec-veg_spec)
-
-        # rfunc = CubicSpline(wlen[0],rfunc[0])
-        # tau = CubicSpline(wlen[0],tau[0])
-
-        # veg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
-        # # reg_spec = target.spec * np.exp(tau(target.lines)*airmass) / target.get_exposure() / rfunc(target.lines)
-
-
-        # plt.figure()
-        # plt.subplot(2,1,1)
-        # plt.title('Comparison Interpolating')
-        # plt.plot(target.lines,target.spec,'.-')
-        # plt.subplot(2,1,2)
-        # plt.plot(target.lines,veg_spec,'.-')
-        # # plt.plot(target.lines,reg_spec,'.-')
-        # plt.plot(std_wlen,std_spec,'.-')
-        # plt.show()
+    plt.show()  
