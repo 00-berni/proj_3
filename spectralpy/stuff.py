@@ -953,9 +953,11 @@ class FuncFit():
         self.pol_fit(ord=1, initial_values=initial_values, names=names, mode=mode, **fitargs)
     
     def sigma(self) -> ArrayLike:
-        err_func = self.res['errfunc']
+        err = 0
         xdata, _, Dy, Dx = self.data
-        err = err_func(xdata,Dx)
+        if 'errfunc' in self.res.keys() and Dx is not None:
+            err_func = self.res['errfunc']
+            err += err_func(xdata,Dx)
         if Dy is not None:
             err = np.sqrt(Dy**2 + err**2)
         return err
@@ -1203,7 +1205,6 @@ def unc_format(value: ArrayLike, err: ArrayLike) -> list[str]:
     return fmt
     
 def print_measure(value: float | Quantity, err: float | Quantity, name: str = 'value', unit: str | None = None) -> None:
-    from spectralpy.stuff import unc_format
     if isinstance(value, Quantity) and isinstance(err, Quantity):
         unit = value.unit.to_string()
         value = value.value
