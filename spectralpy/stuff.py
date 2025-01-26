@@ -1204,7 +1204,7 @@ def unc_format(value: ArrayLike, err: ArrayLike) -> list[str]:
     fmt = [f'%.{order:d}e',r'%.1e']
     return fmt
     
-def print_measure(value: float | Quantity, err: float | Quantity, name: str = 'value', unit: str | None = None) -> None:
+def print_measure(value: float | Quantity, err: float | Quantity, name: str = 'value', unit: str = '') -> None:
     if isinstance(value, Quantity) and isinstance(err, Quantity):
         unit = value.unit.to_string()
         value = value.value
