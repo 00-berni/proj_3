@@ -82,7 +82,7 @@ if __name__ == '__main__':
         print('ALT',coord.alt)
         estalt = coord.alt.value
         # set an uncertainty a priori
-        Destalt = 0.02
+        Destalt = 0.01
         print(tag.name,'\tALT:',estalt, Destalt)
         spc.print_measure(estalt,Destalt,'ALT','deg')
         # store the results
@@ -139,8 +139,10 @@ if __name__ == '__main__':
 
     plt.figure()
     plt.title('Binned spectra normilized by the exposure time',fontsize=FONTSIZE+2)
-    plt.errorbar(wlen,ydata[0],Dydata[0],fmt='.--',label=f'$X = {x[0]:.3f}$')    
-    plt.errorbar(wlen,ydata[1],Dydata[1],fmt='.--',label=f'$X = {x[1]:.3f}$')
+    # plt.errorbar(wlen,ydata[0],Dydata[0],fmt='.--',label=f'$X = {x[0]:.3f}$')    
+    # plt.errorbar(wlen,ydata[1],Dydata[1],fmt='.--',label=f'$X = {x[1]:.3f}$')
+    plt.errorbar(wlen,ydata[0],fmt='.--',label=f'$X = {x[0]:.3f}$')    
+    plt.errorbar(wlen,ydata[1],fmt='.--',label=f'$X = {x[1]:.3f}$')
     plt.grid(True,which='both',axis='x',linestyle='dotted',alpha=0.6)
     plt.xticks(bins,bins.astype(int),rotation=45)
     plt.legend(fontsize=FONTSIZE)
@@ -157,14 +159,15 @@ if __name__ == '__main__':
     tau  = np.log(ydata[1]/ydata[0]) / (x[0]-x[1])
     Dtau = (Dydata[1]/ydata[1] + Dydata[0]/ydata[0] + tau*(Dx[1]+Dx[0]))/(x[0]-x[1])
     plt.figure()
-    plt.errorbar(wlen,tau,fmt='.--')
-    # plt.show()
+    plt.errorbar(wlen,tau,Dtau,fmt='.--')
+    plt.show()
 
     # fit an exponential to `tau` data
     def fit_func(x, *params):
         b,c,d = params
         return np.exp(b*(x-c)) + d
     initial_values = [-1e-4,wlen[1],tau.min()]
+    # initial_values = [-1e-4,6270,tau.min()]
     # fit = spc.FuncFit(xdata=wlen,ydata=tau,yerr=Dtau)
     fit = spc.FuncFit(xdata=wlen,ydata=tau)
     fit.pipeline(fit_func,initial_values)
@@ -174,6 +177,7 @@ if __name__ == '__main__':
     plt.show()    
 
 
+    ## 0-Airmass
     # compute binned 0-airmass spectrum
     # ln(I) = -tau x + ln(SR)
     # ln(SR) = ln(Ii) + tau xi
@@ -262,14 +266,14 @@ if __name__ == '__main__':
     plt.title('Binned Standard Spectrum',fontsize=FONTSIZE+2)
     plt.plot(wlen,std_spec,'.--')
     plt.xlabel('$\\lambda_k$ [$\\AA$]',fontsize=FONTSIZE)
-    plt.ylabel('$I_{std,k}$ [ergs cm$^{-2}$ s$^{-1}$ $\\AA^{-1}$]',fontsize=FONTSIZE)
+    plt.ylabel('$S_{k}^{std}$ [erg cm$^{-2}$ s$^{-1}$ $\\AA^{-1}$]',fontsize=FONTSIZE)
     plt.grid(True,which='both',axis='x',linestyle='dotted',alpha=0.6)
     plt.xticks(bins,bins.astype(int),rotation=45)
     plt.figure()
     plt.title('Binned Response Function',fontsize=FONTSIZE+2)
     plt.plot(wlen,response,'.--')
     plt.xlabel('$\\lambda_k$ [$\\AA$]',fontsize=FONTSIZE)
-    plt.ylabel('$R_k$ [counts cm$^{2}$ $\\AA$ ergs$^{-1}$]',fontsize=FONTSIZE)
+    plt.ylabel('$R_k$ [counts cm$^{2}$ $\\AA$ erg$^{-1}$]',fontsize=FONTSIZE)
     plt.grid(True,which='both',axis='x',linestyle='dotted',alpha=0.6)
     plt.xticks(bins,bins.astype(int),rotation=45)
 
@@ -299,6 +303,9 @@ if __name__ == '__main__':
     for obs, airmass in zip(targets,x):
         wave = obs.lines[wl_lim(obs.lines)]
         sp_data = obs.spec[wl_lim(obs.lines)]
+        # sel_pos = (obs.lines >= targets[1].lines[0]) & (obs.lines <= targets[1].lines[-1])
+        # wave = obs.lines[sel_pos]
+        # sp_data = obs.spec[sel_pos]
         ext_tau = fit.method(wave)
         exp_time = obs.get_exposure()
         rec_sp  = sp_data * np.exp(ext_tau*airmass) / int_response(wave) / exp_time
@@ -316,12 +323,14 @@ if __name__ == '__main__':
     plt.grid(linestyle='--',alpha=0.2,color='grey')
     plt.legend(fontsize=FONTSIZE)
     plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=FONTSIZE)
-    plt.ylabel('$I_0$ [ergs cm$^{-2}$ s$^{-1}$ $\\AA^{-1}$]',fontsize=FONTSIZE)
+    plt.ylabel('$S_\\lambda$ [erg cm$^{-2}$ s$^{-1}$ $\\AA^{-1}$]',fontsize=FONTSIZE)
     plt.show()
 
     # bin data to compare them
     (std_wl,_),(std_sp,_), _ = spc.binning(std_sp,std_wl,bins)
     (bin_wl,_),(bin_sp,_), _ = spc.binning(avg_abssp,wave,bins)
+    # (std_wl,_),(std_sp,_), _ = spc.binning(std_sp,std_wl,edges=(targets[1].lines[0],targets[1].lines[-1]))
+    # (bin_wl,_),(bin_sp,_), _ = spc.binning(avg_abssp,wave,edges=(targets[1].lines[0],targets[1].lines[-1]))
     norm_diff = (bin_sp-std_sp)/std_sp*100
     avg_diff = np.mean(norm_diff[bin_wl>5000][:-1])
     print(norm_diff.max())
@@ -334,10 +343,10 @@ if __name__ == '__main__':
     plt.plot(bin_wl,bin_sp,'.--',label='calibrated')
     plt.grid(True,which='both',axis='x',linestyle='dotted',alpha=0.6)
     plt.legend(fontsize=FONTSIZE)
-    plt.ylabel('$I_0$ [ergs cm$^{-2}$ s$^{-1}$ $\\AA^{-1}$]',fontsize=FONTSIZE)
+    plt.ylabel('$S_{k}$ [erg cm$^{-2}$ s$^{-1}$ $\\AA^{-1}$]',fontsize=FONTSIZE)
     plt.xticks(bins,['']*len(bins),rotation=45)
     plt.subplot(2,1,2)
-    plt.ylabel('$(I_{0,k}-I_{std,k})/I_{std,k}$ [%]',fontsize=FONTSIZE)
+    plt.ylabel('$(S_{k}-S_{k}^{std})/S_{k}^{std}$ [%]',fontsize=FONTSIZE)
     plt.xlabel('$\\lambda_k$ [$\\AA$]',fontsize=FONTSIZE)
     plt.grid(True,which='both',axis='x',linestyle='dotted',alpha=0.6)
     plt.xticks(bins,bins.astype(int),rotation=45)
