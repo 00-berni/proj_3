@@ -829,150 +829,150 @@ def calibration(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], targ
     return target, lamp
 
 
-def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray], data: tuple[ndarray, ndarray], bins: ndarray, fit_mode: Literal['curve_fit','odr'] = 'odr', display_plots: bool = True, diagn_plot: bool = False,**pltargs) -> tuple[tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
-    """To compute the optical depth and the 0 airmass spectrum
+# def atm_transfer(airmass: tuple[ndarray, ndarray], wlen: tuple[ndarray, ndarray], data: tuple[ndarray, ndarray], bins: ndarray, fit_mode: Literal['curve_fit','odr'] = 'odr', display_plots: bool = True, diagn_plot: bool = False,**pltargs) -> tuple[tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
+#     """To compute the optical depth and the 0 airmass spectrum
 
-    Parameters
-    ----------
-    airmass : tuple[ndarray, ndarray]
-        values of airmass and the corresponding uncertainties
-    wlen : tuple[ndarray, ndarray]
-        values of wavelengths and the corresponding uncertainties
-    data : tuple[ndarray, ndarray]
-        spectrum and the corresponding uncertainties
-    bins : ndarray
-        wavelengths bin values
-    display_plots : bool, optional
-        to display images and plots, by default `True`
-    diagn_plot : bool, optional
-        to display diagnostic images and plots, by default `False`
+#     Parameters
+#     ----------
+#     airmass : tuple[ndarray, ndarray]
+#         values of airmass and the corresponding uncertainties
+#     wlen : tuple[ndarray, ndarray]
+#         values of wavelengths and the corresponding uncertainties
+#     data : tuple[ndarray, ndarray]
+#         spectrum and the corresponding uncertainties
+#     bins : ndarray
+#         wavelengths bin values
+#     display_plots : bool, optional
+#         to display images and plots, by default `True`
+#     diagn_plot : bool, optional
+#         to display diagnostic images and plots, by default `False`
 
-    Returns
-    -------
-    (S0, DS0) : tuple[ndarray, ndarray]
-        0 airmass spectrum and uncertainty
-    (tau, Dtau) : tuple[ndarray,ndarray]
-        optical depth and uncertainty
-    """
-    if 'fontsize' not in pltargs.keys():
-        pltargs['fontsize'] = 18
-    fontsize = pltargs['fontsize']
-    pltargs.pop('fontsize')
-    if 'figsize' not in pltargs.keys():
-        pltargs['figsize'] = (13,10)
-    figsize = pltargs['figsize']
-    pltargs.pop('figsize')
-    # load data
-    x, Dx = airmass
-    l_data, Dl_data = wlen
-    y_data, Dy_data = data
-    bins = np.copy(bins)
-    # prepare arrays to collect values of S0 and tau with uncertainties
-    a_S0  = np.empty((0,2))
-    a_tau = np.empty((0,2))
-    if diagn_plot:    
-        fig1, ax1 = plt.subplots(1,1,figsize=figsize)
-        fig2, ax2 = plt.subplots(1,1,figsize=figsize)
-        # ax2.axhline(0, 0, 1, color='black')
-    res = []
-    for i in range(l_data.shape[1]):
-        # select data
-        y = y_data[:,i]
-        Dy = Dy_data[:,i]
-        # fit routine
-        #.. Assuming N/t = exp(-tau*a)*S0 then 
-        #.. log(N/t) = - tau * a + log(S0)
-        fit = FuncFit(xdata=x, ydata=np.log(y), xerr=Dx, yerr=Dy/y)
-        fit.linear_fit(names=('tau','ln(S0)'),mode=fit_mode)
-        pop, Dpop = fit.results()
-        S0  = np.exp(pop[1])
-        DS0 = Dpop[1] * S0
-        # store the results
-        a_S0  = np.append(a_S0,  [ [S0, DS0] ], axis=0)
-        a_tau = np.append(a_tau, [ [-pop[0], Dpop[0]] ], axis=0)
-        res += [*fit.residuals()]
-        # plot them
-        if diagn_plot:
-            xlabel = '$X$' if i == 0 else ''
-            ylabel = '$\\ln{(\\mathcal{N}/t_{exp})}$' if i == 0 else ''
-            color = (0.5,i/l_data.shape[1],1-i/l_data.shape[1])
-            fit.data_plot(ax1,pltarg1={'color':color},pltarg2={'color':color},ylabel=ylabel,color=color,xlabel=xlabel)
-            fit.residuals_plot(ax2,color=color,xlabel=xlabel)
-            # fit.plot(mode='subplots')
-            # plt.show()
-            # if i == 5 : exit()
-    if diagn_plot:
-        plt.figure()
-        plt.title('Residuals')
-        plt.plot(res,'.--')
-        plt.figure()
-        plt.hist(res,len(res)//2)
+#     Returns
+#     -------
+#     (S0, DS0) : tuple[ndarray, ndarray]
+#         0 airmass spectrum and uncertainty
+#     (tau, Dtau) : tuple[ndarray,ndarray]
+#         optical depth and uncertainty
+#     """
+#     if 'fontsize' not in pltargs.keys():
+#         pltargs['fontsize'] = 18
+#     fontsize = pltargs['fontsize']
+#     pltargs.pop('fontsize')
+#     if 'figsize' not in pltargs.keys():
+#         pltargs['figsize'] = (13,10)
+#     figsize = pltargs['figsize']
+#     pltargs.pop('figsize')
+#     # load data
+#     x, Dx = airmass
+#     l_data, Dl_data = wlen
+#     y_data, Dy_data = data
+#     bins = np.copy(bins)
+#     # prepare arrays to collect values of S0 and tau with uncertainties
+#     a_S0  = np.empty((0,2))
+#     a_tau = np.empty((0,2))
+#     if diagn_plot:    
+#         fig1, ax1 = plt.subplots(1,1,figsize=figsize)
+#         fig2, ax2 = plt.subplots(1,1,figsize=figsize)
+#         # ax2.axhline(0, 0, 1, color='black')
+#     res = []
+#     for i in range(l_data.shape[1]):
+#         # select data
+#         y = y_data[:,i]
+#         Dy = Dy_data[:,i]
+#         # fit routine
+#         #.. Assuming N/t = exp(-tau*a)*S0 then 
+#         #.. log(N/t) = - tau * a + log(S0)
+#         fit = FuncFit(xdata=x, ydata=np.log(y), xerr=Dx, yerr=Dy/y)
+#         fit.linear_fit(names=('tau','ln(S0)'),mode=fit_mode)
+#         pop, Dpop = fit.results()
+#         S0  = np.exp(pop[1])
+#         DS0 = Dpop[1] * S0
+#         # store the results
+#         a_S0  = np.append(a_S0,  [ [S0, DS0] ], axis=0)
+#         a_tau = np.append(a_tau, [ [-pop[0], Dpop[0]] ], axis=0)
+#         res += [*fit.residuals()]
+#         # plot them
+#         if diagn_plot:
+#             xlabel = '$X$' if i == 0 else ''
+#             ylabel = '$\\ln{(\\mathcal{N}/t_{exp})}$' if i == 0 else ''
+#             color = (0.5,i/l_data.shape[1],1-i/l_data.shape[1])
+#             fit.data_plot(ax1,pltarg1={'color':color},pltarg2={'color':color},ylabel=ylabel,color=color,xlabel=xlabel)
+#             fit.residuals_plot(ax2,color=color,xlabel=xlabel)
+#             # fit.plot(mode='subplots')
+#             # plt.show()
+#             # if i == 5 : exit()
+#     if diagn_plot:
+#         plt.figure()
+#         plt.title('Residuals')
+#         plt.plot(res,'.--')
+#         plt.figure()
+#         plt.hist(res,len(res)//2)
 
-        plt.show()
+#         plt.show()
 
 
-    print('DIFF',np.diff(bins,axis=0), np.diff(Dl_data,axis=0))
-    # select a row
-    l_data, Dl_data = l_data[0], Dl_data[0] 
-    bins = bins[0]
-    # collect data
-    S0, DS0 = a_S0[:,0], a_S0[:,1]
-    tau, Dtau = a_tau[:,0], a_tau[:,1]
-    # plot
-    if display_plots:
-        quickplot([l_data,tau,Dtau,Dl_data],dim=figsize,fmt='.',title='Estimated Optical Depth',labels=('$\\lambda$ [$\\AA$]','$\\tau$'),fontsize=fontsize,linestyle='dashed')
-        plt.grid(True,which='both',axis='x')
-        plt.xticks(bins,bins,rotation=45)
-        plt.show()
+#     print('DIFF',np.diff(bins,axis=0), np.diff(Dl_data,axis=0))
+#     # select a row
+#     l_data, Dl_data = l_data[0], Dl_data[0] 
+#     bins = bins[0]
+#     # collect data
+#     S0, DS0 = a_S0[:,0], a_S0[:,1]
+#     tau, Dtau = a_tau[:,0], a_tau[:,1]
+#     # plot
+#     if display_plots:
+#         quickplot([l_data,tau,Dtau,Dl_data],dim=figsize,fmt='.',title='Estimated Optical Depth',labels=('$\\lambda$ [$\\AA$]','$\\tau$'),fontsize=fontsize,linestyle='dashed')
+#         plt.grid(True,which='both',axis='x')
+#         plt.xticks(bins,bins,rotation=45)
+#         plt.show()
 
-        quickplot([l_data, S0, DS0, Dl_data],dim=figsize,fmt='.',title='Estimated Spectrum at 0 airmass',labels=('$\\lambda$ [$\\AA$]','$\\Sigma$ [counts/s]'),fontsize=fontsize,linestyle='dashed')
-        plt.grid(True,which='both',axis='x')
-        plt.xticks(bins,bins,rotation=45)
-        plt.show()
+#         quickplot([l_data, S0, DS0, Dl_data],dim=figsize,fmt='.',title='Estimated Spectrum at 0 airmass',labels=('$\\lambda$ [$\\AA$]','$\\Sigma$ [counts/s]'),fontsize=fontsize,linestyle='dashed')
+#         plt.grid(True,which='both',axis='x')
+#         plt.xticks(bins,bins,rotation=45)
+#         plt.show()
 
-        plt.figure(figsize=figsize)
-        plt.subplot(1,2,1)
-        plt.title('Estimated Optical Depth',fontsize=fontsize+2)
-        plt.ylabel('$\\tau$',fontsize=fontsize)
-        plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
-        plt.grid(True,which='both',axis='x')
-        plt.xticks(bins,bins,rotation=45)
-        plt.errorbar(l_data,tau,Dtau,Dl_data,'.--')
-        plt.subplot(1,2,2)
-        plt.title('Estimated Spectrum at 0 airmass',fontsize=fontsize+2)
-        plt.ylabel('$\\Sigma$ [counts/s]',fontsize=fontsize)
-        plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
-        plt.grid(True,which='both',axis='x')
-        plt.xticks(bins,bins,rotation=45)
-        plt.errorbar(l_data, S0, DS0, Dl_data,'.--')
+#         plt.figure(figsize=figsize)
+#         plt.subplot(1,2,1)
+#         plt.title('Estimated Optical Depth',fontsize=fontsize+2)
+#         plt.ylabel('$\\tau$',fontsize=fontsize)
+#         plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
+#         plt.grid(True,which='both',axis='x')
+#         plt.xticks(bins,bins,rotation=45)
+#         plt.errorbar(l_data,tau,Dtau,Dl_data,'.--')
+#         plt.subplot(1,2,2)
+#         plt.title('Estimated Spectrum at 0 airmass',fontsize=fontsize+2)
+#         plt.ylabel('$\\Sigma$ [counts/s]',fontsize=fontsize)
+#         plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
+#         plt.grid(True,which='both',axis='x')
+#         plt.xticks(bins,bins,rotation=45)
+#         plt.errorbar(l_data, S0, DS0, Dl_data,'.--')
 
-        plt.figure(figsize=figsize)
-        plt.subplot(2,1,1)
-        plt.title('Estimated Optical Depth',fontsize=fontsize+2)
-        plt.ylabel('$\\tau$',fontsize=fontsize)
-        plt.grid(True,which='both',axis='x')
-        plt.xticks(bins,['']*len(bins))
-        plt.errorbar(l_data,tau,Dtau,Dl_data,'.--')
-        plt.subplot(2,1,2)
-        plt.title('Estimated Spectrum at 0 airmass',fontsize=fontsize+2)
-        plt.ylabel('$\\Sigma$ [counts/s]',fontsize=fontsize)
-        plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
-        plt.grid(True,which='both',axis='x')
-        plt.xticks(bins,bins,rotation=45)
-        plt.errorbar(l_data, S0, DS0, Dl_data,'.--')
-        plt.show()
-    # ln(N1/t1) = -tau a1 + ln(S0)
-    # ln(N2/t2) = -tau a2 + ln(S0)
-    # ln(N1/t1 * t2/N2) = tau (a2-a1)
-    # tau = ln(N1/N2 * t2/t1) / (a2-a1)
-    # tau0 = (np.log(y_data/y_data[[1,2,0]]).T / (x[[1,2,0]]-x)).T
-    # plt.figure(figsize=figsize)
-    # for t0,i in zip(tau0,['01','12','20']):
-    #     plt.plot(l_data,t0,'.--',label=i)
-    # plt.legend()
-    # plt.show()
-    # exit()
-    return (S0, DS0), (tau, Dtau)
+#         plt.figure(figsize=figsize)
+#         plt.subplot(2,1,1)
+#         plt.title('Estimated Optical Depth',fontsize=fontsize+2)
+#         plt.ylabel('$\\tau$',fontsize=fontsize)
+#         plt.grid(True,which='both',axis='x')
+#         plt.xticks(bins,['']*len(bins))
+#         plt.errorbar(l_data,tau,Dtau,Dl_data,'.--')
+#         plt.subplot(2,1,2)
+#         plt.title('Estimated Spectrum at 0 airmass',fontsize=fontsize+2)
+#         plt.ylabel('$\\Sigma$ [counts/s]',fontsize=fontsize)
+#         plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
+#         plt.grid(True,which='both',axis='x')
+#         plt.xticks(bins,bins,rotation=45)
+#         plt.errorbar(l_data, S0, DS0, Dl_data,'.--')
+#         plt.show()
+#     # ln(N1/t1) = -tau a1 + ln(S0)
+#     # ln(N2/t2) = -tau a2 + ln(S0)
+#     # ln(N1/t1 * t2/N2) = tau (a2-a1)
+#     # tau = ln(N1/N2 * t2/t1) / (a2-a1)
+#     # tau0 = (np.log(y_data/y_data[[1,2,0]]).T / (x[[1,2,0]]-x)).T
+#     # plt.figure(figsize=figsize)
+#     # for t0,i in zip(tau0,['01','12','20']):
+#     #     plt.plot(l_data,t0,'.--',label=i)
+#     # plt.legend()
+#     # plt.show()
+#     # exit()
+#     return (S0, DS0), (tau, Dtau)
 
 def remove_balmer(lines: np.ndarray, spectrum: np.ndarray, wlen_gap: ArrayLike = 90, display_plots: bool = False,**pltargs) -> np.ndarray:
     from .data import BALMER
@@ -1074,148 +1074,148 @@ def vega_std(bin: int | float | ArrayLike = 50, edges: None | Sequence[float] = 
 
 
 
-def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen_ends: tuple[float,float],  bin_width: float | int = 50, fit_mode: Literal['curve_fit','odr'] = 'odr' , std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False,**pltargs) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
-    """To estimate instrument response function
+# def ccd_response(altitude: tuple[ndarray, ndarray], tg_obs: list[Spectrum], wlen_ends: tuple[float,float],  bin_width: float | int = 50, fit_mode: Literal['curve_fit','odr'] = 'odr' , std_name: str = 'Vega', selection: int = 0, display_plots: bool = True, diagn_plots: bool = False,**pltargs) -> tuple[tuple[ndarray,ndarray],tuple[ndarray,ndarray], tuple[ndarray, ndarray]]:
+#     """To estimate instrument response function
 
-    Parameters
-    ----------
-    altitude : tuple[ndarray, ndarray]
-        different altitudes values and the corresponding uncertainties
-    tg_obs : list[Spectrum]
-        spectrum data of target for different altitudes
-    wlen_ends : list[list[float]]
-        list of ends of each wavelengths range acquired at different altitudes
-    bin_width : float | int, optional
-        the width of each bin, by default `50`
-    std_name : str, optional
-        the name of the standard used to calibrate, by default `'Vega'`
-    selection : int, optional
-        the kind of chosen standard data, by default `0`
-    display_plots : bool, optional
-        to display images and plots, by default `True`
-    diagn_plot : bool, optional
-        to display diagnostic images and plots, by default `False`
+#     Parameters
+#     ----------
+#     altitude : tuple[ndarray, ndarray]
+#         different altitudes values and the corresponding uncertainties
+#     tg_obs : list[Spectrum]
+#         spectrum data of target for different altitudes
+#     wlen_ends : list[list[float]]
+#         list of ends of each wavelengths range acquired at different altitudes
+#     bin_width : float | int, optional
+#         the width of each bin, by default `50`
+#     std_name : str, optional
+#         the name of the standard used to calibrate, by default `'Vega'`
+#     selection : int, optional
+#         the kind of chosen standard data, by default `0`
+#     display_plots : bool, optional
+#         to display images and plots, by default `True`
+#     diagn_plot : bool, optional
+#         to display diagnostic images and plots, by default `False`
 
-    Returns
-    -------
-    (l_data, Dl_data) : tuple[ndarray, ndarray]
-        _description_
-    (R, DR) : tuple[ndarray,ndarray]
-        _description_
-    (op_dep, Dop_dep) : tuple[ndarray,ndarray]
-        _description_
-    """
-    if 'fontsize' not in pltargs.keys():
-        pltargs['fontsize'] = 18
-    fontsize = pltargs['fontsize']
-    pltargs.pop('fontsize')
-    if 'figsize' not in pltargs.keys():
-        pltargs['figsize'] = (13,10)
-    figsize = pltargs['figsize']
-    pltargs.pop('figsize')
-    ## Data Collection
-    alt, Dalt = altitude
-    # airmass
-    x  = 1/np.sin(alt*np.pi/180)
-    Dx = Dalt * np.cos(alt*np.pi/180) * x**2 * np.pi/180 
-    print('AIRMASSES')
-    amfmt, aufmt = unc_format(alt,Dalt)
-    xmfmt, xufmt = unc_format(x,Dx)
-    for i in range(len(x)):
-        ai,Dai = alt[i],Dalt[i]
-        xi,Dxi = x[i],Dx[i]
-        tmp_str = 'alt0{index} = {val:' + amfmt[1:] + '} +/- {err:' + aufmt[1:] + '} --> {perc:.2%}'
-        print(tmp_str.format(index=i+1,val=ai,err=Dai,perc=Dai/ai))
-        tmp_str = 'x0{index} = {val:' + xmfmt[1:] + '} +/- {err:' + xufmt[1:] + '} --> {perc:.2%}'
-        print(tmp_str.format(index=i+1,val=xi,err=Dxi,perc=Dxi/xi))
-    min_line, max_line = wlen_ends       #: ends of the wavelengths range
-    print('MINMAX',min_line,max_line)
-    # define variables to collect values
-    l_data = []     #: central values of binned wavelengths
-    y_data = []     #: binned spectrum data
-    a_bin  = []     #: bins values
-    for obs in tg_obs:
-        obs = obs.copy()
-        exp_time = obs.get_exposure()
-        # normalize spectrum data by exposure time
-        obs.spec = obs.spec / exp_time
-        obs.std = obs.std / exp_time if obs.std is not None else None
-        # bin the data
-        l, y, bins = obs.binning(bin=bin_width,edges=(min_line,max_line))    
-        # store the results     
-        l_data +=  [[*l]]
-        y_data +=  [[*y]]
-        a_bin  +=  [bins]
-    # from list to array
-    l_data, Dl_data = np.array(l_data).transpose((1,0,2))
-    y_data, Dy_data = np.array(y_data).transpose((1,0,2))
-    a_bin = np.array(a_bin)
-    if display_plots:
-        plt.figure(figsize=figsize)
-        plt.title('Binned data for each airmass',fontsize=fontsize+2)
-        for i in range(l_data.shape[0]):
-            plt.errorbar(l_data[i],y_data[i],Dy_data[i],Dl_data[i], label=f'$X = ${x[i]:.3f}')
-        plt.xticks(a_bin[0],a_bin[0],rotation=45)
-        plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
-        plt.ylabel('Time Norm. Data [counts/s]',fontsize=fontsize)
-        plt.grid(True,which='both',axis='x')
-        plt.legend(fontsize=fontsize)
-        plt.show()
+#     Returns
+#     -------
+#     (l_data, Dl_data) : tuple[ndarray, ndarray]
+#         _description_
+#     (R, DR) : tuple[ndarray,ndarray]
+#         _description_
+#     (op_dep, Dop_dep) : tuple[ndarray,ndarray]
+#         _description_
+#     """
+#     if 'fontsize' not in pltargs.keys():
+#         pltargs['fontsize'] = 18
+#     fontsize = pltargs['fontsize']
+#     pltargs.pop('fontsize')
+#     if 'figsize' not in pltargs.keys():
+#         pltargs['figsize'] = (13,10)
+#     figsize = pltargs['figsize']
+#     pltargs.pop('figsize')
+#     ## Data Collection
+#     alt, Dalt = altitude
+#     # airmass
+#     x  = 1/np.sin(alt*np.pi/180)
+#     Dx = Dalt * np.cos(alt*np.pi/180) * x**2 * np.pi/180 
+#     print('AIRMASSES')
+#     amfmt, aufmt = unc_format(alt,Dalt)
+#     xmfmt, xufmt = unc_format(x,Dx)
+#     for i in range(len(x)):
+#         ai,Dai = alt[i],Dalt[i]
+#         xi,Dxi = x[i],Dx[i]
+#         tmp_str = 'alt0{index} = {val:' + amfmt[1:] + '} +/- {err:' + aufmt[1:] + '} --> {perc:.2%}'
+#         print(tmp_str.format(index=i+1,val=ai,err=Dai,perc=Dai/ai))
+#         tmp_str = 'x0{index} = {val:' + xmfmt[1:] + '} +/- {err:' + xufmt[1:] + '} --> {perc:.2%}'
+#         print(tmp_str.format(index=i+1,val=xi,err=Dxi,perc=Dxi/xi))
+#     min_line, max_line = wlen_ends       #: ends of the wavelengths range
+#     print('MINMAX',min_line,max_line)
+#     # define variables to collect values
+#     l_data = []     #: central values of binned wavelengths
+#     y_data = []     #: binned spectrum data
+#     a_bin  = []     #: bins values
+#     for obs in tg_obs:
+#         obs = obs.copy()
+#         exp_time = obs.get_exposure()
+#         # normalize spectrum data by exposure time
+#         obs.spec = obs.spec / exp_time
+#         obs.std = obs.std / exp_time if obs.std is not None else None
+#         # bin the data
+#         l, y, bins = obs.binning(bin=bin_width,edges=(min_line,max_line))    
+#         # store the results     
+#         l_data +=  [[*l]]
+#         y_data +=  [[*y]]
+#         a_bin  +=  [bins]
+#     # from list to array
+#     l_data, Dl_data = np.array(l_data).transpose((1,0,2))
+#     y_data, Dy_data = np.array(y_data).transpose((1,0,2))
+#     a_bin = np.array(a_bin)
+#     if display_plots:
+#         plt.figure(figsize=figsize)
+#         plt.title('Binned data for each airmass',fontsize=fontsize+2)
+#         for i in range(l_data.shape[0]):
+#             plt.errorbar(l_data[i],y_data[i],Dy_data[i],Dl_data[i], label=f'$X = ${x[i]:.3f}')
+#         plt.xticks(a_bin[0],a_bin[0],rotation=45)
+#         plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
+#         plt.ylabel('Time Norm. Data [counts/s]',fontsize=fontsize)
+#         plt.grid(True,which='both',axis='x')
+#         plt.legend(fontsize=fontsize)
+#         plt.show()
 
-    ## Atmospheric Transfer Function
-    # estimate 0 airmass spectrum
-    (S0, DS0), (op_dep, Dop_dep) = atm_transfer((x,Dx), (l_data,Dl_data), (y_data,Dy_data), a_bin, fit_mode=fit_mode, display_plots=display_plots, diagn_plot=diagn_plots,**pltargs)
-
-
-
-    ## Response Function
-    # select a row
-    l_data, Dl_data = l_data[0], Dl_data[0] 
-    bins = a_bin[0]
-    # set ends of wavelengths range
-    min_line, max_line = bins[0], bins[-1]
-    # get the data of the standard
-    # std_wlen, std_data = get_standard(name=std_name, sel=selection, diagn_plots=diagn_plots)
-    # std = Spectrum.empty()      #: variable to collect standard spectrum data
-    # std = vega_std()
-    (std_wlen, std_Dwlen), (std_spec, std_Dspec) = vega_std(bins,diagn_plots=display_plots)
-    if display_plots:
-        plt.figure()
-        plt.suptitle('Spectra of Standard and Target after resizing')
-        plt.subplot(2,1,1)
-        plt.title('Standard')
-        plt.plot(std_wlen,std_spec,'.-')
-        plt.ylabel('$S_{std}$ [erg/(s cm$^2$ $\\AA$)]')
-        plt.subplot(2,1,2)
-        plt.title('Target')
-        plt.plot(l_data,S0,'.-')
-        plt.xlabel('$\\lambda$ [$\\AA$]')
-        plt.ylabel('$\\Sigma_0$ [counts/s]')
-
-    if diagn_plots:
-        plt.figure(figsize=figsize)
-        plt.title('Binned Standard Spectrum',fontsize=fontsize+2)
-        plt.errorbar(std_wlen,std_spec,std_Dspec,std_Dwlen,'.',linestyle='dashed')
-        plt.grid(True,which='both',axis='x')
-        plt.xticks(bins,bins,rotation=45)
-        plt.ylabel('$I_{std}$ [erg/(s cm$^2$ $\\AA$)]',fontsize=fontsize)
-        plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
+#     ## Atmospheric Transfer Function
+#     # estimate 0 airmass spectrum
+#     (S0, DS0), (op_dep, Dop_dep) = atm_transfer((x,Dx), (l_data,Dl_data), (y_data,Dy_data), a_bin, fit_mode=fit_mode, display_plots=display_plots, diagn_plot=diagn_plots,**pltargs)
 
 
-    stand, Dstand = std_spec, std_Dspec
-    R = S0/stand
-    DR = R * np.sqrt((DS0/S0)**2 + (Dstand/stand)**2)
-    if display_plots:
-        plt.figure(figsize=figsize)
-        plt.title('Response Function',fontsize=fontsize+2)
-        plt.errorbar(l_data,R,DR,Dl_data,'.-')
-        plt.grid(True,which='both',axis='x')
-        plt.xticks(bins,bins,rotation=45)
-        plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
-        plt.ylabel('$R$ [counts cm$^2$ $\\AA$ / erg]',fontsize=fontsize)
+
+#     ## Response Function
+#     # select a row
+#     l_data, Dl_data = l_data[0], Dl_data[0] 
+#     bins = a_bin[0]
+#     # set ends of wavelengths range
+#     min_line, max_line = bins[0], bins[-1]
+#     # get the data of the standard
+#     # std_wlen, std_data = get_standard(name=std_name, sel=selection, diagn_plots=diagn_plots)
+#     # std = Spectrum.empty()      #: variable to collect standard spectrum data
+#     # std = vega_std()
+#     (std_wlen, std_Dwlen), (std_spec, std_Dspec) = vega_std(bins,diagn_plots=display_plots)
+#     if display_plots:
+#         plt.figure()
+#         plt.suptitle('Spectra of Standard and Target after resizing')
+#         plt.subplot(2,1,1)
+#         plt.title('Standard')
+#         plt.plot(std_wlen,std_spec,'.-')
+#         plt.ylabel('$S_{std}$ [erg/(s cm$^2$ $\\AA$)]')
+#         plt.subplot(2,1,2)
+#         plt.title('Target')
+#         plt.plot(l_data,S0,'.-')
+#         plt.xlabel('$\\lambda$ [$\\AA$]')
+#         plt.ylabel('$\\Sigma_0$ [counts/s]')
+
+#     if diagn_plots:
+#         plt.figure(figsize=figsize)
+#         plt.title('Binned Standard Spectrum',fontsize=fontsize+2)
+#         plt.errorbar(std_wlen,std_spec,std_Dspec,std_Dwlen,'.',linestyle='dashed')
+#         plt.grid(True,which='both',axis='x')
+#         plt.xticks(bins,bins,rotation=45)
+#         plt.ylabel('$I_{std}$ [erg/(s cm$^2$ $\\AA$)]',fontsize=fontsize)
+#         plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
+
+
+#     stand, Dstand = std_spec, std_Dspec
+#     R = S0/stand
+#     DR = R * np.sqrt((DS0/S0)**2 + (Dstand/stand)**2)
+#     if display_plots:
+#         plt.figure(figsize=figsize)
+#         plt.title('Response Function',fontsize=fontsize+2)
+#         plt.errorbar(l_data,R,DR,Dl_data,'.-')
+#         plt.grid(True,which='both',axis='x')
+#         plt.xticks(bins,bins,rotation=45)
+#         plt.xlabel('$\\lambda$ [$\\AA$]',fontsize=fontsize)
+#         plt.ylabel('$R$ [counts cm$^2$ $\\AA$ / erg]',fontsize=fontsize)
     
-    plt.show()
-    return (l_data, Dl_data, bins), (R, DR), (op_dep, Dop_dep)
+#     plt.show()
+#     return (l_data, Dl_data, bins), (R, DR), (op_dep, Dop_dep)
 
 
     
