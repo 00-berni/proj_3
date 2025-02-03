@@ -1084,6 +1084,7 @@ def binning(spectrum: ArrayLike, lines: ArrayLike, bin: float | int | ArrayLike 
     else:
         bins = np.copy(bin)
         bin_width = np.diff(bin).astype(int)[0]
+    print(bins)
     # define some useful quantities
     half_bin = bin_width / 2
     bin_num = len(bins) - 2 
@@ -1094,8 +1095,8 @@ def binning(spectrum: ArrayLike, lines: ArrayLike, bin: float | int | ArrayLike 
     # average over the values in each bin
     pos = lambda i : np.where((bins[i] <= lines) & (lines < bins[i+1]))[0]
     print('EDGES',bins[[0,-1]])
-    bin_spect = np.array([ np.mean(spectrum[pos(i)]) for i in range(bin_num+1)])
-    err_spect = np.array([ (spectrum[pos(i)].max()-spectrum[pos(i)].min())/2 for i in range(bin_num+1)])
+    bin_spect = np.array([ np.mean(spectrum[pos(i)]) if len(spectrum[pos(i)]) != 0 else 0 for i in range(bin_num+1)])
+    err_spect = np.array([ (spectrum[pos(i)].max()-spectrum[pos(i)].min())/2 if len(spectrum[pos(i)]) != 0 else 0 for i in range(bin_num+1)])
     return (bin_lines, err_lines), (bin_spect, err_spect), bins
 
 
