@@ -94,6 +94,9 @@ spc.print_measure(angle,Dangle,'Angle_tot','deg')
 jupiter.data = jupiter.hdul[0].data.copy()
 jupiter = jupiter.rotate_target(angle)
 
+fig,ax = plt.subplots(1,1)
+spc.fits_image(fig,ax,jupiter)
+plt.show()
 
 
 ### Looking for the center
@@ -171,6 +174,10 @@ plt.axvline(top-cp_jup.lims[0],0,1,linestyle='--')
 plt.axvline(low-cp_jup.lims[0],0,1,linestyle='--')
 plt.show()
 
+fig,ax = plt.subplots(1,1)
+fig.suptitle('Light Frame',fontsize=FONTSIZE)
+spc.fits_image(fig,ax,cp_jup,fontsize=FONTSIZE,aspect='equal')
+plt.show()
 plt.figure()
 plt.imshow(cp_jup.data,origin='lower',norm='log',cmap='gray_r')
 plt.figure()
@@ -237,6 +244,8 @@ plt.show()
 sel_cut = (676,705)
 p1 = data[px_u,slice(*sel_cut)]
 p2 = data[px_d,slice(*sel_cut)]
+P1 = p1.copy()
+P2 = p2.copy()
 av1 = p1.max() - np.mean(data[px_u])
 av2 = p2.max() - np.mean(data[px_d])
 p1 = p1.max()-p1    
@@ -245,14 +254,15 @@ x1 = np.arange(len(p1))
 x2 = np.arange(len(p2))    
 
 plt.figure(figsize=(15,10))
-plt.title(f'Line in {sel_cut}',fontsize=FONTSIZE+2)
-plt.imshow(data[:,slice(*sel_cut)],origin='lower')
+plt.title(f'Selected tilted line',fontsize=FONTSIZE+2)
+plt.imshow(data[:,slice(*sel_cut)],origin='lower',cmap='gray_r')
 plt.axhline(px_u,0,1)
 plt.axhline(px_d,0,1)
 
 from scipy.signal import correlate, correlation_lags
 
 new_corr = correlate(p1-av1,p2-av2,mode='full')
+new_corr /= new_corr.max()
 new_lag = correlation_lags(len(p1),len(p2))
 corr_shift = abs(new_lag[new_corr.argmax()])
 Dcorr_shift = 1
@@ -268,16 +278,43 @@ plt.figure()
 plt.plot(new_lag,new_corr)
 plt.errorbar(corr_shift,new_corr.max(),xerr=Dcorr_shift,color='red',capsize=3)
 
+plt.figure()
+plt.subplot(211)
+plt.title('Cross-correlation of the two spectra', fontsize=FONTSIZE+2)
+plt.plot(P1,label='top')
+plt.plot(P2,label='bottom')
+plt.legend(fontsize=FONTSIZE)
+plt.grid(which='both',linestyle='--',alpha=0.2,color='grey')
+plt.xlabel('x [px]',fontsize=FONTSIZE)
+plt.ylabel('counts',fontsize=FONTSIZE)
+plt.subplot(212)
+plt.plot(new_lag,new_corr,label='cross-correlation')
+plt.errorbar(corr_shift,new_corr.max(),xerr=Dcorr_shift,fmt='.',color='red',capsize=3,label='maximum')
+plt.legend(fontsize=FONTSIZE)
+plt.grid(which='both',linestyle='--',alpha=0.2,color='grey')
+plt.xlabel('lag [px]',fontsize=FONTSIZE)
+plt.ylabel('Norm. values',fontsize=FONTSIZE)
+
+
+
 int_spec = np.sum(data[:,slice(*sel_cut)],axis=0)
 minpos = np.argmin(int_spec)
 minpx  = minpos + sel_cut[0] + cp_jup.lims[2]
 Dminpos = 1
 minval = fit.method(minpx)
 print('MINVAL',minpx,minval)
-plt.figure(figsize=(15,10))
-plt.title('Integrated spectrum',fontsize=FONTSIZE+2)
+plt.figure()
+plt.subplot(121)
+plt.title(f'Selected tilted line',fontsize=FONTSIZE+2)
+plt.imshow(data[:,slice(*sel_cut)],origin='lower',cmap='gray_r')
+plt.colorbar()
+plt.subplot(122)
+plt.title('Cumulative spectrum',fontsize=FONTSIZE+2)
 plt.plot(int_spec,'.--')
-plt.errorbar(minpos,int_spec[minpos],xerr=Dminpos,fmt='.',capsize=3,color='red')
+plt.errorbar(minpos,int_spec[minpos],xerr=Dminpos,fmt='.',capsize=3,color='red',label='$p_0$')
+plt.xlabel('x [px]',fontsize=FONTSIZE)
+plt.ylabel('counts',fontsize=FONTSIZE)
+plt.grid(which='both',linestyle='--',alpha=0.2,color='grey')
 plt.show()
 print('ERR',np.sqrt((Dqf/mf)**2 + (qf*Dmf/mf**2)**2 + 2*fit.res['cov'][0,1]/mf/qf))
 # 8pi R/C (min+q/m)/sh
