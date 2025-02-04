@@ -949,7 +949,7 @@ class FuncFit():
         self.res['errfunc'] = lambda x,Dx: FuncFit.poly_error(x,Dx,self.fit_par,self.errvar)
         # self.res['errfunc'] = lambda x,Dx: FuncFit.poly_error(x,Dx,self.fit_par)
 
-    def linear_fit(self, initial_values: Sequence[float] | None = None, names: Sequence[str] = ('m','q'), mode: Literal['odr','curve_fit'] = 'odr',**fitargs) -> None:
+    def linear_fit(self, initial_values: Sequence[float] | None = None, names: Sequence[str] = ('m','q'), mode: Literal['odr','curve_fit'] = 'curve_fit',**fitargs) -> None:
         self.pol_fit(ord=1, initial_values=initial_values, names=names, mode=mode, **fitargs)
     
     def sigma(self) -> ArrayLike:
