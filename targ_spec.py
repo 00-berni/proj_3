@@ -3,85 +3,116 @@ import matplotlib.pyplot as plt
 import spectralpy as spc
 from spectralpy import TARGETS
 
+
+LINESTYLES = {
+    'loosely dotted'        : (0, (1, 10)),
+    'dotted'                : (0, (1, 5)),
+    'densely dotted'        : (0, (1, 1)),
+
+    'long dash with offset' : (5, (10, 3)),
+    'loosely dashed'        : (0, (5, 10)),
+    'dashed'                : (0, (5, 5)),
+    'densely dashed'        : (0, (5, 1)),
+
+    'loosely dashdotted'    :  (0, (3, 10, 1, 10)),
+    'dashdotted'            :  (0, (3, 5, 1, 5)),
+    'densely dashdotted'    :  (0, (3, 1, 1, 1)),
+
+    'dashdotdotted'         : (0, (3, 5, 1, 5, 1, 5)),
+    'loosely dashdotdotted' : (0, (3, 10, 1, 10, 1, 10)),
+    'densely dashdotdotted' : (0, (3, 1, 1, 1, 1, 1))
+}
+
 label = lambda i,arr,name : name if i==arr[0] else ''
 
-def plot_line(lines: list[float], name: str, color: str, minpos: float,**figargs) -> None:
+def plot_line(lines: spc.ndarray, name: str, color: str, minpos: float, removed_lines: None | list[float] = None,**figargs) -> None:
     if 'linestyle' not in figargs.keys():
         figargs['linestyle'] = '--'
+    if 'alpha' not in figargs.keys():
+        figargs['alpha'] = 0.9#0.5
+    if removed_lines is not None:
+        if len(removed_lines) == 1:
+            pos = lines != removed_lines
+        else:
+            
+            pos = np.array([ lines != rem_line for rem_line in removed_lines]).prod(axis=0).astype(bool)
+        lines = lines[pos].copy()
     for line in lines:
         plt.axvline(line,0,1,color=color,label=label(line,lines,name),**figargs)
         # plt.annotate(name,(line,minpos),(line+10,minpos))
 
 
 b_name = ['H$\\alpha$', 'H$\\beta$', 'H$\\gamma$', 'H$\\delta$', 'H$\\epsilon$', 'H$\\xi$', 'H$\\eta$','H$\\theta$','H$\\iota$','H$\\kappa$']
-balmer = [6562.79, 4861.350, 4340.472, 4101.734, 3970.075, 3889.064, 3835.397, 3797.909, 3770.633, 3750.151]
+balmer = np.array([6562.79, 4861.350, 4340.472, 4101.734, 3970.075, 3889.064, 3835.397, 3797.909, 3770.633, 3750.151])
 bal_err = [0.03,0.05]+[0.006]*7
-feI  = [3021.0725, 3581.1928, 3820.4249, 4307.9020, 4383.5447,  4668.1341,  4957.5965, 5168.8978, 5269.5370 ] #[7610.2676,  7635.8482,  5896.7357, 5274.9807, 4300.2036, 4384.6718, 4401.4425,  4459.3521, 4351.5437]
-feII = [7636.2373, 7611.2601, 6871.6994, 6496.9415, 6497.2764, 6497.4985,  5175.3973, 5274.5277, 4384.31313, 4459.67779, 4351.76199, 4336.30962]
-tiI  = [6497.683, 4300.4848, 4300.5538, 4301.0787, 4322.1141, 4321.7709 ]
-tiII = [4300.0424,  4301.29545, 4350.83776  ]
-neI  = [ 5274.0406, 4402.380, 4460.1758, 4336.2251 ]
-neII = [4384.1063, 4384.2194, 4322.372]
-oI  = [5274.967,5275.123]
-oII = [4384.446, 4351.260, 4336.859, 4322.4477]
-mgI  = [4351.9057,5167.3216,5172.6843,5183.6042]
+feI  = np.array([4528.6139,  4668.1341, 4734.0977, 4920.5028,  4957.5965, 5041.0713, 5083.3382, 5269.5370, 5328.0383, 5709.3779 ]) #[7610.2676,  7635.8482,  5896.7357, 5274.9807, 4300.2036, 4384.6718, 4401.4425,  4459.3521, 4351.5437]
+feII = [5021.5907]
+# tiI  = [6497.683, 4300.4848, 4300.5538, 4301.0787, 4322.1141, 4321.7709 ]
+# tiII = [4300.0424,  4301.29545, 4350.83776  ]
+# neI  = [ 5274.0406, 4402.380, 4460.1758, 4336.2251 ]
+# neII = [4384.1063, 4384.2194, 4322.372]
+# oI  = [5274.967,5275.123]
+# oII = [4384.446, 4351.260, 4336.859, 4322.4477]
+mgI  = np.array([4351.9057,4702.9909,5167.3216,5172.6843,5183.6042, 5711.0880 ])
 mgII = [4384.637]
-arI  = []
-arII = [4401.75478] 
-caI  = [4226.73,4302.53 , 4307.74 ]
+# arI  = []
+# arII = [4401.75478] 
+caI  = np.array([4226.73,4302.53 , 4307.74,  5270.27, 5588.76,  5857.45, 6162.17, 6493.78])
 caII = [3968.47,3933.66]
-naI = [5889.95095,5895.92424]
-o2 = [6276.61, 6867.19,7593.70,8226.96  ]
+naI = np.array([5889.95095,5895.92424])
+o2 = np.array([6276.61, 6867.19,7593.70,8226.96  ])
+tiI = np.array([4527.305, 4667.584,5020.025])
+crI = np.array([4526.4537,4764.2940])
 tio = [6174.86585693, 6320.74407898]
 #tio = [5160, 5450, 5850, 6160]
 
-def display_lines(minpos: float, edges: tuple[float, float], sel: str | list[str] = 'HI') -> None:
-    if 'HI' in sel:
-        for (b,err,name) in zip(balmer,bal_err,b_name):
-            # b += 100
-            if edges[0] <= b <= edges[1]:
-                plt.axvline(b,0,1, color='blue',label=label(b,balmer,'H I'))
-                plt.annotate(name,(b,minpos),(b+10,minpos))
-                plt.axvspan(b-err,b+err,0,1,color='blue',alpha=0.3)
-    if 'BHa' in sel:
-        plot_line(balmer[0:1], b_name[0],'orange',minpos)
-    if 'BHb' in sel:
-        plot_line(balmer[1:2], b_name[1],'orange',minpos)
-    if 'BHc' in sel:
-        plot_line(balmer[2:3], b_name[2],'orange',minpos)
-    if 'BHd' in sel:
-        plot_line(balmer[3:4], b_name[4],'orange',minpos)
-    if 'Fe' in sel or 'FeI' in sel:
-        plot_line(feI, 'Fe I','orange',minpos)
-    if 'Fe' in sel or 'FeII' in sel:
-        plot_line(feII,'Fe II','yellow',minpos)
-    if 'Ti' in sel or 'TiI' in sel:
-        plot_line(tiI, 'Ti I','violet',minpos)
-    if 'Ti' in sel or 'TiII' in sel:
-        plot_line(tiII,'Ti II','plum',minpos)
-    if 'Ne' in sel or 'NeI' in sel:
-        plot_line(neI, 'Ne I','green',minpos)
-    if 'Ne' in sel or 'NeII' in sel:
-        plot_line(neII,'Ne II','lime',minpos)
-    if 'O' in sel or 'OI' in sel:
-        plot_line(oI, 'O I','deeppink',minpos)
-    if 'O' in sel or 'OII' in sel:
-        plot_line(oII,'O II','hotpink',minpos)
-    if 'Mg' in sel or 'MgI' in sel:
-        plot_line(mgI, 'Mg I','red',minpos)
-    if 'Mg' in sel or 'MgII' in sel:
-        plot_line(mgII,'Mg II','tomato',minpos)
-    if 'Ar' in sel or 'ArI' in sel:
-        plot_line(arI, 'Ar I','aqua',minpos)
-    if 'Ar' in sel or 'ArII' in sel:
-        plot_line(arII,'Ar II','cyan',minpos)
-    if 'Ca' in sel or 'CaII' in sel:
-        plot_line(caII,'Ca II','cyan',minpos)
-    if 'Na' in sel or 'NaI' in sel:
-        plot_line(naI,'Na I','green',minpos)
-    plt.legend()
+# def display_lines(minpos: float, edges: tuple[float, float], sel: str | list[str] = 'HI') -> None:
+#     if 'HI' in sel:
+#         for (b,err,name) in zip(balmer,bal_err,b_name):
+#             # b += 100
+#             if edges[0] <= b <= edges[1]:
+#                 plt.axvline(b,0,1, color='blue',label=label(b,balmer,'H I'))
+#                 plt.annotate(name,(b,minpos),(b+10,minpos))
+#                 plt.axvspan(b-err,b+err,0,1,color='blue',alpha=0.3)
+#     if 'BHa' in sel:
+#         plot_line(balmer[0:1], b_name[0],'orange',minpos)
+#     if 'BHb' in sel:
+#         plot_line(balmer[1:2], b_name[1],'orange',minpos)
+#     if 'BHc' in sel:
+#         plot_line(balmer[2:3], b_name[2],'orange',minpos)
+#     if 'BHd' in sel:
+#         plot_line(balmer[3:4], b_name[4],'orange',minpos)
+#     if 'Fe' in sel or 'FeI' in sel:
+#         plot_line(feI, 'Fe I','orange',minpos)
+#     if 'Fe' in sel or 'FeII' in sel:
+#         plot_line(feII,'Fe II','yellow',minpos)
+#     if 'Ti' in sel or 'TiI' in sel:
+#         plot_line(tiI, 'Ti I','violet',minpos)
+#     if 'Ti' in sel or 'TiII' in sel:
+#         plot_line(tiII,'Ti II','plum',minpos)
+#     if 'Ne' in sel or 'NeI' in sel:
+#         plot_line(neI, 'Ne I','green',minpos)
+#     if 'Ne' in sel or 'NeII' in sel:
+#         plot_line(neII,'Ne II','lime',minpos)
+#     if 'O' in sel or 'OI' in sel:
+#         plot_line(oI, 'O I','deeppink',minpos)
+#     if 'O' in sel or 'OII' in sel:
+#         plot_line(oII,'O II','hotpink',minpos)
+#     if 'Mg' in sel or 'MgI' in sel:
+#         plot_line(mgI, 'Mg I','red',minpos)
+#     if 'Mg' in sel or 'MgII' in sel:
+#         plot_line(mgII,'Mg II','tomato',minpos)
+#     if 'Ar' in sel or 'ArI' in sel:
+#         plot_line(arI, 'Ar I','aqua',minpos)
+#     if 'Ar' in sel or 'ArII' in sel:
+#         plot_line(arII,'Ar II','cyan',minpos)
+#     if 'Ca' in sel or 'CaII' in sel:
+#         plot_line(caII,'Ca II','cyan',minpos)
+#     if 'Na' in sel or 'NaI' in sel:
+#         plot_line(naI,'Na I','green',minpos)
+#     plt.legend()
 
-fontsize = 18
+fontsize = 22
 
 def A_class(minpos: float):
     plot_line(balmer,'Balmer','b',minpos)
@@ -96,22 +127,33 @@ def K_class(minpos: float):
     # plot_line(caII[1:2],'CaII K','pink',minpos)
     # plot_line(caII[0:1],'CaII H','pink',minpos)
     # plot_line(naI[0:2],'Na I D','green',minpos)
-    plot_line([np.mean(naI[0:2])],'NaI D','green',minpos)
-    plot_line([np.mean(mgI[1:3])],None,'orange',minpos)
-    plot_line(mgI[3:4],'MgI','orange',minpos)
+    # plot_line([np.mean(naI[0:2])],'NaI D','green',minpos)
+    plot_line(naI,'NaI D','green',minpos,linestyle=LINESTYLES['loosely dashed'])
+    # plot_line([np.mean(mgI[1:3])],None,'orange',minpos)
+    plot_line(tiI,'TiI','turquoise',minpos,linestyle=LINESTYLES['densely dotted'])
+    plot_line(mgI,'MgI','orange',minpos,linestyle='solid')
+    plot_line(caI,'CaI','blueviolet',minpos,linestyle='dotted')
+    plot_line(feI,'FeI','red',minpos, [4957.5965],linestyle='dashdot')
     # plot_line(o2[0:],'O$_2$','purple',minpos)
     plt.legend(fontsize=fontsize)
 
 def G_class(minpos: float):
     plot_line(balmer[0:1],'H$\\alpha$','b',minpos)
     plot_line(balmer[1:2],'H$\\beta$','b',minpos)
+    plot_line(naI,'NaI D','green',minpos,linestyle=LINESTYLES['loosely dashed'])
     # plot_line(balmer[2:3],'H$\\gamma$','b',minpos)
     # plot_line(balmer[3:4],'H$\\delta$','b',minpos)    
     # plot_line(caII[1:2],'CaII K','pink',minpos)
     # plot_line(caII[0:1],'CaII H','pink',minpos)
     # plot_line(naI[0:2],'Na I D','green',minpos)
-    plot_line([np.mean(naI[0:2])],'NaI D','green',minpos)
-    plot_line([np.mean(mgI[1:3])],'MgI','orange',minpos)
+    # plot_line([np.mean(naI[0:2])],'NaI D','green',minpos)
+    # plot_line([np.mean(mgI[1:3])],'MgI','orange',minpos)
+    plot_line(mgI,'MgI','orange',minpos,linestyle='solid')
+    plot_line(crI,'CrI','slategray',minpos,linestyle=LINESTYLES['long dash with offset'])
+    plot_line(tiI,'TiI','turquoise',minpos,linestyle=LINESTYLES['densely dotted'])
+    plot_line(caI,'CaI','blueviolet',minpos,[6493.78],linestyle='dotted')
+    plot_line(feI,'FeI','red',minpos,[4920.5028,4957.5965, 4957.5965, 5041.0713],linestyle='dashdot')
+    plot_line(feII,'FeII','maroon',minpos,linestyle='dashdot')
     # plot_line(mgI[3:4],'MgI','orange',minpos)
     # plot_line(feI[1:2],'FeI','violet',minpos)
     # plot_line(feI[6:7],'FeI','violet',minpos)
@@ -140,11 +182,11 @@ if __name__ == '__main__':
     SEL_OBJ = ['alflyr','alfboo','betdra']
     # SEL_OBJ = ['alfboo']
     display_plots = True
-    # display_plots = False
+    display_plots = False
 
     atm_data = []
     atm_names = []
-    figsize = (14,14)
+    figsize = (20,20)
 
     # atmfig, atmax = plt.subplots(1,3)
 
@@ -167,6 +209,7 @@ if __name__ == '__main__':
         # plt.suptitle(target_name,fontsize=20)
         plt.xlim(4500,7700)
         A_class(minpos)
+        plt.savefig(spc.add_paths(spc.RESULT_DIR,night,target_file,target_name+'_spec.png'))
         # plt.show()
         atm_data += [data[:,data[0]>=balmer[0]]]
         atm_names += [target.name]
@@ -188,8 +231,9 @@ if __name__ == '__main__':
         # plt.figure()
         # plt.title(target.name+': K type star')
         # plt.errorbar(*data,'.-', color='black',alpha=0.5)
-        plt.xlim(4500,7800)
+        plt.xlim(4500,6700)
         K_class(minpos)
+        plt.savefig(spc.add_paths(spc.RESULT_DIR,night,target_file,target_name+'_spec.png'))
         # plt.figure()
         # plt.plot(fit.method(np.arange(lerrsen(data[1]))+target.lims[2]),data[1],'.-')
         # K_class(minpos)
@@ -228,7 +272,7 @@ if __name__ == '__main__':
         # plt.figure()
         # plt.title(target.name+': M type star')
         # plt.errorbar(*data,'.-', color='black',alpha=0.5)
-        plt.xlim(4500,7800)
+        plt.xlim(4500,6700)
         M_class(minpos)
         # plt.figure()
         # plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
@@ -255,8 +299,9 @@ if __name__ == '__main__':
         # plt.figure()
         # plt.title(target.name+': G type star')
         # plt.errorbar(*data,'.-', color='black',alpha=0.5)
-        plt.xlim(4500,7800)
+        plt.xlim(4500,6700)
         G_class(minpos)
+        plt.savefig(spc.add_paths(spc.RESULT_DIR,night,target_file,target_name+'_spec.png'))
         # plt.show()
         # plt.figure()
         # plt.plot(fit.method(np.arange(len(data[1]))+target.lims[2]),data[1],'.-')
@@ -271,9 +316,12 @@ if __name__ == '__main__':
         ax[i].grid()
         lab_o2 = 'O$_2$' if i == 0 else ''  
         lab_h2o = 'H$_2$O' if i == 0 else '' 
-        ax[i].axvspan(6860,6885,facecolor='violet',alpha=0.3,label=lab_o2)
-        ax[i].axvspan(7590,7670,facecolor='violet',alpha=0.3)
-        ax[i].axvspan(7160,7300,facecolor='cyan',alpha=0.3,label=lab_h2o)
+        # ax[i].axvspan(6860,6885,facecolor='violet',alpha=0.3,label=lab_o2)
+        # ax[i].axvspan(7590,7670,facecolor='violet',alpha=0.3)
+        # ax[i].axvspan(7160,7300,facecolor='cyan',alpha=0.3,label=lab_h2o)
+        ax[i].axvspan(6860,6944,facecolor='violet',alpha=0.3,label=lab_o2)
+        ax[i].axvspan(7160,7394,facecolor='cyan',alpha=0.3,label=lab_h2o)
+        ax[i].axvspan(7590,7684,facecolor='violet',alpha=0.3)
         ax[i].set_ylabel('I [a.u.]',fontsize=fontsize)
         ax[i].set_title(atm_names[i],fontsize=fontsize+2,y=.5,loc='right',ha='left',va='center',rotation=270)
     ax[0].annotate('B',(6872.5,0.075),(6872.5,0.13),fontsize=fontsize)
