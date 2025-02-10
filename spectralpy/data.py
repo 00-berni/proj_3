@@ -53,15 +53,17 @@ def data_extraction(path_file: str) -> dict:
     data_file = json.loads(data_file)
     return data_file
 
+def add_paths (*args): 
+    return os.path.join(*args)
 
 NIGHTS = ('16-08-26','17-03-27','18-04-22','18-11-27',
           '22-07-26_ohp','22-07-27_ohp','23-03-28')         #: nights of observation
 PWD = os.path.dirname(os.path.realpath(__file__))           #: path of the current dir
 PROJECT_DIR = os.path.split(PWD)[0]                         #: path of the project dir
-DATA_DIR = os.path.join(PROJECT_DIR, 'data_files')          #: path of the data dir
-CAL_DIR = os.path.join(DATA_DIR, 'calibration')             #: path of calibration dir
-RESULT_DIR = os.path.join(PROJECT_DIR, 'results')           #: path of results dir
-OBJ_FILE = os.path.join(DATA_DIR, 'objs_per_night.json')    #: path of file with objects collection
+DATA_DIR = add_paths(PROJECT_DIR, 'data_files')          #: path of the data dir
+CAL_DIR  = add_paths(DATA_DIR, 'calibration')             #: path of calibration dir
+RESULT_DIR = add_paths(PROJECT_DIR, 'results')           #: path of results dir
+OBJ_FILE = add_paths(DATA_DIR, 'objs_per_night.json')    #: path of file with objects collection
 DATA_ALL = data_extraction(OBJ_FILE)                        #: dictionary with the targets per night
 
 BALMER = [6562.79, 4861.350, 4340.472, 4101.734, 3970.075, 3889.064, 3835.397, 3797.909, 3770.633, 3750.151]
