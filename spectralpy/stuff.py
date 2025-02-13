@@ -205,6 +205,7 @@ class Spectrum():
         from scipy import ndimage
         target = self.copy()
         target.data = ndimage.rotate(target.data,angle=angle,**imagepar)
+        target.angle = np.array([angle,0]) if target.angle is None else target.angle + angle
         if target.sigma is not None:
             target.sigma = ndimage.rotate(target.sigma, angle=angle, **imagepar)
         return target
