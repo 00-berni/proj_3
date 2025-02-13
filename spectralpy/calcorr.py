@@ -361,7 +361,7 @@ def get_target_data(ch_obs: str, ch_obj: str, selection: int | Literal['mean'], 
     if exit_cond: exit()
     return target, lamp
 
-def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: int = 2, lines_err: float = 3.63, initial_values: Sequence[float] | None = None, fit_args: dict = {}, display_plots: bool = True) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
+def lines_calibration(ch_obs: str, ch_obj: str, trsl: int, lamp: Spectrum, ord: int = 2, lines_err: float = 0.001, initial_values: Sequence[float] | None = None, fit_args: dict = {}, display_plots: bool = True) -> tuple[Callable[[ndarray], ndarray], Callable[[ndarray],ndarray]]:
     """To compute the calibration function
 
     Parameters
