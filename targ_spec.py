@@ -182,7 +182,7 @@ if __name__ == '__main__':
     SEL_OBJ = ['alflyr','alfboo','betdra']
     # SEL_OBJ = ['alfboo']
     display_plots = True
-    display_plots = False
+    # display_plots = False
 
     atm_data = []
     atm_names = []
