@@ -396,7 +396,8 @@ new_halpha = fit.method(pos_halpha)
 Dnew_halpha = abs(mf+np.sqrt((Dmf*pos_halpha)**2+Dqf**2+2*pcov[0,1]*pos_halpha))
 v_bulk = C.to(u.km/u.s)/2*(new_halpha-BALMER)/BALMER
 Dv_bulk = abs(C.to(u.km/u.s)/2*Dnew_halpha/BALMER)
-print('New Halpha',new_halpha,'+-',Dnew_halpha,Dnew_halpha/new_halpha*100,BALMER,new_halpha-BALMER)
+print('New Halpha',new_halpha,'+-',Dnew_halpha,BALMER)
+print('Shift',new_halpha-BALMER,'->',Dnew_halpha/(new_halpha-BALMER)*100,'==>',(new_halpha-BALMER)/Dnew_halpha,'sigma')
 print('V bulk',v_bulk,'+-',Dv_bulk)
 
 def new_computation(sel_line: tuple[int,int], sel_range: tuple[tuple[int,int],tuple[int,int]]):
