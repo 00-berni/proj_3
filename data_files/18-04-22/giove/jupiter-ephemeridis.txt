@@ -148,7 +148,7 @@ illuminated and visible to the observer. If the target body diameter is unknown
    Units: ARCSECONDS
  
  'delta      deldot' =
-   Apparent range ("delta", light-time aberrated) and range-rate ("delta-dot")
+   Apparent range ("delta",     ) and range-rate ("delta-dot")
 of the target center relative to the observer. A positive "deldot" means the
 target center is moving away from the observer, negative indicates movement
 toward the observer.  Units: AU and KM/S
