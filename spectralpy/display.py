@@ -1,23 +1,6 @@
-"""
-DISPLAY PACKAGE
-===============
+__author__  = '00-berni'
+__version__ = '0.0.0'
 
-***
-
-::METHODS::
------------
-
-***
-
-!TO DO!
--------
-
-
-***
-    
-?WHAT ASK TO STEVE?
--------------------
-"""
 import numpy as np
 from numpy import ndarray
 from numpy.typing import ArrayLike

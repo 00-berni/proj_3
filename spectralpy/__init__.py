@@ -1,3 +1,6 @@
+__author__  = '00-berni'
+__version__ = '0.0.0'
+
 from .data import *
 from .display import *
 from .stuff import Spectrum, FuncFit, print_measure,binning

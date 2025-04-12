@@ -1,30 +1,10 @@
-"""
-CALCORR PACKAGE
-===============
+__author__  = '00-berni'
+__version__ = '0.0.0'
 
-***
-
-::METHODS::
------------
-
-***
-
-!TO DO!
--------
-    - [] **Update `compute_flat` and `calibration`**
-
-
-***
-    
-?WHAT ASK TO STEVE?
--------------------
-"""
-import os
 import numpy as np
 from numpy import ndarray
 from typing import Callable, Literal
 from numpy.typing import ArrayLike
-from scipy import odr
 from .display import *
 from .data import extract_data, extract_cal_data, get_cal_lines, get_standard, store_results, get_balm_lines
 from .stuff import FuncFit, compute_err, mean_n_std, unc_format, binning

@@ -1,25 +1,5 @@
-"""
-STUFF PACKAGE
-=============
-
-***
-
-::METHODS::
------------
-
-***
-
-!TO DO!
--------
-    - [] **Update `fit_routine`**
-    - [] **Change `angle_correction`**
-
-
-***
-    
-?WHAT ASK TO STEVE?
--------------------
-"""
+__author__  = '00-berni'
+__version__ = '0.0.0'
 
 import numpy as np
 from numpy import ndarray

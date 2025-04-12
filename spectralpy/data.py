@@ -1,24 +1,5 @@
-"""
-DATA PACKAGE
-============
-
-***
-
-::METHODS::
------------
-
-***
-
-!TO DO!
--------
-    - [] **Update the file `.json` and methods: `collects_fits`, `get_data_fit`, `extract_data`, `get_data`**
-
-
-***
-    
-?WHAT ASK TO STEVE?
--------------------
-"""
+__author__  = '00-berni'
+__version__ = '0.0.0'
 
 import os
 import numpy as np
